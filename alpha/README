@@ -1,4 +1,4 @@
-This is auscompgeek's JavaScript IRC calculator bot.
+This is the ALPHA VERSION of auscompgeek's JavaScript IRC calculator bot.
 This bot is designed to be run with JSDB, found at http://jsdb.org/ .
 
 Features:
@@ -21,6 +21,6 @@ Advanced usage:
 
 TODO:
 	- Fix "pow(pow(a,b),c) ** x"!
-	- Multi-network support.
+	- Fix multi-network support.
 	- Parse NAMES, MODEs e.g. +o.
 	- SSL support.
