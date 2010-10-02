@@ -67,11 +67,11 @@ var calcbot =
 	cmodes: {}, // XXX Parse MODE lines.
 	lines: 0,
 	list: "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, log, pow, sqrt, abs, ceil, max, min, floor, round, random, ranint, fact, mean, dice, f, c. Constants: e, pi, phi. Operators: %, ^. Other: decimal, source.",
-	abuse: /nan|infinity|op|raw|run|load|sys|java|ecma|js|plugin|.ping|di(sp(atch|lay)|ocument|el|ate)|c(l(ient|ose)|on(firm|nect))|open|minimize|(qui|exi|aler|pr(in|omp)|insul|bo|.lis)t|undef|w(hile|indow|rite)|f(or|unction|alse)|t(rue|his|ype)|(unti|rctr|eva)l|[\["\]]|([^<>=]|^)=|\/ ?0([^\d.!]|$)|([^w]hat|[^h]at|[^a]t|[^t]|^)'([^s]|$)/
+	abuse: /throw|nan|infinity|op|raw|run|load|sys|java|ecma|js|plugin|.ping|di(sp(atch|lay)|ocument|el|ate)|c(l(ient|ose)|on(firm|nect))|open|minimize|(qui|exi|aler|pr(in|omp)|insul|bo|.lis)t|undef|w(hile|indow|rite)|f(or|unction|alse)|t(rue|his|ype)|(unti|rctr|eva)l|[\["\]]|([^<>=]|^)=|\/ ?0([^\d.!]|$)|([^w]hat|[^h]at|[^a]t|[^t]|^)'([^s]|$)/
 }, ans;
 calcbot.init =
 function initBot()
-{	this.version = "0.16 (1 Oct 2010)";
+{	this.version = "0.16 (2 Oct 2010)";
 	this.help = "This is aucg's JS calc bot v" + this.version + ". Usage: =<expr>. " + this.list + " Type =?<topic> for more information.";
 	this.prefs =
 	{	error: {
@@ -175,7 +175,10 @@ function parseIRCln(ln, serv)
 	} else if (/^:(\S+)(?:!(\S+)@(\S+)|) MODE (\S+)(?: (.+)|)/.test(ln))
 	{	// XXX Parse!
 	} else if (/^:(\S+)(?:!(\S+)@(\S+)|) KICK (\S+) :(.+)/.test(ln))
-	{	this.prefs.rejoinOnKick && this.send(serv, "JOIN", RegExp.$4);
+		this.prefs.rejoinOnKick && this.send(serv, "JOIN", RegExp.$4);
+	else if (/^:\S+ 433 * ./.test(ln)) // Nick collision on connect.
+	{	this.nick += "_";
+		this.send(serv, "NICK", this.nick);
 	}
 }
 
