@@ -21,6 +21,7 @@
  *
  * Contributor(s):
  *   David Vo, David.Vo2@gmail.com, original author
+ *   Michael, oldiesmann@oldiesmann.us, bug finder!
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -197,7 +198,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 	var fromUs = host == this.host || nick == this.nick,
 		kb = at && !(fromUs || nick.match(this.prefs["nokick.nicks"]) || host.match(this.prefs["nokick.hosts"]) || host.match(this.prefs["superuser.hosts"]) /*|| this.cmodes[dest][nick] != []*/) /*&& this.cmodes[dest][this.nick] == []*/,
 		meping = RegExp("^@?" + this.nick.replace(/[^\w\d]/g, "\\$&") + "([:,!.] ?| |$)", "i"),
-		relay = false, equals = false, now = new Date().getTime();
+		relay = false, equals = false, now = new Date().getTime(), s;
 	// fix for buffer playback on ZNC, may produce false positives, dangerous
 	if (this.prefs.fixZNCBuffer) msg = msg.replace(/^\[\d\d?:\d\d(:\d\d)?\] /, "");
 	// fix for message relay bots
@@ -246,7 +247,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 				return;
 			}
 			if (/^(\d*)d(\d+)$/.test(msg)) return this.send(serv, "PRIVMSG", dest, cmdDice(RegExp.$2, RegExp.$1));
-			(ans = this.parseMsg(msg)) != null && this.send(serv, "PRIVMSG", dest, ":" + at + ans);
+			(s = this.parseMsg(msg)) != null && this.send(serv, "PRIVMSG", dest, ":" + at + s);
 		} else if (meping.test(msg) || /^(what('| i)s |calc)/i.test(msg)) // Directed at us, or said "what's x?" or "calc x".
 		{	msg = msg.replace(meping, "").toLowerCase();
 			if (this.abuse.test(msg))
@@ -254,9 +255,9 @@ function onMsg(dest, msg, nick, host, at, serv)
 				return;
 			}
 			if (/^(\d*)d(\d+)$/.test(msg)) return this.send(serv, "PRIVMSG", dest, cmdDice(RegExp.$2, RegExp.$1));
-			(ans = this.parseMsg(msg)) != null && ((typeof ans == "number" && !isNaN(ans)) ||
-				ans != "That isn't a real number." && ans != "I don't do algebra. Sorry for any inconvienience."
-			) && this.send(serv, "PRIVMSG", dest, ":" + at + ans);
+			(s = this.parseMsg(msg)) != null && ((typeof s == "number" && !isNaN(s)) ||
+				s != "That isn't a real number." && s != "I don't do algebra. Sorry for any inconvienience."
+			) && this.send(serv, "PRIVMSG", dest, ":" + at + s);
 		} else if (!at) // PM!
 		{	msg = msg.toLowerCase();
 			if (this.abuse.test(msg))
@@ -264,9 +265,9 @@ function onMsg(dest, msg, nick, host, at, serv)
 				return;
 			}
 			if (/^(\d*)d(\d+)$/.test(msg)) return this.send(serv, "PRIVMSG", nick, cmdDice(RegExp.$2, RegExp.$1));
-			(ans = this.parseMsg(msg)) != null && ((typeof ans == "number" && !isNaN(ans)) ||
-				ans != "That isn't a real number." && ans != "I don't do algebra. Sorry for any inconvienience."
-			) && this.send(serv, "NOTICE", nick, ":" + ans);
+			(s = this.parseMsg(msg)) != null && ((typeof s == "number" && !isNaN(s)) ||
+				s != "That isn't a real number." && ans != "I don't do algebra. Sorry for any inconvienience."
+			) && this.send(serv, "NOTICE", nick, ":" + s);
 		} else if (dest == "#moocows")
 		{	if (!/^au/.test(nick) && /hamburger|beef/i.test(msg))
 				this.send(serv, "PRIVMSG", dest, ":\x01ACTION eats", nick + "\x01");
@@ -316,21 +317,21 @@ function parseMsg(msg)
 		if (/hamburger|beef/.test(msg)) return "Mmm, I shall eat you!";
 		if (/moo|cow/.test(msg)) return "Moooooooooooooooooooo!";
 	}
-	if (msg == "" || /h(a?i|ello|ey)|bon(jou|soi)r|salut|yo|[sz]up|wb/.test(msg)) return "Hey man!";
+	if (msg == "" || /\bh(a?i|ello|ey)|bon(jou|soi)r|salut|yo|[sz]up|wb/.test(msg)) return "Hey man!";
 	if (/s(elf|hut|tfu)|d(anc|ie|iaf|es)|str|(nu|lo|rof|ki)l|nc|egg|rat|cook|m[ea]n|kick|ban|[bm]o[ow]|ham|beef|a\/?s\/?l|au|not|found|up|quiet/.test(msg)) return; // Easter Eggs are disabled?
 	if (/[jkz]/.test(msg)) return "I don't do algebra. Sorry for any inconvienience.";
 	if (/^([-+]?(\d+(?:\.\d+|)|\.\d+)) ?f$/.test(msg)) return f(RegExp.$1) + "C";
 	if (/^([-+]?(\d+(?:\.\d+|)|\.\d+)) ?c$/.test(msg)) return c(RegExp.$1) + "F";
 	// calculate & return result
-	var s = calc(msg);
+	ans = calc(msg);
 	if (this.prefs.userfriendly)
-		if (isNaN(s))
-			s = "That isn't a real number.";
+		if (isNaN(ans))
+			ans = "That isn't a real number.";
 		else if (s == Infinity)
-			s = "That's a number that's too large for me.";
+			ans = "That's a number that's too large for me.";
 		else if (s == -Infinity)
-			s = "That's a number that's too small for me.";
-	return s;
+			ans = "That's a number that's too small for me.";
+	return ans;
 }
 calcbot.up = // Code stolen from Ogmios :)
 function uptime()
@@ -339,7 +340,7 @@ function uptime()
 		m = (diff % 3600 - s) / 60,
 		h = Math.floor(diff / 3600) % 24,
 		d = Math.floor(diff / 3600 / 24);
-	return (d ? d + "d" : "") + (h ? h + "h" : "") + (m ? m + "m" : "") + s + "s";
+	return (d ? d + "d " : "") + (h ? h + "h " : "") + (m ? m + "m " : "") + s + "s";
 }
 calcbot.onCTCP =
 function onCTCP(type, msg, nick, dest, serv)
@@ -535,7 +536,7 @@ function calc(expr)
 			phi = (sqrt(5) + 1) / 2;
 	expr = expr.replace(/(answer to |meaning of |)((the |)ultimate question of |)life,? the universe,? (and|&) every ?thing/g, "42").
 				replace(/math\.*|[?#]|what('| i)s|calc(ulat(e|or)|)|imum|olute|ing|er|the|of/g, "").replace(/(a|)(?:rc|)(cos|sin|tan)\w+/g, "$1$2").replace(/(square ?|)root|\xE2\x88\x9A/g, "sqrt").
-				replace(/ave\w+|mean/, "ave").replace(/(recip|fact|rand?int|rand|d|\b([^a]|^)s)\w+/, "$1").replace(/(\d+(?:\.\d+|!*)|\.\d+) ?([fc])/g, "$2($1)").replace(/(\d+|)d(\d+)/g, "d($2,$1)").
+				replace(/ave\w+|mean/, "ave").replace(/(recip|fact|rand?int|rand|d|s)[^q]+?\b/, "$1").replace(/(\d+(?:\.\d+|!*)|\.\d+) ?([fc])/g, "$2($1)").replace(/(\d+|)d(\d+)/g, "d($2,$1)").
 				replace(/(s|sqrt|round|floor|ceil|log|exp|recip) *(\d+(?:\.\d+|!*)|\.\d+)/g, "$1($2)").replace(/tan +(\d+(?:\.\d+|!*)|\.\d+)/, "tan($2)").
 				replace(/(\d+(?:\.\d+(?:e[-+]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e) ?\*\* ?([-+]?\d+(?:\.\d+(?:e[-+]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e)/g, "pow($1,$2)").replace(/(\d+)!/g, "fact($1)").
 				replace(/\b(\d+(?:\.\d+|)|\.\d+) ?([a-df-wyz])/g,"$1*$2").replace(/\b(ph?i|e) ?([^-+*\/&|^<>%), ])/g,"$1*$2").replace(/(\(.+?\)) ?([^-+*\/&|^<>%!), ])/g,"$1*$2");
