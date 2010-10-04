@@ -75,16 +75,16 @@ function initBot()
 {	this.version = "0.16 (2 Oct 2010)";
 	this.help = "This is aucg's JS calc bot v" + this.version + ". Usage: =<expr>. " + this.list + " Type =?<topic> for more information.";
 	this.prefs =
-	{	error: {
-			log: true,
+	{	error:
+		{	log: true,
 			sendError: true,
 			apologise: false,
 			apologymsg: "Sorry, I encountered an error while trying to evaluate your expression."
 		},
 		fixZNCBuffer: false,
 		userfriendly: false,
-		abuse: {
-			log: true, // when triggered with =
+		abuse:
+		{	log: true, // when triggered with =
 			"log.ctcp": true,
 			"log.ping": true,
 			"log.pm": true,
@@ -92,8 +92,8 @@ function initBot()
 			ban: false,
 			warn: true // warn user sending message
 		},
-		flood: {
-			lines: 6,
+		flood:
+		{	lines: 6,
 			seconds: 4,
 			log: true,
 			kick: true, // not if message was relayed
@@ -346,8 +346,31 @@ calcbot.onCTCP =
 function onCTCP(type, msg, nick, dest, serv)
 {	switch (type)
 	{	case "action":
+			var slaps =
+			[	"\1slaps " + nick + " around a bit with a large trout\1",
+				"\1slaps " + nick + " around a bit with a small fish\1",
+				nick + "! Look over there! *slap*",
+				"\1gets the battering hammer and bashes " + nick + " with it\1",
+				"\1bashes " + nick + " with a terrifying Windows ME user guide\1",
+				"\1beats " + nick + " to a pulp\1",
+				"\1hits " + nick + " with an enormous Compaq laptop\1",
+				"\1hits " + nick + " with a breath taking Windows ME user guide\1",
+				"\1smacks " + nick + "\1",
+				"\1trips up " + nick + " and laughs\1",
+				"\1uses his 1337ness against " + nick + "\1",
+				"\1slaps " + nick + ", therefore adding to his aggressiveness stats\1",
+				"\1pokes " + nick + " in the ribs\1",
+				"\1drops a fully grown whale on " + nick + "\1",
+				"\1whacks " + nick + " with a piece of someone's floorboard\1",
+				"\1slaps " + nick + " with IE6\1",
+				"\1trout slaps " + nick + "\1",
+				"\1hits " + nick + " over the head with a hammer\1",
+				"\1slaps " + nick + "\1",
+				"\1slaps " + nick + " with a trout\1",
+				"\1whacks " + nick + " with a suspicious brick\1"
+			];
 			msg.match("(hit|kick|slap|beat|poke|prod|stab|kill|whack|punche)s " + this.nick.replace(/[^\w\d]/g, "\\$&") + "\\b", "i") &&
-				this.send(serv, "PRIVMSG", dest, ":Oi! Stop it!");
+				this.send(serv, "PRIVMSG", dest, ":" + slaps[ranint(0, slaps.length)]);
 			break;
 		case "version":
 			this.send(serv, "NOTICE", nick, ":\1VERSION aucg's JS IRC calc bot", this.version,
@@ -398,8 +421,6 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			this.send(serv, "QUIT :" + nick, "told me to explode! 10... 9... 8... 7... 6... 5... 4... 3... 2... 1... 0... *boom*", args);
 			break;
 		case "die":
-		case "quit":
-		case "disconnect":
 			this.send(serv, "QUIT :" + at + args);
 			break;
 		case "connect": // Try not to use this, it might cause a memory leak. This is used to quit the bot & connect elsewhere.
@@ -414,14 +435,13 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			this.start(argary[0], argary[1], "", argary[3], argary[2]);
 			break;
 		case "join":
-			if (/^[^#&+!]/.test(args)) args = "#" + args;
+			args.match(/^[^#&+!]/) && args = "#" + args;
 			this.send(serv, "JOIN", args);
 			break;
-		case "part":
 		case "leave":
 			var argary = args.split(" "),
 				chan = argary.shift();
-			if (/^[^#&+!]/.test(chan)) chan = "#" + chan;
+			chan.match(/^[^#&+!]/) && chan = "#" + chan;
 			this.send(serv, "PART", chan, ":" + at + argary.join(" "));
 			break;
 		case "kick":
@@ -432,10 +452,9 @@ function rcBot(cmd, args, dest, at, nick, serv)
 				this.prefs.abuse.log && this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), "kick " + args);
 				break;
 			}
-			if (/^[^#&+!]/.test(chan)) chan = "#" + chan;
+			chan.match(/^[^#&+!]/) && chan = "#" + chan;
 			this.send(serv, "KICK", chan, argary.shift(), ":" + at + argary.join(" "));
 			break;
-		case "msg":
 		case "privmsg":
 		case "message":
 			var argary = args.split(" ");
@@ -448,7 +467,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			break;
 		case "echo":
 		case "say":
-			this.send(serv, "PRIVMSG", dest, (/^:| /.test(args) ? ":" + args : args));
+			this.send(serv, "PRIVMSG", dest, (/ |^:/.test(args) ? ":" + args : args));
 			break;
 		case "raw":
 			this.send(serv, args);
@@ -464,9 +483,6 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			var res = eval(args);
 			if (typeof res == "function") res = "function";
 			res && this.send(serv, "PRIVMSG", dest, ":" + at + res);
-			break;
-		case "inject": // Someone find a use for this and email me before I remove it...
-			this.parseln(args, serv);
 			break;
 		case "log":
 			this.log(serv, "LOG", nick + (at ? " in " + dest : ""), args);
