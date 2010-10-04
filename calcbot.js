@@ -435,13 +435,13 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			this.start(argary[0], argary[1], "", argary[3], argary[2]);
 			break;
 		case "join":
-			args.match(/^[^#&+!]/) && args = "#" + args;
+			if (/^[^#&+!]/.test(args)) args = "#" + args;
 			this.send(serv, "JOIN", args);
 			break;
 		case "leave":
 			var argary = args.split(" "),
 				chan = argary.shift();
-			chan.match(/^[^#&+!]/) && chan = "#" + chan;
+			if (/^[^#&+!]/.test(chan)) chan = "#" + chan;
 			this.send(serv, "PART", chan, ":" + at + argary.join(" "));
 			break;
 		case "kick":
@@ -452,7 +452,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 				this.prefs.abuse.log && this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), "kick " + args);
 				break;
 			}
-			chan.match(/^[^#&+!]/) && chan = "#" + chan;
+			if (/^[^#&+!]/.test(chan)) chan = "#" + chan;
 			this.send(serv, "KICK", chan, argary.shift(), ":" + at + argary.join(" "));
 			break;
 		case "privmsg":
