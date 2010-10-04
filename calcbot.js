@@ -287,13 +287,13 @@ function onMsg(dest, msg, nick, host, at, serv)
 calcbot.parseMsg =
 function parseMsg(msg)
 {	if (/ping/.test(msg)) return msg.replace("ping", "pong");
-	if (/how('?s| (is|are|r|do)) (things|(|yo)u)|hr[yu]|(are|r) (|yo)u o*k/.test(msg)) return "fine thanks! I've been up " + this.up() + " now!";
+	if (/ha?ow('?s| (is|are|r|do)) (things|(|yo)u)|hr[yu]|(are|r) (|yo)u o*k/.test(msg)) return "fine thanks! I've been up " + this.up() + " now!";
 	if (/stat|up ?time/.test(msg)) return "I've been up " + this.up() + ".";
 	if (/source/.test(msg)) return "Old cZ code: http://sites.google.com/site/davidvo2/calc.js | New JSDB code: http://ssh.shellium.org/~auscompgeek/calcbot.js";
 	if (/ver/.test(msg)) return !/what/.test(msg) ? this.version : undefined;
-	if (/((are|r) (yo|)u|is) a bot/.test(msg)) return "Of course I'm a bot! Do you think a human can reply this fast?";
+	if (/(a?re? (|yo)u|is) a bot/.test(msg)) return "Of course I'm a bot! Do you think a human can reply this fast?";
 	if (/^(help|command|list)|^\?[^?]/.test(msg)) return calchelp(msg);
-	if (msg.match(this.nick.replace(/[^\w\d]/g, "\\$&") + "|you|who (are|r) u")) return "I'm a calc bot. /msg me help for a list of functions.";
+	if (msg.match(this.nick.replace(/[^\w\d]/g, "\\$&") + "|you|who a?re? u")) return "I'm a calc bot. /msg me help for a list of functions.";
 	if (/bye|bai/.test(msg)) return "OK, bye then.";
 	if (this.prefs.easterEggs) // Time for some Easter Eggs! *dance*
 	{	if (/lol|rofl/.test(msg)) return "Stop laughing!";
@@ -535,11 +535,11 @@ function calc(expr)
 			randomrange = randint = ranint,
 			phi = (sqrt(5) + 1) / 2;
 	expr = expr.replace(/(answer to |meaning of |)((the |)ultimate question of |)life,? the universe,? (and|&) every ?thing/g, "42")
-               .replace(/math\.*|[?#]|what('| i)s|calc(ulat(e|or)|)|imum|olute|ing|er|the|of/g, "").replace(/(a|)(?:rc|)(cos|sin|tan)\w+/g, "$1$2").replace(/(square ?|)root|\xE2\x88\x9A/g, "sqrt")
-               .replace(/ave\w+|mean/, "ave").replace(/(recip|fact|ra?nd|ranint|d|\bs)[^q()]*?\b/, "$1").replace(/(\d+(?:\.\d+|!*)|\.\d+) ?([fc])/g, "$2($1)").replace(/(\d+|)d(\d+)/g, "d($2,$1)")
-               .replace(/(s|sqrt|round|floor|ceil|log|exp|recip) *(\d+(?:\.\d+|!*)|\.\d+)/g, "$1($2)").replace(/tan +(\d+(?:\.\d+|!*)|\.\d+)/, "tan($2)")
-               .replace(/(\d+(?:\.\d+(?:e[-+]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e) ?\*\* ?([-+]?\d+(?:\.\d+(?:e[-+]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e)/g, "pow($1,$2)").replace(/(\d+)!/g, "fact($1)")
-               .replace(/\b(\d+(?:\.\d+|)|\.\d+) ?([a-df-wyz])/g,"$1*$2").replace(/\b(ph?i|e) ?([^-+*\/&|^<>%), ])/g,"$1*$2").replace(/(\(.+?\)) ?([^-+*\/&|^<>%!), ])/g,"$1*$2");
+	           .replace(/math\.*|[?#]|what('| i)s|calc(ulat(e|or)|)|imum|olute|ing|er|the|of/g, "").replace(/(a|)(?:rc|)(cos|sin|tan)\w+/g, "$1$2").replace(/(square ?|)root|\xE2\x88\x9A/g, "sqrt")
+	           .replace(/ave\w+|mean/, "ave").replace(/(recip|fact|ra?nd|ranint|d|\bs)[^q()]*?\b/, "$1").replace(/(\d+(?:\.\d+|!*)|\.\d+) ?([fc])/g, "$2($1)").replace(/(\d+|)d(\d+)/g, "d($2,$1)")
+	           .replace(/(s|sqrt|round|floor|ceil|log|exp|recip) *(\d+(?:\.\d+|!*)|\.\d+)/g, "$1($2)").replace(/tan +(\d+(?:\.\d+|!*)|\.\d+)/, "tan($2)")
+	           .replace(/(\d+(?:\.\d+(?:e[-+]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e) ?\*\* ?([-+]?\d+(?:\.\d+(?:e[-+]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e)/g, "pow($1,$2)").replace(/(\d+)!/g, "fact($1)")
+	           .replace(/\b(\d+(?:\.\d+|)|\.\d+) ?([a-df-wyz])/g,"$1*$2").replace(/\b(ph?i|e) ?([^-+*\/&|^<>%), ])/g,"$1*$2").replace(/(\(.+?\)) ?([^-+*\/&|^<>%!), ])/g,"$1*$2");
 	while (/pow\(.+,.+\) ?\*\* ?[-+]?(\d+(\.\d|!?)|\.\d)/.test(expr) || /fact\(.+\)!/.test(expr)) // XXX "pow(pow(a,b),c) ** x" becomes "pow(pow(a,pow(b),c),x)"!
 		expr = expr.replace(/pow(\(.+?,)(.+?)\) ?\*\* ?([-+]?(\d+(?:\.\d+|!*)|\.\d+))/g, "pow$1pow($2,$3))").replace(/(fact\(.+?\))!/g, "fact($1)");
 	return Number(eval(expr));
