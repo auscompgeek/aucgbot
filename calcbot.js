@@ -347,27 +347,27 @@ function onCTCP(type, msg, nick, dest, serv)
 {	switch (type)
 	{	case "action":
 			var slaps =
-			[	"\1slaps " + nick + " around a bit with a large trout\1",
-				"\1slaps " + nick + " around a bit with a small fish\1",
+			[	"\1ACTION slaps " + nick + " around a bit with a large trout\1",
+				"\1ACTION slaps " + nick + " around a bit with a small fish\1",
 				nick + "! Look over there! *slap*",
-				"\1gets the battering hammer and bashes " + nick + " with it\1",
-				"\1bashes " + nick + " with a terrifying Windows ME user guide\1",
-				"\1beats " + nick + " to a pulp\1",
-				"\1hits " + nick + " with an enormous Compaq laptop\1",
-				"\1hits " + nick + " with a breath taking Windows ME user guide\1",
-				"\1smacks " + nick + "\1",
-				"\1trips up " + nick + " and laughs\1",
-				"\1uses his 1337ness against " + nick + "\1",
-				"\1slaps " + nick + ", therefore adding to his aggressiveness stats\1",
-				"\1pokes " + nick + " in the ribs\1",
-				"\1drops a fully grown whale on " + nick + "\1",
-				"\1whacks " + nick + " with a piece of someone's floorboard\1",
-				"\1slaps " + nick + " with IE6\1",
-				"\1trout slaps " + nick + "\1",
-				"\1hits " + nick + " over the head with a hammer\1",
-				"\1slaps " + nick + "\1",
-				"\1slaps " + nick + " with a trout\1",
-				"\1whacks " + nick + " with a suspicious brick\1"
+				"\1ACTION gets the battering hammer and bashes " + nick + " with it\1",
+				"\1ACTION bashes " + nick + " with a terrifying Windows ME user guide\1",
+				"\1ACTION beats " + nick + " to a pulp\1",
+				"\1ACTION hits " + nick + " with an enormous Compaq laptop\1",
+				"\1ACTION hits " + nick + " with a breath taking Windows ME user guide\1",
+				"\1ACTION smacks " + nick + "\1",
+				"\1ACTION trips up " + nick + " and laughs\1",
+				"\1ACTION uses his 1337ness against " + nick + "\1",
+				"\1ACTION slaps " + nick + ", therefore adding to his aggressiveness stats\1",
+				"\1ACTION pokes " + nick + " in the ribs\1",
+				"\1ACTION drops a fully grown whale on " + nick + "\1",
+				"\1ACTION whacks " + nick + " with a piece of someone's floorboard\1",
+				"\1ACTION slaps " + nick + " with IE6\1",
+				"\1ACTION trout slaps " + nick + "\1",
+				"\1ACTION hits " + nick + " over the head with a hammer\1",
+				"\1ACTION slaps " + nick + "\1",
+				"\1ACTION slaps " + nick + " with a trout\1",
+				"\1ACTION whacks " + nick + " with a suspicious brick\1"
 			];
 			msg.match("(hit|kick|slap|beat|poke|prod|stab|kill|whack|punche)s " + this.nick.replace(/[^\w\d]/g, "\\$&") + "\\b", "i") &&
 				this.send(serv, "PRIVMSG", dest, ":" + slaps[ranint(0, slaps.length)]);
@@ -469,6 +469,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 		case "say":
 			this.send(serv, "PRIVMSG", dest, (/ |^:/.test(args) ? ":" + args : args));
 			break;
+		case "quote":
 		case "raw":
 			this.send(serv, args);
 			break;
