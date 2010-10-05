@@ -72,7 +72,7 @@ var calcbot =
 }, ans;
 calcbot.init =
 function initBot()
-{	this.version = "0.16 (2 Oct 2010)";
+{	this.version = "0.16 (5 Oct 2010)";
 	this.help = "This is aucg's JS calc bot v" + this.version + ". Usage: =<expr>. " + this.list + " Type =?<topic> for more information.";
 	this.prefs =
 	{	error:
@@ -346,7 +346,7 @@ calcbot.onCTCP =
 function onCTCP(type, msg, nick, dest, serv)
 {	switch (type)
 	{	case "action":
-			var slaps =
+			var res =
 			[	"\1ACTION slaps " + nick + " around a bit with a large trout\1",
 				"\1ACTION slaps " + nick + " around a bit with a small fish\1",
 				nick + "! Look over there! *slap*",
@@ -367,10 +367,11 @@ function onCTCP(type, msg, nick, dest, serv)
 				"\1ACTION hits " + nick + " over the head with a hammer\1",
 				"\1ACTION slaps " + nick + "\1",
 				"\1ACTION slaps " + nick + " with a trout\1",
-				"\1ACTION whacks " + nick + " with a suspicious brick\1"
+				"\1ACTION whacks " + nick + " with a suspicious brick\1",
+				"Hey! Stop it!", "Go away!"
 			];
-			msg.match("(hit|kick|slap|beat|poke|prod|stab|kill|whack|punche)s " + this.nick.replace(/[^\w\d]/g, "\\$&") + "\\b", "i") &&
-				this.send(serv, "PRIVMSG", dest, ":" + slaps[ranint(0, slaps.length)]);
+			msg.match("(hit|kick|slap|beat|prod|stab|kill|whack|insult|(punch|bash|pok)e)s " + this.nick.replace(/[^\w\d]/g, "\\$&") + "\\b", "i") &&
+				this.send(serv, "PRIVMSG", dest, ":" + res[ranint(0, res.length)]);
 			break;
 		case "version":
 			this.send(serv, "NOTICE", nick, ":\1VERSION aucg's JS IRC calc bot", this.version,
@@ -550,7 +551,7 @@ function calc(expr)
 		rnd = rand = ranint = Math.random,
 			// give these aliases, even though we don't need to
 			randomrange = randint = ranint,
-			phi = (sqrt(5) + 1) / 2;
+			phi = (1 + sqrt(5)) / 2;
 	expr = expr.replace(/(answer to |meaning of |)((the |)ultimate question of |)life,? the universe,? (and|&) every ?thing/g, "42")
 	           .replace(/math\.*|[?#]|what('| i)s|calc(ulat(e|or)|)|imum|olute|ing|er|the|of/g, "").replace(/(a|)(?:rc|)(cos|sin|tan)\w+/g, "$1$2").replace(/(square ?|)root|\xE2\x88\x9A/g, "sqrt")
 	           .replace(/ave\w+|mean/, "ave").replace(/(recip|fact|ra?nd|ranint|d|\bs)[^q()]*?\b/, "$1").replace(/(\d+(?:\.\d+|!*)|\.\d+) ?([fc])/g, "$2($1)").replace(/(\d+|)d(\d+)/g, "d($2,$1)")
@@ -742,6 +743,9 @@ function calchelp(e)
 			break;
 		case "pi":
 			s = "pi: The mathematical constant pi, approximately 22/7 or 3.14.";
+			break;
+		case "phi":
+			s = "phi: The mathematical constant phi, (1+sqrt 5)/2.";
 			break;
 		case "%":
 			s = "%: Modulus, the remainder of division, not percentage.";
