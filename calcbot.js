@@ -171,13 +171,13 @@ function parseIRCln(ln, serv)
 		this.send(serv, "PONG", RegExp.$1);
 	else if (/^:(\S+)!(\S+)@(\S+) INVITE (\S+) :(\S+)/.test(ln))
 		this.send(serv, "JOIN", RegExp.$5);
-	else if (/^:(\S+)!(\S+)@(\S+) NICK (\S+)$/.test(ln))
+	else if (/^:(\S+)!(\S+)@(\S+) NICK :(\S+)/.test(ln))
 	{	if (RegExp.$1 == this.nick) this.nick = RegExp.$4;
 	} else if (/^:(\S+)(?:!(\S+)@(\S+)|) MODE (\S+)(?: (.+)|)/.test(ln))
 	{	// XXX Parse!
 	} else if (/^:(\S+)(?:!(\S+)@(\S+)|) KICK (\S+) :(.+)/.test(ln))
 		this.prefs.rejoinOnKick && this.send(serv, "JOIN", RegExp.$4);
-	else if (/^:\S+ 433 * ./.test(ln)) // Nick collision on connect.
+	else if (/^:\S+ 433 \* ./.test(ln)) // Nick collision on connect.
 	{	this.nick += "_";
 		this.send(serv, "NICK", this.nick);
 	}
@@ -248,7 +248,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 			}
 			if (/^(\d*)d(\d+)$/.test(msg)) return this.send(serv, "PRIVMSG", dest, cmdDice(RegExp.$2, RegExp.$1));
 			(s = this.parseMsg(msg)) != null && this.send(serv, "PRIVMSG", dest, ":" + at + s);
-		} else if (meping.test(msg) || /^(what('| i)s |calc)/i.test(msg)) // Directed at us, or said "what's x?" or "calc x".
+		} else if (meping.test(msg) || /^(what('| i)s |calc|math )/i.test(msg)
 		{	msg = msg.replace(meping, "").toLowerCase();
 			if (this.abuse.test(msg))
 			{	this.prefs.abuse["log.ping"] && this.log(serv, "Ping", nick + (at ? " in " + dest : ""), msg);
@@ -290,7 +290,7 @@ function parseMsg(msg)
 	if (/ha?ow('?s| (is|are|r|do)) (things|(|yo)u)|hr[yu]|(are|r) (|yo)u o*k/.test(msg)) return "fine thanks! I've been up " + this.up() + " now!";
 	if (/stat|up ?time/.test(msg)) return "I've been up " + this.up() + ".";
 	if (/source/.test(msg)) return "Old cZ code: http://sites.google.com/site/davidvo2/calc.js | New JSDB code: http://ssh.shellium.org/~auscompgeek/calcbot.js";
-	if (/ver/.test(msg)) return !/what/.test(msg) ? this.version : undefined;
+	if (/\bver/.test(msg)) return !/what/.test(msg) ? this.version : undefined;
 	if (/(a?re? (|yo)u|is) a bot/.test(msg)) return "Of course I'm a bot! Do you think a human can reply this fast?";
 	if (/^(help|command|list)|^\?[^?]/.test(msg)) return calchelp(msg);
 	if (msg.match(this.nick.replace(/[^\w\d]/g, "\\$&") + "|you|who a?re? u")) return "I'm a calc bot. /msg me help for a list of functions.";
@@ -543,7 +543,7 @@ function calc(expr)
 		sqrt = Math.sqrt,
 		// miscellaneous
 		abs = Math.abs,
-		ceil = Math.ceil,    
+		ceil = Math.ceil,
 		max = Math.max,
 		min = Math.min,
 		floor = Math.floor,
