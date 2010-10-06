@@ -248,7 +248,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 			}
 			if (/^(\d*)d(\d+)$/.test(msg)) return this.send(serv, "PRIVMSG", dest, cmdDice(RegExp.$2, RegExp.$1));
 			(s = this.parseMsg(msg)) != null && this.send(serv, "PRIVMSG", dest, ":" + at + s);
-		} else if (meping.test(msg) || /^(what('| i)s |calc|math )/i.test(msg)
+		} else if (meping.test(msg) || /^(what('| i)s |calc|math )/i.test(msg))
 		{	msg = msg.replace(meping, "").toLowerCase();
 			if (this.abuse.test(msg))
 			{	this.prefs.abuse["log.ping"] && this.log(serv, "Ping", nick + (at ? " in " + dest : ""), msg);
