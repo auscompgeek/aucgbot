@@ -548,7 +548,7 @@ function calc(expr)
 		min = Math.min,
 		floor = Math.floor,
 		round = Math.round,
-		rnd = rand = ranint = Math.random,
+		rnd = rand = Math.random,
 			// give these aliases, even though we don't need to
 			randomrange = randint = ranint,
 			phi = (1 + sqrt(5)) / 2;
