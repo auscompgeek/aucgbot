@@ -175,8 +175,8 @@ function parseIRCln(ln, serv)
 	{	if (RegExp.$1 == this.nick) this.nick = RegExp.$4;
 	} else if (/^:(\S+)(?:!(\S+)@(\S+)|) MODE (\S+)(?: (.+)|)/.test(ln))
 	{	// XXX Parse!
-	} else if (/^:(\S+)(?:!(\S+)@(\S+)|) KICK (\S+) :(.+)/.test(ln))
-		this.prefs.rejoinOnKick && this.send(serv, "JOIN", RegExp.$4);
+	} else if (/^:(\S+)(?:!(\S+)@(\S+)|) KICK (\S+) (\S+) :(.*)/.test(ln))
+		RegExp.$5 == this.nick && this.prefs.rejoinOnKick && this.send(serv, "JOIN", RegExp.$4);
 	else if (/^:\S+ 433 \* ./.test(ln)) // Nick collision on connect.
 	{	this.nick += "_";
 		this.send(serv, "NICK", this.nick);
