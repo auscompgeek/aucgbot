@@ -67,7 +67,7 @@ if (!calcbot) var calcbot =
 	cmodes: {}, // XXX Parse MODE lines.
 	lines: 0,
 	list: "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, log, pow, sqrt, abs, ceil, max, min, floor, round, random, ranint, fact, mean, dice, f, c. Constants: e, pi, phi. Operators: %, ^, **. Other: decimal, source.",
-	abuse: /throw|infinity|op|run|load|sys|java|ecma|js|.help|.ping|raw|nan|plugin|d(isp(atch|lay)|ocument|el|ate)|c(l(ient|ose)|on(firm|nect))|open|minimize|(qui|exi|aler|pr(in|omp)|insul|bo|.lis)t|undef|while|window|write|for|function|false|true|this|type|until|rctrl|eval|[\["\]]|([^<>=]|^)=|([^w]hat|[^h]at|[^a]t|[^t]|^)'([^s]|$)/
+	abuse: /throw|infinity|op|raw|load|sys|java|ecma|js|.help|.ping|.help|.ping|raw|nan|plugin|dispatch|display|document|del|date|client|close|confirm|connect|open|minimize|quit|exit|alert|print|prompt|insult|.list|undef|while|window|write|for|function|false|true|this|type|until|rctrl|eval|[\["\]]|([^<>=]|^)=|([^w]hat|[^h]at|[^a]t|[^t]|^)'([^s]|$)/
 }, ans;
 calcbot.init =
 function initBot()
