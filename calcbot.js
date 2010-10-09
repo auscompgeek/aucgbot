@@ -62,17 +62,16 @@
  *	- SSL support.
  */
 
-if (!calcbot)
-var calcbot =
+if (!calcbot) var calcbot =
 {	prefs: {abuse: {}, flood: {}, error: {}},
 	cmodes: {}, // XXX Parse MODE lines.
 	lines: 0,
-	list: "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, log, pow, sqrt, abs, ceil, max, min, floor, round, random, ranint, fact, mean, dice, f, c. Constants: e, pi, phi. Operators: %, ^. Other: decimal, source.",
-	abuse: /throw|nan|infinity|op|raw|run|load|sys|java|ecma|js|plugin|.ping|di(sp(atch|lay)|ocument|el|ate)|c(l(ient|ose)|on(firm|nect))|open|minimize|(qui|exi|aler|pr(in|omp)|insul|bo|.lis)t|undef|w(hile|indow|rite)|f(or|unction|alse)|t(rue|his|ype)|(unti|rctr|eva)l|[\["\]]|([^<>=]|^)=|\/ ?0([^\d.!]|$)|([^w]hat|[^h]at|[^a]t|[^t]|^)'([^s]|$)/
+	list: "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, log, pow, sqrt, abs, ceil, max, min, floor, round, random, ranint, fact, mean, dice, f, c. Constants: e, pi, phi. Operators: %, ^, **. Other: decimal, source.",
+	abuse: /throw|infinity|op|run|load|sys|java|ecma|js|.help|.ping|raw|nan|plugin|d(isp(atch|lay)|ocument|el|ate)|c(l(ient|ose)|on(firm|nect))|open|minimize|(qui|exi|aler|pr(in|omp)|insul|bo|.lis)t|undef|while|window|write|for|function|false|true|this|type|until|rctrl|eval|[\["\]]|([^<>=]|^)=|([^w]hat|[^h]at|[^a]t|[^t]|^)'([^s]|$)/
 }, ans;
 calcbot.init =
 function initBot()
-{	this.version = "0.16 (5 Oct 2010)";
+{	this.version = "0.16 (9 Oct 2010)";
 	this.help = "This is aucg's JS calc bot v" + this.version + ". Usage: =<expr>. " + this.list + " Type =?<topic> for more information.";
 	this.prefs =
 	{	error:
@@ -289,9 +288,9 @@ function parseMsg(msg)
 {	if (/ping/.test(msg)) return msg.replace("ping", "pong");
 	if (/ha?ow('?s| (is|are|r|do)) (things|(|yo)u)|hr[yu]|(are|r) (|yo)u o*k/.test(msg)) return "fine thanks! I've been up " + this.up() + " now!";
 	if (/stat|up ?time/.test(msg)) return "I've been up " + this.up() + ".";
-	if (/source/.test(msg)) return "Old cZ code: http://sites.google.com/site/davidvo2/calc.js | New JSDB code: http://ssh.shellium.org/~auscompgeek/calcbot.js";
+	if (/source|url/.test(msg)) return "Old cZ code: http://sites.google.com/site/davidvo2/calc.js | New JSDB code: http://ssh.shellium.org/~auscompgeek/calcbot.js";
 	if (/\bver/.test(msg)) return !/what/.test(msg) ? this.version : undefined;
-	if (/(a?re? (|yo)u|is) a bot/.test(msg)) return "Of course I'm a bot! Do you think a human can reply this fast?";
+	if (/(is|a?re? (|yo)u) a bot/.test(msg)) return "Of course I'm a bot! Do you think a human can reply this fast?";
 	if (/^(help|command|list)|^\?[^?]/.test(msg)) return calchelp(msg);
 	if (msg.match(this.nick.replace(/[^\w\d]/g, "\\$&") + "|you|who a?re? u")) return "I'm a calc bot. /msg me help for a list of functions.";
 	if (/bye|bai/.test(msg)) return "OK, bye then.";
@@ -318,7 +317,8 @@ function parseMsg(msg)
 		if (/moo|cow/.test(msg)) return "Moooooooooooooooooooo!";
 	}
 	if (msg == "" || /\bh(a?i|ello|ey)|bon(jou|soi)r|salut|yo|[sz]up|wb/.test(msg)) return "Hey man!";
-	if (/s(elf|hut|tfu)|d(anc|ie|iaf|es)|str|(nu|lo|rof|ki)l|nc|egg|rat|cook|m[ea]n|kick|ban|[bm]o[ow]|ham|beef|a\/?s\/?l|au|not|found|up|quiet/.test(msg)) return; // Easter Eggs are disabled?
+	if (/s(elf|hut|tfu)|d(anc|ie|iaf|es)|str|(nu|lo|rof|ki)l|nc|egg|rat|cook|m[ea]n|kick|ban|[bm]o[ow]|ham|beef|a\/?s\/?l|au|not|found|up|quiet|bot/.test(msg)) return;
+	if (/bot/.test(msg)) return this.parseComment(msg, nick, dest, serv);
 	if (/[jkz]/.test(msg)) return "I don't do algebra. Sorry for any inconvienience.";
 	if (/^([-+]?(\d+(?:\.\d+|)|\.\d+)) ?f$/.test(msg)) return f(RegExp.$1) + "C";
 	if (/^([-+]?(\d+(?:\.\d+|)|\.\d+)) ?c$/.test(msg)) return c(RegExp.$1) + "F";
@@ -341,6 +341,11 @@ function uptime()
 		h = Math.floor(diff / 3600) % 24,
 		d = Math.floor(diff / 3600 / 24);
 	return (d ? d + "d " : "") + (h ? h + "h " : "") + (m ? m + "m " : "") + s + "s";
+}
+calcbot.parseComment =
+function parseComment(msg, nick, dest, serv)
+{	if (/botsnack|good ?bot/.test(msg)) this.send(serv, "PRIVMSG", dest, ":\1ACTION beams\1");
+	if (/bad ?bot/.test(msg)) this.send(serv, "PRIVMSG", dest, ":\1ACTION cowers\1");
 }
 calcbot.onCTCP =
 function onCTCP(type, msg, nick, dest, serv)
@@ -381,6 +386,7 @@ function onCTCP(type, msg, nick, dest, serv)
 			this.send(serv, "NOTICE", nick, ":\1TIME", new Date() + "\1");
 			break;
 		case "source":
+		case "url":
 			this.send(serv, "NOTICE", nick, ":\1SOURCE http://ssh.shellium.org/~auscompgeek/calcbot.js on http://jsdb.org\1");
 			break;
 		case "ping":
@@ -553,11 +559,11 @@ function calc(expr)
 			randomrange = randint = ranint,
 			phi = (1 + sqrt(5)) / 2;
 	expr = expr.replace(/(answer to |meaning of |)((the |)ultimate question of |)life,? the universe,? (and|&) every ?thing/g, "42")
-	           .replace(/math\.*|[?#]|what('| i)s|calc(ulat(e|or)|)|imum|olute|ing|er|the|of/g, "").replace(/(a|)(?:rc|)(cos|sin|tan)\w+/g, "$1$2").replace(/(square ?|)root|\xE2\x88\x9A/g, "sqrt")
+	           .replace(/math\.*|#|\?+$|what('| i)s|calc(ulat(e|or)|)|imum|olute|ing|er|the|of/g, "").replace(/(a|)(?:rc|)(cos|sin|tan)\w+/g, "$1$2").replace(/(square ?|)root|\xE2\x88\x9A/g, "sqrt")
 	           .replace(/ave\w+|mean/, "ave").replace(/(recip|fact|ra?nd|ranint|d|\bs)[^q()]*?\b/, "$1").replace(/(\d+(?:\.\d+|!*)|\.\d+) ?([fc])/g, "$2($1)").replace(/(\d+|)d(\d+)/g, "d($2,$1)")
 	           .replace(/(s|sqrt|round|floor|ceil|log|exp|recip) *(\d+(?:\.\d+|!*)|\.\d+)/g, "$1($2)").replace(/tan +(\d+(?:\.\d+|!*)|\.\d+)/, "tan($2)")
 	           .replace(/(\d+(?:\.\d+(?:e[-+]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e) ?\*\* ?([-+]?\d+(?:\.\d+(?:e[-+]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e)/g, "pow($1,$2)").replace(/(\d+)!/g, "fact($1)")
-	           .replace(/\b(\d+(?:\.\d+|)|\.\d+) ?([a-df-wyz])/g,"$1*$2").replace(/\b(ph?i|e) ?([^-+*\/&|^<>%), ])/g,"$1*$2").replace(/(\(.+?\)) ?([^-+*\/&|^<>%!), ])/g,"$1*$2");
+	           .replace(/\b(\d+(?:\.\d+|)|\.\d+) ?([a-df-wyz])/g,"$1*$2").replace(/\b(ph?i|e) ?([^-+*\/&|^<>%),?: ])/g,"$1*$2").replace(/(\(.+?\)) ?([^-+*\/&|^<>%!),?: ])/g,"$1*$2");
 	while (/pow\(.+,.+\) ?\*\* ?[-+]?(\d+(\.\d|!?)|\.\d)/.test(expr) || /fact\(.+\)!/.test(expr)) // XXX "pow(pow(a,b),c) ** x" becomes "pow(pow(a,pow(b),c),x)"!
 		expr = expr.replace(/pow(\(.+?,)(.+?)\) ?\*\* ?([-+]?(\d+(?:\.\d+|!*)|\.\d+))/g, "pow$1pow($2,$3))").replace(/(fact\(.+?\))!/g, "fact($1)");
 	return Number(eval(expr));
@@ -671,7 +677,7 @@ function calchelp(e)
 				"but x can be in the format of pow(a,pow(b,c)). See also: exp, sqrt, e";
 			break;
 		case "^":
-			s = "^: Bitwise XOR (exclusive OR), not exponentation! See also: **";
+			s = "x^y: Bitwise XOR (exclusive OR), not exponentation! See also: **";
 			break;
 		case "squarer": // square root
 		case "root":
@@ -738,8 +744,9 @@ function calchelp(e)
 			s = "c(x), <x>c: Convert x degrees Celsius to degrees Fahrenheit. See also: f";
 			break;
 		case "e":
-			s = "If e's used in the middle of a number, i.e. <x>e<y>, it's used to denote scientific notation " +
-				"e.g. 2e100 = 2*10**100. In other cases, e's the mathematical constant e. See also: exp, log, pow";
+			s = "If e's used in the middle of a number, i.e. <x>e<y>, it's used to denote scientific notation" +
+				" e.g. 2e100 = 2*10**100. NB: There's no spaces allowed in this case! " +
+				"In other cases, e's the mathematical constant e. See also: exp, log, pow";
 			break;
 		case "pi":
 			s = "pi: The mathematical constant pi, approximately 22/7 or 3.14.";
@@ -748,7 +755,7 @@ function calchelp(e)
 			s = "phi: The mathematical constant phi, (1+sqrt 5)/2.";
 			break;
 		case "%":
-			s = "%: Modulus, the remainder of division, not percentage.";
+			s = "x%y: Modulus, the remainder of division, not percentage.";
 			break;
 		case "decimal":
 		case ".":
