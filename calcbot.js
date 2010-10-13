@@ -56,6 +56,7 @@
  *	calcbot.start(server, port, ident, pass, channels);
  *
  * TODO:
+ *	- Randomize "moo" reply.
  *	- Fix "pow(pow(a,b),c) ** x"!
  *	- Multi-network support.
  *	- Parse NAMES, MODEs e.g. +o.
@@ -67,7 +68,7 @@ if (!calcbot) var calcbot =
 	cmodes: {}, // XXX Parse MODE lines.
 	lines: 0,
 	list: "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, log, pow, sqrt, abs, ceil, max, min, floor, round, random, ranint, fact, mean, dice, f, c. Constants: e, pi, phi. Operators: %, ^, **. Other: decimal, source.",
-	abuse: /throw|infinity|op|raw|load|sys|java|ecma|js|.help|.ping|.help|.ping|raw|nan|plugin|dispatch|display|document|del|date|client|close|confirm|connect|open|minimize|quit|exit|alert|print|prompt|insult|.list|undef|while|window|write|for|function|false|true|this|type|until|rctrl|eval|[\["\]]|([^<>=]|^)=|([^w]hat|[^h]at|[^a]t|[^t]|^)'([^s]|$)/
+	abuse: /var|my|our|local|throw|infinity|op|raw|load|sys|java|ecma|js|.help|.ping|raw|nan|plugin|dispatch|display|document|del|date|client|close|confirm|connect|open|minimize|quit|exit|alert|print|prompt|insult|.list|undef|while|window|write|for|function|false|true|this|type|until|rctrl|eval|[\["\]]|([^<>=]|^)=|([^w]hat|[^h]at|[^a]t|[^t]|^)'([^s]|$)/
 }, ans;
 calcbot.init =
 function initBot()
@@ -184,8 +185,7 @@ function parseIRCln(ln, serv)
 
 calcbot.onMsg =
 function onMsg(dest, msg, nick, host, at, serv)
-{	if ((/bot|Serv|Op/i.test(nick) || /bot[\/.]/.test(host)) && nick != this.nick && !fromUs) return; // It's a bot (not us).
-	/*** XXX Implement this fully. ***
+{	/*** XXX Implement this fully. ***
 	 * Don't try to kick/ban if:
 	 *	a) we're not in a channel,
 	 *	b) the message was from us
@@ -204,6 +204,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 	if (this.prefs["relay.check"] && nick.match(this.prefs["relay.bots"]) && /^<.+> /.test(msg))
 		msg = msg.replace(/^<(.+?)> /, ""), nick = RegExp.$1, at = nick + ": ",
 		relay = true, kb = false, fromUs = nick == this.nick || fromUs;
+	if ((/bot|Serv|Op/i.test(nick) || /bot[\/.]/.test(host)) && nick != this.nick && !fromUs) return; // It's a bot (not us).
 	if (now - this.lastTime > this.prefs["flood.seconds"] * 1000) this.lines = 0;
 	if (this.lines >= this.prefs["flood.lines"] && now - this.lastTime <= this.prefs["flood.seconds"] * 1000)
 	{	this.lastTime = now;
@@ -265,7 +266,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 			}
 			if (/^(\d*)d(\d+)$/.test(msg)) return this.send(serv, "PRIVMSG", nick, cmdDice(RegExp.$2, RegExp.$1));
 			(s = this.parseMsg(msg)) != null && ((typeof s == "number" && !isNaN(s)) ||
-				s != "That isn't a real number." && ans != "I don't do algebra. Sorry for any inconvienience."
+				s != "That isn't a real number." && s != "I don't do algebra. Sorry for any inconvienience."
 			) && this.send(serv, "NOTICE", nick, ":" + s);
 		} else if (dest == "#moocows")
 		{	if (!/^au/.test(nick) && /hamburger|beef/i.test(msg))
@@ -325,17 +326,18 @@ function parseMsg(msg)
 	// calculate & return result
 	ans = calc(msg);
 	if (this.prefs.userfriendly)
-		if (isNaN(ans))
-			ans = "That isn't a real number.";
-		else if (s == Infinity)
-			ans = "That's a number that's too large for me.";
-		else if (s == -Infinity)
-			ans = "That's a number that's too small for me.";
+	{	if (isNaN(ans))
+			return "That isn't a real number.";
+		if (ans == Infinity)
+			return "That's a number that's too large for me.";
+		if (ans == -Infinity)
+			return "That's a number that's too small for me.";
+	}
 	return ans;
 }
 calcbot.up = // Code stolen from Ogmios :)
 function uptime()
-{	var diff = Math.floor((this.lastTime - this.started) / 1000),
+{	var diff = Math.round((this.lastTime - this.started) / 1000),
 		s = diff % 60,
 		m = (diff % 3600 - s) / 60,
 		h = Math.floor(diff / 3600) % 24,
@@ -379,33 +381,33 @@ function onCTCP(type, msg, nick, dest, serv)
 				this.send(serv, "PRIVMSG", dest, ":" + res[ranint(0, res.length)]);
 			break;
 		case "version":
-			this.send(serv, "NOTICE", nick, ":\1VERSION aucg's JS IRC calc bot", this.version,
-							"(JSDB", system.release + ", JS", system.version / 100 + ")\1");
+			this.nctcp(serv, nick, type, "aucg's JS IRC calc bot", this.version,
+						"(JSDB", system.release + ", JS", system.version / 100);
 			break;
 		case "time":
-			this.send(serv, "NOTICE", nick, ":\1TIME", new Date() + "\1");
+			this.nctcp(serv, nick, type, new Date());
 			break;
 		case "source":
 		case "url":
-			this.send(serv, "NOTICE", nick, ":\1SOURCE http://ssh.shellium.org/~auscompgeek/calcbot.js on http://jsdb.org\1");
+			this.nctcp(serv, nick, type, "http://ssh.shellium.org/~auscompgeek/calcbot.js on http://jsdb.org");
 			break;
 		case "ping":
-			this.send(serv, "NOTICE", nick, ":\1PING", msg + "\1");
+			this.nctcp(serv, nick, type, msg);
 			break;
 		case "uptime":
 		case "age":
-			this.send(serv, "NOTICE", nick, ":\1AGE", this.up() + "\1");
+			this.nctcp(serv, nick, type, this.up());
 			break;
 		case "gender":
 		case "sex":
-			this.send(serv, "NOTICE", nick, ":\1GENDER bot\1");
+			this.nctcp(serv, nick, type, "bot");
 			break;
 		case "location":
-			this.send(serv, "NOTICE", nick, ":\1LOCATION behind you\1");
+			this.nctcp(serv, nick, type, "behind you");
 			break;
 		case "a/s/l":
 		case "asl":
-			this.send(serv, "NOTICE", nick, ":\1ASL 2m/bot/behind you\1");
+			this.nctcp(serv, nick, type, "2m/bot/behind you");
 			break;
 		case "avatar":
 		case "icon":
@@ -413,7 +415,7 @@ function onCTCP(type, msg, nick, dest, serv)
 			break;
 		case "languages":
 		case "language":
-			this.send(serv, "NOTICE", nick, ":\1LANGUAGE JS,math,en\1");
+			this.nctcp(serv, nick, type, "JS,math,en");
 			break;
 		default:
 			writeln("[WARNING] Unknown CTCP! ^^^^^");
@@ -462,6 +464,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			if (/^[^#&+!]/.test(chan)) chan = "#" + chan;
 			this.send(serv, "KICK", chan, argary.shift(), ":" + at + argary.join(" "));
 			break;
+		case "msg":
 		case "privmsg":
 		case "message":
 			var argary = args.split(" ");
@@ -518,6 +521,7 @@ function send(serv)
 		this.serv.writeln(s.join(" ").replace(/\s+/, " ").replace(/^ | $/g, ""));
 	else writeln("[ERROR] Call to send() without arguments?");
 }
+calcbot.nctcp = function nctcp(serv, nick, type, msg) this.send(serv, "NOTICE", nick, "\1" + type, msg + "\1");
 calcbot.log =
 function log(serv)
 {	if (!this.prefs.log) return;
@@ -558,7 +562,7 @@ function calc(expr)
 			// give these aliases, even though we don't need to
 			randomrange = randint = ranint,
 			phi = (1 + sqrt(5)) / 2;
-	expr = expr.replace(/(answer to |meaning of |)((the |)ultimate question of |)life,? the universe,? (and|&) every ?thing/g, "42")
+	expr = expr.replace(/(answer to |meaning of |)(|(|the )(|ultimate )question of )life,? the universe,? (and|&) every ?thing/g, "42")
 	           .replace(/math\.*|#|\?+$|what('| i)s|calc(ulat(e|or)|)|imum|olute|ing|er|the|of/g, "").replace(/(a|)(?:rc|)(cos|sin|tan)\w+/g, "$1$2").replace(/(square ?|)root|\xE2\x88\x9A/g, "sqrt")
 	           .replace(/ave\w+|mean/, "ave").replace(/(recip|fact|ra?nd|ranint|d|\bs)[^q()]*?\b/, "$1").replace(/(\d+(?:\.\d+|!*)|\.\d+) ?([fc])/g, "$2($1)").replace(/(\d+|)d(\d+)/g, "d($2,$1)")
 	           .replace(/(s|sqrt|round|floor|ceil|log|exp|recip) *(\d+(?:\.\d+|!*)|\.\d+)/g, "$1($2)").replace(/tan +(\d+(?:\.\d+|!*)|\.\d+)/, "tan($2)")
