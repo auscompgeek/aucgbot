@@ -56,10 +56,9 @@
  *	calcbot.start(server, port, ident, pass, channels);
  *
  * TODO:
- *	- Randomize "moo" reply.
  *	- Fix "pow(pow(a,b),c) ** x"!
  *	- Multi-network support.
- *	- Parse NAMES, MODEs e.g. +o.
+ *	- Parse NAMES, MODEs e.g. +o, 005.
  *	- SSL support.
  */
 
@@ -68,11 +67,11 @@ if (!calcbot) var calcbot =
 	cmodes: {}, // XXX Parse MODE lines.
 	lines: 0,
 	list: "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, log, pow, sqrt, abs, ceil, max, min, floor, round, random, ranint, fact, mean, dice, f, c. Constants: e, pi, phi. Operators: %, ^, **. Other: decimal, source.",
-	abuse: /var|my|our|local|throw|infinity|op|raw|load|sys|java|ecma|js|.help|.ping|raw|nan|plugin|dispatch|display|document|del|date|client|close|confirm|connect|open|minimize|quit|exit|alert|print|prompt|insult|.list|undef|while|window|write|for|function|false|true|this|type|until|rctrl|eval|[\["\]]|([^<>=]|^)=|([^w]hat|[^h]at|[^a]t|[^t]|^)'([^s]|$)/
+	abuse: /load|java|ecma|op|.help|.ping|doc|cli|(qui|exi|aler|prin|insul|.lis)t|undef|raw|throw|window|nan|open|con|pro|patch|plug|play|infinity|my|our|var|for|function|(fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|this|js|sys|scr|(de|loca|unti|rctr|eva)l|[\["\]]|([^<>=]|^)=|([^w]hat|[^h]at|[^a]t|[^t]|^)'([^s]|$)/
 }, ans;
 calcbot.init =
 function initBot()
-{	this.version = "0.16 (9 Oct 2010)";
+{	this.version = "0.17 (14 Oct 2010)";
 	this.help = "This is aucg's JS calc bot v" + this.version + ". Usage: =<expr>. " + this.list + " Type =?<topic> for more information.";
 	this.prefs =
 	{	error:
@@ -103,7 +102,7 @@ function initBot()
 		actDice: false, // display output of <x>d<y> as /me rolls a d<y> x times: a, b, c, total: d
 		log: true, // toggle all logging
 		"relay.check": true, // toggle relay bot checking
-		"relay.bots": /^(lcp|bik_link|iRelayer|janus|Mingbeast)$/, // regex tested against nicks to check for relay bots
+		"relay.bots": /^(lcp|bik_link|iRelayer|janus|Mingbeast|irfail)$/, // regex tested against nicks to check for relay bots
 		italicsInHelp: false, // tested ONLY in ChatZilla, doesn't work in irssi
 		"keyboard.sendInput": true, // XXX Doesn't work on Windows?
 		"keyboard.dieOnInput": false, // if keyboard.sendInput is false
@@ -129,7 +128,7 @@ function startBot(serv, port, user, pass, chans)
 	{	this.serv = new Stream("net://" + serv + ":" + port); // XXX Add multi-server support.
 		pass && this.send(serv, "PASS", pass); pass = 0;
 		this.send(serv, "NICK", this.nick);
-		this.send(serv, "USER", user || "aucg", "8 * :\x033\x0Fauscompgeek's JS calc bot, see =help");
+		this.send(serv, "USER", user || "aucg", "8 * :\x033\17auscompgeek's JS calc bot, see =help");
 		if (typeof chans == "array")
 			for (var i = 0; i <= chans.length; i++)
 				if (i == 0)
@@ -204,7 +203,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 	if (this.prefs["relay.check"] && nick.match(this.prefs["relay.bots"]) && /^<.+> /.test(msg))
 		msg = msg.replace(/^<(.+?)> /, ""), nick = RegExp.$1, at = nick + ": ",
 		relay = true, kb = false, fromUs = nick == this.nick || fromUs;
-	if ((/bot|Serv|Op/i.test(nick) || /bot[\/.]/.test(host)) && nick != this.nick && !fromUs) return; // It's a bot (not us).
+	if ((/bot|Serv|Op/i.test(nick) || /bot[\/.]/.test(host)) && !fromUs) return; // It's a bot (not us).
 	if (now - this.lastTime > this.prefs["flood.seconds"] * 1000) this.lines = 0;
 	if (this.lines >= this.prefs["flood.lines"] && now - this.lastTime <= this.prefs["flood.seconds"] * 1000)
 	{	this.lastTime = now;
@@ -270,10 +269,17 @@ function onMsg(dest, msg, nick, host, at, serv)
 			) && this.send(serv, "NOTICE", nick, ":" + s);
 		} else if (dest == "#moocows")
 		{	if (!/^au/.test(nick) && /hamburger|beef/i.test(msg))
-				this.send(serv, "PRIVMSG", dest, ":\x01ACTION eats", nick + "\x01");
+				this.send(serv, "PRIVMSG", dest, ":\1ACTION eats", nick + "\1");
 			else if (/moo|cow/i.test(msg))
-				this.send(serv, "PRIVMSG", dest, "Mooooooooooo!");
-		} else if (/^!?help!?$/i.test(msg))
+			{	s =
+				[	"Mooooooooooo!", "MOO!", "Moo.", ":Moo. Moo.", ":Moo Moo Moo, Moo Moo.",
+					":\1ACTION goes and gets a drink\1",
+					":\1ACTION quietly meditates on the purpose of #moocows\1",
+					":\1ACTION races across the channel\1"
+				];
+				this.send(serv, "PRIVMSG", dest, s[ranint(0, s.length)]);
+			}
+		} else if (/^help!?$/i.test(msg))
 			this.send(serv, "PRIVMSG", dest, ":" + at + "Welcome! To get help, please state your problem. Being specific will get you help faster.");
 	} catch(ex)
 	{	if (equals) // Error, tell the user, but only if explicitly run.
@@ -295,6 +301,8 @@ function parseMsg(msg)
 	if (/^(help|command|list)|^\?[^?]/.test(msg)) return calchelp(msg);
 	if (msg.match(this.nick.replace(/[^\w\d]/g, "\\$&") + "|you|who a?re? u")) return "I'm a calc bot. /msg me help for a list of functions.";
 	if (/bye|bai/.test(msg)) return "OK, bye then.";
+	if (/bad ?bot/.test(msg)) return "Why am I a bad bot? :(";
+	if (/botsnack|good ?bot/.test(msg)) return "Thanks! :)";
 	if (this.prefs.easterEggs) // Time for some Easter Eggs! *dance*
 	{	if (/lol|rofl/.test(msg)) return "Stop laughing!";
 		if (/stfu|shut ?up|quiet/.test(msg)) return "Don't tell me to be quiet!";
@@ -344,11 +352,6 @@ function uptime()
 		d = Math.floor(diff / 3600 / 24);
 	return (d ? d + "d " : "") + (h ? h + "h " : "") + (m ? m + "m " : "") + s + "s";
 }
-calcbot.parseComment =
-function parseComment(msg, nick, dest, serv)
-{	if (/botsnack|good ?bot/.test(msg)) this.send(serv, "PRIVMSG", dest, ":\1ACTION beams\1");
-	if (/bad ?bot/.test(msg)) this.send(serv, "PRIVMSG", dest, ":\1ACTION cowers\1");
-}
 calcbot.onCTCP =
 function onCTCP(type, msg, nick, dest, serv)
 {	switch (type)
@@ -375,14 +378,15 @@ function onCTCP(type, msg, nick, dest, serv)
 				"\1ACTION slaps " + nick + "\1",
 				"\1ACTION slaps " + nick + " with a trout\1",
 				"\1ACTION whacks " + nick + " with a suspicious brick\1",
+				"\1ACTION puts " + nick + "'s fingers in a Chinese finger lock\1",
 				"Hey! Stop it!", "Go away!"
 			];
-			msg.match("(hit|kick|slap|beat|prod|stab|kill|whack|insult|(punch|bash|pok)e)s " + this.nick.replace(/[^\w\d]/g, "\\$&") + "\\b", "i") &&
+			msg.match("(hit|kick|slap|b?eat|prod|stab|kill|whack|insult|(punch|bash|pok)e)s " + this.nick.replace(/[^\w\d]/g, "\\$&") + "\\b", "i") &&
 				this.send(serv, "PRIVMSG", dest, ":" + res[ranint(0, res.length)]);
 			break;
 		case "version":
-			this.nctcp(serv, nick, type, "aucg's JS IRC calc bot", this.version,
-						"(JSDB", system.release + ", JS", system.version / 100);
+			this.nctcp(serv, nick, type, "aucg's JS IRC calc bot " + this.version +
+					" (JSDB " + system.release + ", JS " + (system.version / 100));
 			break;
 		case "time":
 			this.nctcp(serv, nick, type, new Date());
@@ -418,7 +422,7 @@ function onCTCP(type, msg, nick, dest, serv)
 			this.nctcp(serv, nick, type, "JS,math,en");
 			break;
 		default:
-			writeln("[WARNING] Unknown CTCP! ^^^^^");
+			writeln("[ERROR] Unknown CTCP! ^^^^^");
 			this.prefs.abuse["log.ctcp"] && this.log(serv, "CTCP", nick + (nick == dest ? "" : " in " + dest), type, msg);
 	}
 }
@@ -435,7 +439,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 		case "connect": // Try not to use this, it might cause a memory leak. This is used to quit the bot & connect elsewhere.
 			var argary = /^(?:irc:\/\/|)((?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-5])\.(?:\d\d?|1\d\d|2[0-4]\d|25[0-5])\.(?:\d\d?|1\d\d|2[0-4]\d|25[0-5])\.(?:\d\d?|1\d\d|2[0-4]\d|25[0-4])|[\w\d][\w\d.\-_]+\w)(?::([1-5]\d{0,4}|[6-9]\d{0,3}|6[0-5]{2}[0-3][0-5])|)(?:\/([^?]*)|)(?:\?pass=(.+)|)$/.exec(args);
 			if (!argary) // Invalid URL?!?!?
-			{	writeln("[WARNING] Invalid URL! ^^^^^");
+			{	writeln("[ERROR] Invalid URL! ^^^^^");
 				this.prefs.abuse.log && this.log(serv, "Invalid URL", nick + (at ? " in " + dest : ""), args);
 				break;
 			}
@@ -505,7 +509,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			}
 			break;
 		default:
-			writeln("[WARNING] Possible abuse! ^^^^^");
+			writeln("[ERROR] Possible abuse! ^^^^^");
 			this.prefs.abuse.log && this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), cmd + (args ? " " + args : ""));
 			this.prefs.abuse.warn && this.send(serv, "NOTICE", nick, ":Please don't try to abuse my remote control.");
 	}
@@ -564,10 +568,10 @@ function calc(expr)
 			phi = (1 + sqrt(5)) / 2;
 	expr = expr.replace(/(answer to |meaning of |)(|(|the )(|ultimate )question of )life,? the universe,? (and|&) every ?thing/g, "42")
 	           .replace(/math\.*|#|\?+$|what('| i)s|calc(ulat(e|or)|)|imum|olute|ing|er|the|of/g, "").replace(/(a|)(?:rc|)(cos|sin|tan)\w+/g, "$1$2").replace(/(square ?|)root|\xE2\x88\x9A/g, "sqrt")
-	           .replace(/ave\w+|mean/, "ave").replace(/(recip|fact|ra?nd|ranint|d|\bs)[^q()]*?\b/, "$1").replace(/(\d+(?:\.\d+|!*)|\.\d+) ?([fc])/g, "$2($1)").replace(/(\d+|)d(\d+)/g, "d($2,$1)")
+	           .replace(/ave\w+|mean/, "ave").replace(/(recip|fact|ra?nd|rand?int|d|\bs)[^q()]*?\b/, "$1").replace(/(\d+(?:\.\d+|!*)|\.\d+) ?([fc])/g, "$2($1)").replace(/(\d+|)d(\d+)/g, "d($2,$1)")
 	           .replace(/(s|sqrt|round|floor|ceil|log|exp|recip) *(\d+(?:\.\d+|!*)|\.\d+)/g, "$1($2)").replace(/tan +(\d+(?:\.\d+|!*)|\.\d+)/, "tan($2)")
 	           .replace(/(\d+(?:\.\d+(?:e[-+]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e) ?\*\* ?([-+]?\d+(?:\.\d+(?:e[-+]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e)/g, "pow($1,$2)").replace(/(\d+)!/g, "fact($1)")
-	           .replace(/\b(\d+(?:\.\d+|)|\.\d+) ?([a-df-wyz])/g,"$1*$2").replace(/\b(ph?i|e) ?([^-+*\/&|^<>%),?: ])/g,"$1*$2").replace(/(\(.+?\)) ?([^-+*\/&|^<>%!),?: ])/g,"$1*$2");
+	           .replace(/\b(\d+(?:\.\d+|)|\.\d+) ?([(a-df-wyz])/g,"$1*$2").replace(/\b(ph?i|e) ?([^-+*\/&|^<>%),?: ])/g,"$1*$2").replace(/(\(.+?\)) ?([^-+*\/&|^<>%!),?: ])/g,"$1*$2");
 	while (/pow\(.+,.+\) ?\*\* ?[-+]?(\d+(\.\d|!?)|\.\d)/.test(expr) || /fact\(.+\)!/.test(expr)) // XXX "pow(pow(a,b),c) ** x" becomes "pow(pow(a,pow(b),c),x)"!
 		expr = expr.replace(/pow(\(.+?,)(.+?)\) ?\*\* ?([-+]?(\d+(?:\.\d+|!*)|\.\d+))/g, "pow$1pow($2,$3))").replace(/(fact\(.+?\))!/g, "fact($1)");
 	return Number(eval(expr));
@@ -596,10 +600,10 @@ function ave()
 	return total / arguments.length;
 }
 function d(sides, count, modifier) // Partially from cZ dice plugin.
-{	var total = 0;
+{	var total = 0, i;
 	sides = parseInt(sides) || 6;
 	count = parseInt(count) || 1;
-	for (var i = 0; i < count; i++)
+	for (i = 0; i < count; i++)
 		total += ranint(1, sides);
 	return total + (parseFloat(modifier) || 0);
 }
@@ -615,10 +619,10 @@ function f(temp) (temp - 32) / 1.8;
 function c(temp) temp * 1.8 + 32;
 
 function cmdDice(sides, count) // Partially from cZ dice plugin.
-{	var ary = [], total = 0;
+{	var ary = [], total = 0, i;
 	sides = parseInt(sides) || 6;
 	count = parseInt(count) || 1;
-	for (var i = 0; i < count; i++)
+	for (i = 0; i < count; i++)
 	{	ary[i] = ranint(1, sides);
 		total += ary[i];
 	}
@@ -712,7 +716,7 @@ function calchelp(e)
 		case "random":
 		case "rand":
 		case "rnd":
-			s = "rnd(): Get a random decimal e.g. floor(rand()*(max-min+1))+min. See also: floor, round, ranint";
+			s = "rnd(): Get a random decimal e.g. floor(rnd()*(max-min+1))+min. See also: floor, round, ranint";
 			break;
 		case "randomi": // random integer
 		case "randomr": // randomRange
@@ -738,7 +742,7 @@ function calchelp(e)
 			break;
 		case "dice":
 		case "d":
-			s = "d([x,[y,[z]]]), [<y>]d<x>: Roll y dice with x number of sides, then add z. " +
+			s = "d([x,[y,[z]]]), [y]d<x>: Roll y dice with x number of sides, then add z. " +
 				"NB: x & y can't be expressions with <y>d<x>! See also: ranint";
 			break;
 		case "f":
