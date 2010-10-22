@@ -67,11 +67,11 @@ if (!calcbot) var calcbot =
 	cmodes: {}, // XXX Parse MODE lines.
 	lines: 0,
 	list: "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, log, pow, sqrt, abs, ceil, max, min, floor, round, random, ranint, fact, mean, dice, f, c. Constants: e, pi, phi. Operators: %, ^, **. Other: decimal, source.",
-	abuse: /load|java|ecma|op|.help|.ping|doc|cli|(qui|exi|aler|prin|insul|.lis)t|undef|raw|throw|window|nan|open|con|pro|patch|plug|play|infinity|my|our|var|for|function|(fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|this|js|sys|scr|(de|loca|unti|rctr|eva)l|[\["\]]|([^<>=]|^)=|([^w]hat|[^h]at|[^a]t|[^t]|^)'([^s]|$)/
+	abuse: /load|java|ecma|op|.help|.ping|doc|cli|(qui|exi|aler|prin|insul|.lis)t|undef|raw|throw|window|nan|open|con|pro|patch|plug|play|infinity|my|var|for|function|(fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|this|js|sys|scr|(de|loca|unti|rctr|eva)l|[\["\]]|([^<>=]|^)=|([^w]hat|[^h]at|[^a]t|[^t]|^)'([^s]|$)/
 }, ans;
 calcbot.init =
 function initBot()
-{	this.version = "0.17 (14 Oct 2010)";
+{	this.version = "0.17 (22 Oct 2010)";
 	this.help = "This is aucg's JS calc bot v" + this.version + ". Usage: =<expr>. " + this.list + " Type =?<topic> for more information.";
 	this.prefs =
 	{	error:
@@ -112,7 +112,7 @@ function initBot()
 		"nokick.nicks": /Tanner|Mardeg|aj00200|ChrisMorgan|JohnTHaller|Bensawsome|juju|Shadow|TMZ|aus?c(ompgeek|g|ow)|Jan/,
 		"nokick.hosts": /bot|spam|staff|developer|math/,
 		// regex for allowed hosts to use =rctrl command
-		"superuser.hosts": /support\.team\.at\.shellium\.org|trek|aus?c(ompgeek|g)|^(FOSSnet|freenode)\/(staff|dev)|oper|netadmin|Gryllida|bot(ter|)s|spam|\.net\.pbthawe\.eu/
+		"superuser.hosts": /support\.team\.at\.shellium\.org|trek|aus?c(ompgeek|g)|^(FOSSnet|freenode)\/(staff|dev)|oper|netadmin|[Gg]ryllida|bot(ter|)s|spam|\.net\.pbthawe\.eu/
 	};
 	return "Calc bot initialised. Type calcbot.start(serv,port,user,pass,chans) to start the bot.";
 }
@@ -326,7 +326,7 @@ function parseMsg(msg)
 		if (/moo|cow/.test(msg)) return "Moooooooooooooooooooo!";
 	}
 	if (msg == "" || /\bh(a?i|ello|ey)|bon(jou|soi)r|salut|yo|[sz]up|wb/.test(msg)) return "Hey man!";
-	if (/s(elf|hut|tfu)|d(anc|ie|iaf|es)|str|(nu|lo|rof|ki)l|nc|egg|rat|cook|m[ea]n|kick|ban|[bm]o[ow]|ham|beef|a\/?s\/?l|au|not|found|up|quiet|bot/.test(msg)) return;
+	if (/self|shut|stfu|d(anc|ie|iaf|es)|str|our|(nu|lo|rof|ki)l|nc|egg|rat|cook|m[ea]n|kick|ban|[bm]o[ow]|ham|beef|a\/?s\/?l|au|not|found|up|quiet|bot/.test(msg)) return;
 	if (/bot/.test(msg)) return this.parseComment(msg, nick, dest, serv);
 	if (/[jkz]/.test(msg)) return "I don't do algebra. Sorry for any inconvienience.";
 	if (/^([-+]?(\d+(?:\.\d+|)|\.\d+)) ?f$/.test(msg)) return f(RegExp.$1) + "C";
@@ -401,6 +401,9 @@ function onCTCP(type, msg, nick, dest, serv)
 		case "uptime":
 		case "age":
 			this.nctcp(serv, nick, type, this.up());
+			break;
+		case "prefix":
+			this.nctcp(serv, nick, type, "=");
 			break;
 		case "gender":
 		case "sex":
@@ -525,7 +528,7 @@ function send(serv)
 		this.serv.writeln(s.join(" ").replace(/\s+/, " ").replace(/^ | $/g, ""));
 	else writeln("[ERROR] Call to send() without arguments?");
 }
-calcbot.nctcp = function nctcp(serv, nick, type, msg) this.send(serv, "NOTICE", nick, "\1" + type, msg + "\1");
+calcbot.nctcp = function nctcp(serv, nick, type, msg) this.send(serv, "NOTICE", nick, ":\1" + type.toUpperCase(), msg + "\1");
 calcbot.log =
 function log(serv)
 {	if (!this.prefs.log) return;
