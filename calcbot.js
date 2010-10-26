@@ -274,8 +274,14 @@ function onMsg(dest, msg, nick, host, at, serv)
 			{	s =
 				[	"Mooooooooooo!", "MOO!", "Moo.", ":Moo. Moo.", ":Moo Moo Moo, Moo Moo.",
 					":\1ACTION goes and gets a drink\1",
-					":\1ACTION quietly meditates on the purpose of #moocows\1",
-					":\1ACTION races across the channel\1"
+					":\1ACTION quietly meditates on the purpose of " + dest + "\1",
+					":\1ACTION races across the channel\1",
+					":\1ACTION runs around in circles and falls over\1",
+					":\1ACTION wanders aimlessly\1",
+					":\1ACTION eyes " + nick + " menacingly\1",
+					":\1ACTION sniffs " + nick + "\1",
+					":\1ACTION thumps " + nick + "\1",
+					":\1ACTION solves partial differential equations"
 				];
 				this.send(serv, "PRIVMSG", dest, s[ranint(0, s.length)]);
 			}
