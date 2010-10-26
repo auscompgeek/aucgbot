@@ -71,7 +71,7 @@ if (!calcbot) var calcbot =
 }, ans;
 calcbot.init =
 function initBot()
-{	this.version = "0.17 (22 Oct 2010)";
+{	this.version = "0.17 (26 Oct 2010)";
 	this.help = "This is aucg's JS calc bot v" + this.version + ". Usage: =<expr>. " + this.list + " Type =?<topic> for more information.";
 	this.prefs =
 	{	error:
@@ -203,7 +203,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 	if (this.prefs["relay.check"] && nick.match(this.prefs["relay.bots"]) && /^<.+> /.test(msg))
 		msg = msg.replace(/^<(.+?)> /, ""), nick = RegExp.$1, at = nick + ": ",
 		relay = true, kb = false, fromUs = nick == this.nick || fromUs;
-	if ((/bot|Serv|Op/i.test(nick) || /bot[\/.]/.test(host)) && !fromUs) return; // It's a bot (not us).
+	if ((/bot|Serv|Op$/i.test(nick) || /bot[\/.]/.test(host)) && !fromUs) return; // It's a bot (not us).
 	if (now - this.lastTime > this.prefs["flood.seconds"] * 1000) this.lines = 0;
 	if (this.lines >= this.prefs["flood.lines"] && now - this.lastTime <= this.prefs["flood.seconds"] * 1000)
 	{	this.lastTime = now;
@@ -233,7 +233,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 			if (host.match(this.prefs["superuser.hosts"]) && /^=rctrl (\S+)(?: (.+)|)/.test(msg))
 				return this.remoteControl(RegExp.$1, RegExp.$2, dest, at, nick, serv);
 			msg = msg.replace(/^[= ]+/, "").toLowerCase();
-			if (/^'?[-^]?[dpszo0?(){}\/|\\!<>]+( |$)/.test(msg)) return; // Begins with a smiley.
+			if (/^['"-^]*[dpszo0?(){}\/|\\!<>.]*( |$)/.test(msg)) return; // Begins with a smiley.
 			if (msg.match(this.abuse))
 			{	if (!fromUs)
 				{	if (kb)
@@ -300,7 +300,7 @@ function parseMsg(msg)
 	if (/(is|a?re? (|yo)u) a bot/.test(msg)) return "Of course I'm a bot! Do you think a human can reply this fast?";
 	if (/^(help|command|list)|^\?[^?]/.test(msg)) return calchelp(msg);
 	if (msg.match(this.nick.replace(/[^\w\d]/g, "\\$&") + "|you|who a?re? u")) return "I'm a calc bot. /msg me help for a list of functions.";
-	if (/bye|bai/.test(msg)) return "OK, bye then.";
+	if (/bye|bai|bbl|brb/.test(msg)) return "Ok, hope I see you soon. :(";
 	if (/bad ?bot/.test(msg)) return "Why am I a bad bot? :(";
 	if (/botsnack|good ?bot/.test(msg)) return "Thanks! :)";
 	if (this.prefs.easterEggs) // Time for some Easter Eggs! *dance*
