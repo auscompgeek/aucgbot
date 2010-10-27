@@ -63,7 +63,7 @@
  */
 
 if (!calcbot) var calcbot =
-{	prefs: {abuse: {}, flood: {}, error: {}},
+{	prefs: { abuse: {}, flood: {}, error: {} },
 	cmodes: {}, // XXX Parse MODE lines.
 	lines: 0,
 	list: "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, log, pow, sqrt, abs, ceil, max, min, floor, round, random, ranint, fact, mean, dice, f, c. Constants: e, pi, phi. Operators: %, ^, **. Other: decimal, source.",
@@ -153,9 +153,7 @@ function startBot(serv, port, user, pass, chans)
 			else if (this.prefs["keyboard.dieOnInput"] && system.kbhit())
 				this.send(serv, "QUIT :Keyboard input.");
 		}
-	} catch(ex)
-	{	writeln("IRC bot error: ", ex);
-	}
+	} catch(ex) { writeln("IRC bot error: ", ex); }
 }
 
 calcbot.parseln =
@@ -227,7 +225,8 @@ function onMsg(dest, msg, nick, host, at, serv)
 	msg = msg.replace(/\s+/g, " ").replace(/^ | $/g, "");
 	try
 	{	if (msg[0] == "\1") // Possible CTCP.
-		{	if (/^\x01([^\1 ]+)(?: ([^\1]*)|)\x01/.test(msg)) this.onCTCP(RegExp.$1.toLowerCase(), RegExp.$2, nick, dest, serv);
+		{	if (/^\x01([^\1 ]+)(?: ([^\1]*)|)\x01/.test(msg))
+				this.onCTCP(RegExp.$1.toLowerCase(), RegExp.$2, nick, dest, serv);
 		} else if (msg[0] == "=") // Starts with =.
 		{	equals = true;
 			if (host.match(this.prefs["superuser.hosts"]) && /^=rctrl (\S+)(?: (.+)|)/.test(msg))
@@ -272,21 +271,22 @@ function onMsg(dest, msg, nick, host, at, serv)
 				this.send(serv, "PRIVMSG", dest, ":\1ACTION eats", nick + "\1");
 			else if (/moo|cow/i.test(msg))
 			{	s =
-				[	"Mooooooooooo!", "MOO!", "Moo.", ":Moo. Moo.", ":Moo Moo Moo, Moo Moo.",
-					":\1ACTION goes and gets a drink\1",
-					":\1ACTION quietly meditates on the purpose of " + dest + "\1",
-					":\1ACTION races across the channel\1",
-					":\1ACTION runs around in circles and falls over\1",
-					":\1ACTION wanders aimlessly\1",
-					":\1ACTION eyes " + nick + " menacingly\1",
-					":\1ACTION sniffs " + nick + "\1",
-					":\1ACTION thumps " + nick + "\1",
-					":\1ACTION solves partial differential equations"
+				[	"Mooooooooooo!", "MOO!", "Moo.", "Moo. Moo.", "Moo Moo Moo, Moo Moo.",
+					"\1ACTION goes and gets a drink\1",
+					"\1ACTION quietly meditates on the purpose of " + dest + "\1",
+					"\1ACTION races across the channel\1",
+					"\1ACTION runs around in circles and falls over\1",
+					"\1ACTION wanders aimlessly\1",
+					"\1ACTION eyes " + nick + " menacingly\1",
+					"\1ACTION sniffs " + nick + "\1",
+					"\1ACTION thumps " + nick + "\1",
+					"\1ACTION solves partial differential equations\1"
 				];
-				this.send(serv, "PRIVMSG", dest, s[ranint(0, s.length)]);
+				this.send(serv, "PRIVMSG", dest, ":" + s[ranint(0, s.length)]);
 			}
 		} else if (/^help!?$/i.test(msg))
-			this.send(serv, "PRIVMSG", dest, ":" + at + "Welcome! To get help, please state your problem. Being specific will get you help faster.");
+			this.send(serv, "PRIVMSG", dest, ":" + at +
+							"Welcome! To get help, please state your problem. Being specific will get you help faster.");
 	} catch(ex)
 	{	if (equals) // Error, tell the user, but only if explicitly run.
 		{	writeln("[ERROR] ", ex);
@@ -299,7 +299,8 @@ function onMsg(dest, msg, nick, host, at, serv)
 calcbot.parseMsg =
 function parseMsg(msg)
 {	if (/ping/.test(msg)) return msg.replace("ping", "pong");
-	if (/ha?ow('?s| (is|are|r|do)) (things|(|yo)u)|hr[yu]|(are|r) (|yo)u o*k/.test(msg)) return "fine thanks! I've been up " + this.up() + " now!";
+	if (/ha?ow('?s| (is|are|r|do)) (things|(|yo)u)|hr[yu]|(are|r) (|yo)u o*k/.test(msg))
+			return "fine thanks! I've been up " + this.up() + " now!";
 	if (/stat|up ?time/.test(msg)) return "I've been up " + this.up() + ".";
 	if (/source|url/.test(msg)) return "Old cZ code: http://sites.google.com/site/davidvo2/calc.js | New JSDB code: http://ssh.shellium.org/~auscompgeek/calcbot.js";
 	if (/\bver/.test(msg)) return !/what/.test(msg) ? this.version : undefined;
@@ -315,7 +316,8 @@ function parseMsg(msg)
 		if (msg == "404" || /not|found/.test(msg)) return "404.not.found.shellium.org";
 		if (/u'?re? dumb/.test(msg)) return "I'm dumb? Look who's talking!";
 		if (/a\/?s\/?l/.test(msg)) return "In case you're wondering, I'm too young for you.";
-		if (/aus?(co(mpgeek|w)|cg|blah)/.test(msg)) return "auscompgeek is the coolest Australian computer geek/nerd/whiz/expert around here!";
+		if (/aus?(co(mpgeek|w)|cg|blah)/.test(msg))
+			   return "auscompgeek is the coolest Australian computer geek/nerd/whiz/expert around here!";
 		if (/boo|ban|kick/.test(msg)) return "AHHHHH!!! NO!!!! Get it off! Get it off!";
 		if (/destruct|explode|die|diaf/.test(msg)) return "10... 9... 8... 7... 6... 5... 4... 3... 2... 1... 0... *boom*";
 		if (/^6 ?\* ?9$/.test(msg)) return "42... Jokes, 54 ;)"; // 'The Hitchhiker's Guide to the Galaxy'!
@@ -333,7 +335,7 @@ function parseMsg(msg)
 	}
 	if (msg == "" || /\bh(a?i|ello|ey)|bon(jou|soi)r|salut|yo|[sz]up|wb/.test(msg)) return "Hey man!";
 	if (/self|shut|stfu|d(anc|ie|iaf|es)|str|our|(nu|lo|rof|ki)l|nc|egg|rat|cook|m[ea]n|kick|ban|[bm]o[ow]|ham|beef|a\/?s\/?l|au|not|found|up|quiet|bot/.test(msg)) return;
-	if (/bot/.test(msg)) return this.parseComment(msg, nick, dest, serv);
+	if (/bot/.test(msg)) return this.parseRemark(msg);
 	if (/[jkz]/.test(msg)) return "I don't do algebra. Sorry for any inconvienience.";
 	if (/^([-+]?(\d+(?:\.\d+|)|\.\d+)) ?f$/.test(msg)) return f(RegExp.$1) + "C";
 	if (/^([-+]?(\d+(?:\.\d+|)|\.\d+)) ?c$/.test(msg)) return c(RegExp.$1) + "F";
@@ -348,6 +350,10 @@ function parseMsg(msg)
 			return "That's a number that's too small for me.";
 	}
 	return ans;
+}
+calcbot.parseRemark =
+function parseBotRemark(msg)
+{	
 }
 calcbot.up = // Code stolen from Ogmios :)
 function uptime()
@@ -387,7 +393,8 @@ function onCTCP(type, msg, nick, dest, serv)
 				"\1ACTION puts " + nick + "'s fingers in a Chinese finger lock\1",
 				"Hey! Stop it!", "Go away!"
 			];
-			msg.match("(hit|kick|slap|b?eat|prod|stab|kill|whack|insult|(punch|bash|pok)e)s " + this.nick.replace(/[^\w\d]/g, "\\$&") + "\\b", "i") &&
+			msg.match("(hit|kick|slap|eat|prod|stab|kill|whack|insult|(punch|bash|touch|pok)e)s " +
+				this.nick.replace(/[^\w\d]/g, "\\$&") + "\\b", "i") &&
 				this.send(serv, "PRIVMSG", dest, ":" + res[ranint(0, res.length)]);
 			break;
 		case "version":
@@ -440,12 +447,12 @@ function rcBot(cmd, args, dest, at, nick, serv)
 {	switch (cmd)
 	{	case "self-destruct": // Hehe, I had to put this in :D
 		case "explode":
-			this.send(serv, "QUIT :" + nick, "told me to explode! 10... 9... 8... 7... 6... 5... 4... 3... 2... 1... 0... *boom*", args);
+			this.send(serv, "QUIT :" + at, "10... 9... 8... 7... 6... 5... 4... 3... 2... 1... 0... *boom*", args);
 			break;
 		case "die":
 			this.send(serv, "QUIT :" + at + args);
 			break;
-		case "connect": // Try not to use this, it might cause a memory leak. This is used to quit the bot & connect elsewhere.
+		case "connect": // This might cause a memory leak. This is used to quit the bot & connect elsewhere.
 			var argary = /^(?:irc:\/\/|)((?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-5])\.(?:\d\d?|1\d\d|2[0-4]\d|25[0-5])\.(?:\d\d?|1\d\d|2[0-4]\d|25[0-5])\.(?:\d\d?|1\d\d|2[0-4]\d|25[0-4])|[\w\d][\w\d.\-_]+\w)(?::([1-5]\d{0,4}|[6-9]\d{0,3}|6[0-5]{2}[0-3][0-5])|)(?:\/([^?]*)|)(?:\?pass=(.+)|)$/.exec(args);
 			if (!argary) // Invalid URL?!?!?
 			{	writeln("[ERROR] Invalid URL! ^^^^^");
@@ -534,7 +541,8 @@ function send(serv)
 		this.serv.writeln(s.join(" ").replace(/\s+/, " ").replace(/^ | $/g, ""));
 	else writeln("[ERROR] Call to send() without arguments?");
 }
-calcbot.nctcp = function nctcp(serv, nick, type, msg) this.send(serv, "NOTICE", nick, ":\1" + type.toUpperCase(), msg + "\1");
+calcbot.nctcp = function nctcp(serv, nick, type, msg)
+	this.send(serv, "NOTICE", nick, ":\1" + type.toUpperCase(), msg + "\1");
 calcbot.log =
 function log(serv)
 {	if (!this.prefs.log) return;
@@ -575,7 +583,7 @@ function calc(expr)
 			// give these aliases, even though we don't need to
 			randomrange = randint = ranint,
 			phi = (1 + sqrt(5)) / 2;
-	expr = expr.replace(/(answer to |meaning of |)(|(|the )(|ultimate )question of )life,? the universe,? (and|&) every ?thing/g, "42")
+	expr = expr.replace(/(answer to |meaning of |)(|(|the )(|ultimate )question of )life,* the universe,* (and|&) every ?thing/g, "42")
 	           .replace(/math\.*|#|\?+$|what('| i)s|calc(ulat(e|or)|)|imum|olute|ing|er|the|of/g, "").replace(/(a|)(?:rc|)(cos|sin|tan)\w+/g, "$1$2").replace(/(square ?|)root|\xE2\x88\x9A/g, "sqrt")
 	           .replace(/ave\w+|mean/, "ave").replace(/(recip|fact|ra?nd|rand?int|d|\bs)[^q()]*?\b/, "$1").replace(/(\d+(?:\.\d+|!*)|\.\d+) ?([fc])/g, "$2($1)").replace(/(\d+|)d(\d+)/g, "d($2,$1)")
 	           .replace(/(s|sqrt|round|floor|ceil|log|exp|recip) *(\d+(?:\.\d+|!*)|\.\d+)/g, "$1($2)").replace(/tan +(\d+(?:\.\d+|!*)|\.\d+)/, "tan($1)")
@@ -766,7 +774,7 @@ function calchelp(e)
 				"In other cases, e's the mathematical constant e. See also: exp, log, pow";
 			break;
 		case "pi":
-			s = "pi: The mathematical constant pi, approximately 22/7 or 3.14.";
+			s = "pi: The mathematical constant pi, 4*atan 1, approximately 22/7 or 3.14.";
 			break;
 		case "phi":
 			s = "phi: The mathematical constant phi, (1+sqrt 5)/2.";
