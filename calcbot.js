@@ -153,7 +153,7 @@ function startBot(serv, port, user, pass, chans)
 			else if (this.prefs["keyboard.dieOnInput"] && system.kbhit())
 				this.send(serv, "QUIT :Keyboard input.");
 		}
-	} catch(ex) { writeln("IRC bot error: ", ex); }
+	} catch(ex) { writeln("FATAL ERROR: Operation succeeded: ", ex); }
 }
 
 calcbot.parseln =
@@ -272,7 +272,9 @@ function onMsg(dest, msg, nick, host, at, serv)
 			else if (/moo|cow/i.test(msg))
 			{	s =
 				[	"Mooooooooooo!", "MOO!", "Moo.", "Moo. Moo.", "Moo Moo Moo, Moo Moo.",
+					"\1ACTION nibbles on some grass\1",
 					"\1ACTION goes and gets a drink\1",
+					"\1ACTION looks in the " + dest + " fridge\1",
 					"\1ACTION quietly meditates on the purpose of " + dest + "\1",
 					"\1ACTION races across the channel\1",
 					"\1ACTION runs around in circles and falls over\1",
@@ -282,7 +284,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 					"\1ACTION thumps " + nick + "\1",
 					"\1ACTION solves partial differential equations\1"
 				];
-				this.send(serv, "PRIVMSG", dest, ":" + s[ranint(0, s.length)]);
+				this.send(serv, "PRIVMSG", dest, ":" + s[ranint(0, s.length - 1)]);
 			}
 		} else if (/^help!?$/i.test(msg))
 			this.send(serv, "PRIVMSG", dest, ":" + at +
@@ -353,7 +355,8 @@ function parseMsg(msg)
 }
 calcbot.parseRemark =
 function parseBotRemark(msg)
-{	
+{	if (/good ?bot|botsnack/.test(msg)) return ":)";
+	if (/bad ?bot/.test(msg)) return "Whyyyyy??? :(";
 }
 calcbot.up = // Code stolen from Ogmios :)
 function uptime()
@@ -391,9 +394,21 @@ function onCTCP(type, msg, nick, dest, serv)
 				"\1ACTION slaps " + nick + " with a trout\1",
 				"\1ACTION whacks " + nick + " with a suspicious brick\1",
 				"\1ACTION puts " + nick + "'s fingers in a Chinese finger lock\1",
-				"Hey! Stop it!", "Go away!"
+				"Hey! Stop it!", "Go away!",
+				"Mooooooooooo!", "MOO!", "Moo.", "Moo. Moo.", "Moo Moo Moo, Moo Moo.",
+				"\1ACTION nibbles on some grass\1",
+				"\1ACTION goes and gets a drink\1",
+				"\1ACTION looks in the " + dest + " fridge\1",
+				"\1ACTION quietly meditates on the purpose of " + dest + "\1",
+				"\1ACTION races across the channel\1",
+				"\1ACTION runs around in circles and falls over\1",
+				"\1ACTION wanders aimlessly\1",
+				"\1ACTION eyes " + nick + " menacingly\1",
+				"\1ACTION sniffs " + nick + "\1",
+				"\1ACTION thumps " + nick + "\1",
+				"\1ACTION solves partial differential equations\1"
 			];
-			msg.match("(hit|kick|slap|eat|prod|stab|kill|whack|insult|(punch|bash|touch|pok)e)s " +
+			msg.match("(hit|kick|slap|eat|prod|stab|kill|whack|insult|teabag|(punch|bash|touch|pok)e)s " +
 				this.nick.replace(/[^\w\d]/g, "\\$&") + "\\b", "i") &&
 				this.send(serv, "PRIVMSG", dest, ":" + res[ranint(0, res.length)]);
 			break;
