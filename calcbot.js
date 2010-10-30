@@ -225,7 +225,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 	msg = msg.replace(/\s+/g, " ").replace(/^ | $/g, "");
 	try
 	{	if (msg[0] == "\1") // Possible CTCP.
-		{	if (/^\x01([^\1 ]+)(?: ([^\1]*)|)\x01/.test(msg))
+		{	if (/^\x01([^\1 ]+)(?: ([^\1]*)|)/.test(msg))
 				this.onCTCP(RegExp.$1.toLowerCase(), RegExp.$2, nick, dest, serv);
 		} else if (msg[0] == "=") // Starts with =.
 		{	equals = true;
