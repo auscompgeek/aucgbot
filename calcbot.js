@@ -232,7 +232,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 			if (host.match(this.prefs["superuser.hosts"]) && /^=rctrl (\S+)(?: (.+)|)/.test(msg))
 				return this.remoteControl(RegExp.$1, RegExp.$2, dest, at, nick, serv);
 			msg = msg.replace(/^[= ]+/, "").toLowerCase();
-			if (/^['"-^]*[dpszo0?(){}\/|\\!<>.]*( |$)/.test(msg)) return; // Begins with a smiley.
+			if (/^['"^-]*[dpszo0?(){}\/|\\!<>.]*( |$)/.test(msg)) return; // Begins with a smiley.
 			if (msg.match(this.abuse))
 			{	if (!fromUs)
 				{	if (kb)
