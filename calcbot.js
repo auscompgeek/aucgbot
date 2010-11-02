@@ -67,7 +67,7 @@ if (!calcbot) var calcbot =
 	cmodes: {}, // XXX Parse MODE lines.
 	lines: 0,
 	list: "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, log, pow, sqrt, abs, ceil, max, min, floor, round, random, ranint, fact, mean, dice, f, c. Constants: e, pi, phi. Operators: %, ^, **. Other: decimal, source.",
-	abuse: /load|java|ecma|op|.help|.ping|doc|cli|(qui|exi|aler|prin|insul|.lis)t|undef|raw|throw|window|nan|open|con|pro|patch|plug|play|infinity|my|var|for|function|(fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|this|js|sys|scr|(de|loca|unti|rctr|eva)l|[\["\]]|([^<>=]|^)=|([^w]hat|[^h]at|[^a]t|[^t]|^)'([^s]|$)/
+	abuse: /load|java|ecma|op|.help|.ping|doc|cli|(qui|exi|aler|prin|insul|impor|.lis)t|undef|raw|throw|window|nan|open|con|pro|patch|plug|play|infinity|my|var|for|function|(fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|this|js|sys|scr|(de|loca|unti|rctr|eva)l|[\["\]]|([^w]hat|[^h]at|[^a]t|[^t]|^)'([^s]|$)/
 }, ans;
 calcbot.init =
 function initBot()
@@ -93,7 +93,7 @@ function initBot()
 		},
 		flood:
 		{	lines: 6,
-			seconds: 4,
+			secs: 4,
 			log: true,
 			kick: true, // not if message was relayed
 			ban: false, // during flood
@@ -194,16 +194,16 @@ function onMsg(dest, msg, nick, host, at, serv)
 	var fromUs = host == this.host || nick == this.nick,
 		kb = at && !(fromUs || nick.match(this.prefs["nokick.nicks"]) || host.match(this.prefs["nokick.hosts"]) || host.match(this.prefs["superuser.hosts"]) /*|| this.cmodes[dest][nick] != []*/) /*&& this.cmodes[dest][this.nick] == []*/,
 		meping = RegExp("^@?" + this.nick.replace(/[^\w\d]/g, "\\$&") + "([:,!.] ?| |$)", "i"),
-		relay = false, equals = false, now = new Date().getTime(), s;
+		relay = 0, equals = 0, now = new Date().getTime(), s;
 	// fix for buffer playback on ZNC, may produce false positives, dangerous
 	if (this.prefs.fixZNCBuffer) msg = msg.replace(/^\[\d\d?:\d\d(:\d\d)?\] /, "");
 	// fix for message relay bots
 	if (this.prefs["relay.check"] && nick.match(this.prefs["relay.bots"]) && /^<.+> /.test(msg))
 		msg = msg.replace(/^<(.+?)> /, ""), nick = RegExp.$1, at = nick + ": ",
-		relay = true, kb = false, fromUs = nick == this.nick || fromUs;
+		relay = 1, kb = 0, fromUs = nick == this.nick || fromUs;
 	if ((/bot|Serv|Op$/i.test(nick) || /bot[\/.]/.test(host)) && !fromUs) return; // It's a bot (not us).
-	if (now - this.lastTime > this.prefs["flood.seconds"] * 1000) this.lines = 0;
-	if (this.lines >= this.prefs["flood.lines"] && now - this.lastTime <= this.prefs["flood.seconds"] * 1000)
+	if (now - this.lastTime > this.prefs.flood.secs * 1000) this.lines = 0;
+	if (this.lines >= this.prefs.flood.lines && now - this.lastTime <= this.prefs.flood.secs * 1000)
 	{	this.lastTime = now;
 		if (this.flood)
 		{	if (kb)
@@ -211,7 +211,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 				this.prefs.flood.ban && this.send(serv, "MODE", dest, "+b *!*@" + host);
 			}
 		} else
-		{	this.flood = true;
+		{	this.flood = 1;
 			writeln("[WARNING] Flood detected!");
 			kb && this.prefs.flood.kick ? this.send(serv, "KICK", dest, nick, ":No flooding!") :
 			this.prefs.flood.warn && !relay && this.send(serv, "NOTICE", nick, ":Please don't flood.");
@@ -219,7 +219,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 		this.prefs.flood.log && this.log(serv, "Flood", nick + (at ? " in " + dest : ""), msg);
 		return;
 	}
-	this.flood = false;
+	this.flood = 0;
 	this.lastTime = now;
 	this.lines++;
 	msg = msg.replace(/\s+/g, " ").replace(/^ | $/g, "");
@@ -228,17 +228,17 @@ function onMsg(dest, msg, nick, host, at, serv)
 		{	if (/^\x01([^\1 ]+)(?: ([^\1]*)|)/.test(msg))
 				this.onCTCP(RegExp.$1.toLowerCase(), RegExp.$2, nick, dest, serv);
 		} else if (msg[0] == "=") // Starts with =.
-		{	equals = true;
+		{	equals = 1;
 			if (host.match(this.prefs["superuser.hosts"]) && /^=rctrl (\S+)(?: (.+)|)/.test(msg))
 				return this.remoteControl(RegExp.$1, RegExp.$2, dest, at, nick, serv);
 			msg = msg.replace(/^[= ]+/, "").toLowerCase();
-			if (/^['"^-]*[dpszo0?(){}\/|\\!<>.]*( |$)/.test(msg)) return; // Begins with a smiley.
+			if (/^['"^-]*[dpszo0?(){}\/|\\!<>.;]*( |$)/.test(msg)) return; // Begins with a smiley.
 			if (msg.match(this.abuse))
 			{	if (!fromUs)
 				{	if (kb)
 					{	this.prefs.abuse.kick && this.send(serv, "KICK", dest, nick, ":Don't abuse me!");
 						this.prefs.abuse.ban && this.send(serv, "MODE", dest, "+b *!*@" + host);
-					} else !relay && this.prefs.abuse.warn && this.send(serv, "NOTICE", nick, ":Please don't try to abuse the calc bot.");
+					} else !relay && this.prefs.abuse.warn && this.send(serv, "NOTICE", nick, ":Whoa! Careful dude!");
 				}
 				writeln("[WARNING] Abuse detected! ^^^^^");
 				this.prefs.abuse.log && this.log(serv, "Abuse", nick + (at ? " in " + dest : ""), msg);
@@ -542,7 +542,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 		default:
 			writeln("[ERROR] Possible abuse! ^^^^^");
 			this.prefs.abuse.log && this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), cmd + (args ? " " + args : ""));
-			this.prefs.abuse.warn && this.send(serv, "NOTICE", nick, ":Please don't try to abuse my remote control.");
+			this.prefs.abuse.warn && this.send(serv, "NOTICE", nick, ":Hmm? Didn't quite get that.");
 	}
 }
 
