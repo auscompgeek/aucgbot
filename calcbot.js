@@ -137,9 +137,8 @@ function startBot(serv, port, user, pass, chans)
 			writeln("[WARNING] No channels specified! Joining ", channels);
 		else
 			writeln("[WARNING] Can't join channels specified! Joining ", channels);
-		for (i = 0; i <= channels.length; i++)
-			channels[i] = (/^[#&+!]/.test(channels[i]) ? channels[i] : "#" + channels[i]);
-		channels = channels.join(",");
+		for (i = 0; i < channels.length; i++)
+			channels[i] = /^[#&+!]/.test(channels[i]) ? channels[i] : "#" + channels[i];
 		while ((ln = this.serv.readln()))
 		{	writeln(ln);
 			if (channels && /^:\S+ 005 /.test(ln) && this.send(serv, "JOIN", channels.join(",")))
@@ -298,7 +297,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 }
 calcbot.parseMsg =
 function parseMsg(msg)
-{	if (/ping/.test(msg)) return msg.replace("ping", "pong");
+{	if (/ping/.test(msg)) return "pong";
 	if (/ha?ow('?s| (is|are|r|do)) (things|(|yo)u)|hr[yu]|(are|r) (|yo)u o*k/.test(msg))
 			return "fine thanks! I've been up " + this.up() + " now!";
 	if (/stat|up ?time/.test(msg)) return "I've been up " + this.up() + ".";
@@ -311,7 +310,9 @@ function parseMsg(msg)
 	if (/bad ?bot/.test(msg)) return "Whyyyyy?? :(";
 	if (/botsnack|good ?bot/.test(msg)) return ":)";
 	if (this.prefs.easterEggs) // Time for some Easter Eggs! *dance*
-	{	if (/lol|rofl/.test(msg)) return "Stop laughing!";
+	{	if (/^6 ?\* ?9$/.test(msg)) return "42... Jokes, 54 ;)"; // 'The Hitchhiker's Guide to the Galaxy'!
+		if (/\/ ?0([^\d.!]|$)/.test(msg)) return "divide.by.zero.at.shellium.org";
+		if (/lol|rofl/.test(msg)) return "Stop laughing!";
 		if (/stfu|shut ?up|quiet/.test(msg)) return "Don't tell me to be quiet!";
 		if (msg == "404" || /not|found/.test(msg)) return "404.not.found.shellium.org";
 		if (/u'?re? dumb/.test(msg)) return "I'm dumb? Look who's talking!";
@@ -320,8 +321,6 @@ function parseMsg(msg)
 			   return "auscompgeek is the coolest Australian computer geek/nerd/whiz/expert around here!";
 		if (/boo|ban|kick/.test(msg)) return "AHHHHH!!! NO!!!! Get it off! Get it off!";
 		if (/destruct|explode|die|diaf/.test(msg)) return "10... 9... 8... 7... 6... 5... 4... 3... 2... 1... 0... *boom*";
-		if (/^6 ?\* ?9$/.test(msg)) return "42... Jokes, 54 ;)"; // 'The Hitchhiker's Guide to the Galaxy'!
-		if (/\/ ?0([^\d.!]|$)/.test(msg)) return "divide.by.zero.at.shellium.org";
 		if (/danc(e|ing)/.test(msg)) return "free.dancing.bot.at.shellium.org! \\o/ |o| \\o\\ |o| /o/ |o| \\o/";
 		if (/nul/.test(msg)) return "dev.null.route.shellium.org";
 		if (/support/.test(msg)) return "support.team.at.shellium.org";
@@ -472,8 +471,8 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			break;
 		case "join":
 			args = args.split(",");
-			for (var i = 0; i <= args.length; i++)
-				args[i] = (/^[#&+!]/.test(args[i]) ? args[i] : "#" + args[i]);
+			for (var i = 0; i < args.length; i++)
+				args[i] = /^[#&+!]/.test(args[i]) ? args[i] : "#" + args[i];
 			this.send(serv, "JOIN", args.join(","));
 			break;
 		case "leave":
@@ -514,7 +513,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			break;
 		case "eval":
 		case "js": // Dangerous!
-			if (/uneval ?\(.+\)/i.test(args) && /calcbot|this/i.test(args))
+			if (/uneval.*\(.*(calcbot|this).*\)/i.test(args))
 			{	writeln("[WARNING] Possible abuse! ^^^^^");
 				this.prefs.abuse.log && this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), cmd + (args ? " " + args : ""));
 				this.prefs.abuse.warn && this.send(serv, "NOTICE", nick, ":Please don't try to abuse my remote control.");
