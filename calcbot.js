@@ -67,11 +67,11 @@ if (!calcbot) var calcbot =
 	cmodes: {}, // XXX Parse MODE lines.
 	lines: 0,
 	list: "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, log, pow, sqrt, abs, ceil, max, min, floor, round, random, ranint, fact, mean, dice, f, c. Constants: e, pi, phi. Operators: %, ^, **. Other: decimal, source.",
-	abuse: /load|java|ecma|op|.help|.ping|doc|cli|(qui|exi|aler|prin|insul|impor|.lis)t|undef|raw|throw|window|nan|open|con|pro|patch|plug|play|infinity|my|var|for|function|(fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|this|js|sys|scr|(de|loca|unti|rctr|eva)l|[\["\]]|([^w]hat|[^h]at|[^a]t|[^t]|^)'([^s]|$)/
+	abuse: /load|java|ecma|op|.help|doc|cli|(qui|exi|aler|prin|insul|impor|.lis)t|undef|raw|throw|window|nan|open|con|pro|patch|plug|play|infinity|my|for|(fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|this|js|sys|scr|(de|loca|unti|rctr|eva)l|[\["\]]|(?!what)'(?!s)/
 }, ans;
 calcbot.init =
 function initBot()
-{	this.version = "0.17 (26 Oct 2010)";
+{	this.version = "0.18 (15 Nov 2010)";
 	this.help = "This is aucg's JS calc bot v" + this.version + ". Usage: =<expr>. " + this.list + " Type =?<topic> for more information.";
 	this.prefs =
 	{	error:
@@ -112,14 +112,14 @@ function initBot()
 		"nokick.nicks": /Tanner|Mardeg|aj00200|ChrisMorgan|JohnTHaller|Bensawsome|juju|Shadow|TMZ|aus?c(ompgeek|g|ow)|Jan/,
 		"nokick.hosts": /bot|spam|staff|developer|math/,
 		// regex for allowed hosts to use =rctrl command
-		"superuser.hosts": /support\.team\.at\.shellium\.org|trek|aus?c(ompgeek|g)|^(FOSSnet|freenode)\/(staff|dev)|oper|netadmin|[Gg]ryllida|bot(ter|)s|spam|\.net\.pbthawe\.eu/
+		suHosts: /support\.team\.at\.shellium\.org|trek|aus?c(ompgeek|g)|^(FOSSnet|freenode)\/(staff|dev)|oper|netadmin|[Gg]ryllida|bot(ter|)s|spam/
 	};
 	return "Calc bot initialised. Type calcbot.start(serv,port,user,pass,chans) to start the bot.";
 }
 
 calcbot.start =
 function startBot(serv, port, user, pass, chans)
-{	var channels = "bots";
+{	var channels = ["#bots"], i;
 	this.started = new Date().getTime();
 	serv = serv || "localhost"; port = parseInt(port) || 6667;
 	this.nick = this.nick || "aucgbot";
@@ -130,21 +130,19 @@ function startBot(serv, port, user, pass, chans)
 		this.send(serv, "NICK", this.nick);
 		this.send(serv, "USER", user || "aucg", "8 * :\x033\17auscompgeek's JS calc bot, see =help");
 		if (typeof chans == "array")
-			for (var i = 0; i <= chans.length; i++)
-				if (i == 0)
-					channels = chans[0];
-				else
-					channels += "," + (/^[#&+!]/.test(chans) ? chans[i] : "#" + chans[i]);
+			channels = chans, chans = 0;
 		else if (typeof chans == "string")
-			channels = chans;
+			channels = chans.split(","), chans = 0;
 		else if (!chans)
-			writeln("[WARNING] No channels specified! Joining " + channels);
+			writeln("[WARNING] No channels specified! Joining ", channels);
 		else
-			writeln("[WARNING] Can't join channels specified! Joining " + channels);
-		if (/^[^#&+!]/.test(channels)) channels = "#" + channels;
+			writeln("[WARNING] Can't join channels specified! Joining ", channels);
+		for (i = 0; i <= channels.length; i++)
+			channels[i] = (/^[#&+!]/.test(channels[i]) ? channels[i] : "#" + channels[i]);
+		channels = channels.join(",");
 		while ((ln = this.serv.readln()))
 		{	writeln(ln);
-			if (channels && /^:\S+ 005 /.test(ln) && this.send(serv, "JOIN", channels))
+			if (channels && /^:\S+ 005 /.test(ln) && this.send(serv, "JOIN", channels.join(",")))
 				channels = 0;
 			else
 				this.parseln(ln, serv);
@@ -192,16 +190,16 @@ function onMsg(dest, msg, nick, host, at, serv)
 	 *	f) the message was sent by a relay bot.
 	 */
 	var fromUs = host == this.host || nick == this.nick,
-		kb = at && !(fromUs || nick.match(this.prefs["nokick.nicks"]) || host.match(this.prefs["nokick.hosts"]) || host.match(this.prefs["superuser.hosts"]) /*|| this.cmodes[dest][nick] != []*/) /*&& this.cmodes[dest][this.nick] == []*/,
+		kb = at && !(fromUs || nick.match(this.prefs["nokick.nicks"]) || host.match(this.prefs["nokick.hosts"]) || host.match(this.prefs.suHosts) /*|| this.cmodes[dest][nick] != []*/) /*&& this.cmodes[dest][this.nick] == []*/,
 		meping = RegExp("^@?" + this.nick.replace(/[^\w\d]/g, "\\$&") + "([:,!.] ?| |$)", "i"),
 		relay = 0, equals = 0, now = new Date().getTime(), s;
 	// fix for buffer playback on ZNC, may produce false positives, dangerous
-	if (this.prefs.fixZNCBuffer) msg = msg.replace(/^\[\d\d?:\d\d(:\d\d)?\] /, "");
+	if (this.prefs.fixZNCBuffer) msg = msg.replace(/^\[\d\d?:\d\d(:\d\d|)\] /, "");
 	// fix for message relay bots
 	if (this.prefs["relay.check"] && nick.match(this.prefs["relay.bots"]) && /^<.+> /.test(msg))
 		msg = msg.replace(/^<(.+?)> /, ""), nick = RegExp.$1, at = nick + ": ",
 		relay = 1, kb = 0, fromUs = nick == this.nick || fromUs;
-	if ((/bot|Serv|Op$/i.test(nick) || /bot[\/.]/.test(host)) && !fromUs) return; // It's a bot (not us).
+	if ((/^bot|bot$|Serv|Op$/i.test(nick) || /bot[\/.]/.test(host)) && !fromUs && !relay) return;
 	if (now - this.lastTime > this.prefs.flood.secs * 1000) this.lines = 0;
 	if (this.lines >= this.prefs.flood.lines && now - this.lastTime <= this.prefs.flood.secs * 1000)
 	{	this.lastTime = now;
@@ -229,10 +227,10 @@ function onMsg(dest, msg, nick, host, at, serv)
 				this.onCTCP(RegExp.$1.toLowerCase(), RegExp.$2, nick, dest, serv);
 		} else if (msg[0] == "=") // Starts with =.
 		{	equals = 1;
-			if (host.match(this.prefs["superuser.hosts"]) && /^=rctrl (\S+)(?: (.+)|)/.test(msg))
+			if (host.match(this.prefs.suHosts) && /^=rctrl (\S+)(?: (.+)|)/.test(msg))
 				return this.remoteControl(RegExp.$1, RegExp.$2, dest, at, nick, serv);
 			msg = msg.replace(/^[= ]+/, "").toLowerCase();
-			if (/^['"^-]*[dpszo0?(){}\/|\\!<>.;]*( |$)/.test(msg)) return; // Begins with a smiley.
+			if (/^['"^-]*[dpsczo0?(){}\/|\\!<>.;]*( |$)/.test(msg)) return; // Begins with a smiley.
 			if (msg.match(this.abuse))
 			{	if (!fromUs)
 				{	if (kb)
@@ -290,7 +288,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 			this.send(serv, "PRIVMSG", dest, ":" + at +
 							"Welcome! To get help, please state your problem. Being specific will get you help faster.");
 	} catch(ex)
-	{	if (equals) // Error, tell the user, but only if explicitly run.
+	{	if (equals) // Error, tell the user only if explicitly run.
 		{	writeln("[ERROR] ", ex);
 			this.prefs.error.log && this.log(serv, "ERROR", msg, nick + (at ? " in " + dest : ""), ex);
 			this.prefs.error.apologise && this.send(serv, "PRIVMSG", dest, ":" + at + this.prefs.error.apologymsg);
@@ -310,8 +308,8 @@ function parseMsg(msg)
 	if (/^(help|command|list)|^\?[^?]/.test(msg)) return calchelp(msg);
 	if (msg.match(this.nick.replace(/[^\w\d]/g, "\\$&") + "|you|who a?re? u")) return "I'm a calc bot. /msg me help for a list of functions.";
 	if (/bye|bai|bbl|brb/.test(msg)) return "Ok, hope I see you soon. :(";
-	if (/bad ?bot/.test(msg)) return "Why am I a bad bot? :(";
-	if (/botsnack|good ?bot/.test(msg)) return "Thanks! :)";
+	if (/bad ?bot/.test(msg)) return "Whyyyyy?? :(";
+	if (/botsnack|good ?bot/.test(msg)) return ":)";
 	if (this.prefs.easterEggs) // Time for some Easter Eggs! *dance*
 	{	if (/lol|rofl/.test(msg)) return "Stop laughing!";
 		if (/stfu|shut ?up|quiet/.test(msg)) return "Don't tell me to be quiet!";
@@ -337,7 +335,6 @@ function parseMsg(msg)
 	}
 	if (msg == "" || /\bh(a?i|ello|ey)|bon(jou|soi)r|salut|yo|[sz]up|wb/.test(msg)) return "Hey man!";
 	if (/self|shut|stfu|d(anc|ie|iaf|es)|str|our|(nu|lo|rof|ki)l|nc|egg|rat|cook|m[ea]n|kick|ban|[bm]o[ow]|ham|beef|a\/?s\/?l|au|not|found|up|quiet|bot/.test(msg)) return;
-	if (/bot/.test(msg)) return this.parseRemark(msg);
 	if (/[jkz]/.test(msg)) return "I don't do algebra. Sorry for any inconvienience.";
 	if (/^([-+]?(\d+(?:\.\d+|)|\.\d+)) ?f$/.test(msg)) return f(RegExp.$1) + "C";
 	if (/^([-+]?(\d+(?:\.\d+|)|\.\d+)) ?c$/.test(msg)) return c(RegExp.$1) + "F";
@@ -352,11 +349,6 @@ function parseMsg(msg)
 			return "That's a number that's too small for me.";
 	}
 	return ans;
-}
-calcbot.parseRemark =
-function parseBotRemark(msg)
-{	if (/good ?bot|botsnack/.test(msg)) return ":)";
-	if (/bad ?bot/.test(msg)) return "Whyyyyy??? :(";
 }
 calcbot.up = // Code stolen from Ogmios :)
 function uptime()
@@ -394,7 +386,7 @@ function onCTCP(type, msg, nick, dest, serv)
 				"\1ACTION slaps " + nick + " with a trout\1",
 				"\1ACTION whacks " + nick + " with a suspicious brick\1",
 				"\1ACTION puts " + nick + "'s fingers in a Chinese finger lock\1",
-				"Hey! Stop it!", "Go away!",
+				"Hey! Stop it!", "Go away!", "GETOFF!",
 				"Mooooooooooo!", "MOO!", "Moo.", "Moo. Moo.", "Moo Moo Moo, Moo Moo.",
 				"\1ACTION nibbles on some grass\1",
 				"\1ACTION goes and gets a drink\1",
@@ -410,7 +402,7 @@ function onCTCP(type, msg, nick, dest, serv)
 			];
 			msg.match("(hit|kick|slap|eat|prod|stab|kill|whack|insult|teabag|(punch|bash|touch|pok)e)s " +
 				this.nick.replace(/[^\w\d]/g, "\\$&") + "\\b", "i") &&
-				this.send(serv, "PRIVMSG", dest, ":" + res[ranint(0, res.length)]);
+				this.send(serv, "PRIVMSG", dest, ":" + res[ranint(0, res.length - 1)]);
 			break;
 		case "version":
 			this.nctcp(serv, nick, type, "aucg's JS IRC calc bot " + this.version +
@@ -468,7 +460,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			this.send(serv, "QUIT :" + at + args);
 			break;
 		case "connect": // This might cause a memory leak. This is used to quit the bot & connect elsewhere.
-			var argary = /^(?:irc:\/\/|)((?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-5])\.(?:\d\d?|1\d\d|2[0-4]\d|25[0-5])\.(?:\d\d?|1\d\d|2[0-4]\d|25[0-5])\.(?:\d\d?|1\d\d|2[0-4]\d|25[0-4])|[\w\d][\w\d.\-_]+\w)(?::([1-5]\d{0,4}|[6-9]\d{0,3}|6[0-5]{2}[0-3][0-5])|)(?:\/([^?]*)|)(?:\?pass=(.+)|)$/.exec(args);
+			var argary = /^(?:irc:\/\/|)(\w[\w.-]+\w)(?::([1-5]\d{0,4}|[6-9]\d{0,3}|6[0-5]{2}[0-3][0-5])|)(?:\/([^?]*)|)(?:\?pass=(.+)|)$/.exec(args);
 			if (!argary) // Invalid URL?!?!?
 			{	writeln("[ERROR] Invalid URL! ^^^^^");
 				this.prefs.abuse.log && this.log(serv, "Invalid URL", nick + (at ? " in " + dest : ""), args);
@@ -479,8 +471,10 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			this.start(argary[0], argary[1], "", argary[3], argary[2]);
 			break;
 		case "join":
-			if (/^[^#&+!]/.test(args)) args = "#" + args;
-			this.send(serv, "JOIN", args);
+			args = args.split(",");
+			for (var i = 0; i <= args.length; i++)
+				args[i] = (/^[#&+!]/.test(args[i]) ? args[i] : "#" + args[i]);
+			this.send(serv, "JOIN", args.join(","));
 			break;
 		case "leave":
 			var argary = args.split(" "),
@@ -561,11 +555,11 @@ calcbot.nctcp = function nctcp(serv, nick, type, msg)
 calcbot.log =
 function log(serv)
 {	if (!this.prefs.log) return;
-	var s = [this.lastTime], log;
+	var s = [serv, this.lastTime], log;
 	for (var i = 1; i < arguments.length; i++)
-		s[i] = arguments[i];
-	if (s[1])
-	{	log = new Stream("calcbot-" + serv + ".log", "a");
+		s[i + 1] = arguments[i];
+	if (s[2])
+	{	log = new Stream("calcbot.log", "a");
 		log.writeln(s.join(": ").replace(/\s+/, " ").replace(/^ | $/g, ""));
 		log.close();
 	} else writeln("[ERROR] Call to log() without arguments?");
@@ -600,7 +594,7 @@ function calc(expr)
 			phi = (1 + sqrt(5)) / 2;
 	expr = expr.replace(/(answer to |meaning of |)(|(|the )(|ultimate )question of )life,* the universe,* (and|&) every ?thing/g, "42")
 	           .replace(/math\.*|#|\?+$|what('| i)s|calc(ulat(e|or)|)|imum|olute|ing|er|the|of/g, "").replace(/(a|)(?:rc|)(cos|sin|tan)\w+/g, "$1$2").replace(/(square ?|)root|\xE2\x88\x9A/g, "sqrt")
-	           .replace(/ave\w+|mean/, "ave").replace(/(recip|fact|ra?nd|rand?int|d|\bs)[^q()]*?\b/, "$1").replace(/(\d+(?:\.\d+|!*)|\.\d+) ?([fc])/g, "$2($1)").replace(/(\d+|)d(\d+)/g, "d($2,$1)")
+	           .replace(/ave\w+|mean/, "ave").replace(/(recip|fact|rand?int|ra?nd|d|sqrt|s)[^ ()]*\b/, "$1").replace(/(\d+(?:\.\d+|!*)|\.\d+) ?([fc])/g, "$2($1)").replace(/(\d+|)d(\d+)/g, "d($2,$1)")
 	           .replace(/(s|sqrt|round|floor|ceil|log|exp|recip) *(\d+(?:\.\d+|!*)|\.\d+)/g, "$1($2)").replace(/tan +(\d+(?:\.\d+|!*)|\.\d+)/, "tan($1)")
 	           .replace(/(\d+(?:\.\d+(?:e[-+]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e) ?\*\* ?([-+]?\d+(?:\.\d+(?:e[-+]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e)/g, "pow($1,$2)").replace(/(\d+)!/g, "fact($1)")
 	           .replace(/\b(\d+(?:\.\d+|)|\.\d+) ?([(a-df-wyz])/g,"$1*$2").replace(/\b(ph?i|e) ?([^-+*\/&|^<>%),?: ])/g,"$1*$2").replace(/(\(.+?\)) ?([^-+*\/&|^<>%!),?: ])/g,"$1*$2");
@@ -611,8 +605,8 @@ function calc(expr)
 function fact(n)
 {	var e = 1;
 	n = Number(n);
-	if (n > 170)
-		e = Infinity; // We can't calculate factorials past this, bail.
+	if (n > 170) // We can't calculate factorials past this, bail.
+		e = Infinity;
 	else if (n < 0 || isNaN(n) || /\./.test(n))
 		e = NaN; // Positive integers only.
 	/*else if (n < 0) // Keeping this around for reference.
@@ -703,7 +697,7 @@ function calchelp(e)
 			s = "tan(x): Get the tangent of x radians. See also: atan, atan2";
 			break;
 		case "exp":
-			s = "exp(x): Get e**<x>. See also: pow.";
+			s = "exp(x): Get e**x. See also: pow.";
 			break;
 		case "logarit":
 		case "log":
@@ -726,7 +720,7 @@ function calchelp(e)
 			break;
 		case "absolut":
 		case "ab": // Ouch!
-			s = "abs(x): Get the absolute value of a number.";
+			s = "abs(x): Get the absolute value of x. (I have absolutely no idea what this is.)";
 			break;
 		case "ceil":
 			s = "ceil(x): Get the smallest integer >= x.";
@@ -754,8 +748,7 @@ function calchelp(e)
 		case "randomr": // randomRange
 		case "randint":
 		case "ranint":
-			s = "ranint([min,[max]]): Get a random integer between <min> & " +
-				"<max>, default = 0 & 1. See also: dice, rand, floor, round";
+			s = "ranint([min,[max]]): Get a random integer between min & max, default = 0 & 1. See also: dice, rand, floor, round";
 			break;
 		case "factori": // factorial
 		case "fact":
