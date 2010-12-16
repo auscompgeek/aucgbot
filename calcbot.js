@@ -46,14 +46,12 @@
  *	- Temperature conversion.
  *
  * Basic usage:
- *	calcbot.init();
  *	calcbot.start();
  *
  * Advanced usage:
- *	calcbot.init();
  *	calcbot.nick = "nick";
  *	calcbot.prefs[pref] = setting;
- *	calcbot.start(server, port, ident, pass, channels);
+ *	calcbot.start(server, port, pass, channels);
  *
  * TODO:
  *	- Fix "pow(pow(a,b),c) ** x"!
@@ -71,7 +69,7 @@ if (!calcbot) var calcbot =
 }, ans;
 calcbot.init =
 function initBot()
-{	this.version = "0.18 (15 Nov 2010)";
+{	this.version = "0.18 (7 Dec 2010)";
 	this.help = "This is aucg's JS calc bot v" + this.version + ". Usage: =<expr>. " + this.list + " Type =?<topic> for more information.";
 	this.prefs =
 	{	error:
@@ -112,13 +110,13 @@ function initBot()
 		"nokick.nicks": /Tanner|Mardeg|aj00200|ChrisMorgan|JohnTHaller|Bensawsome|juju|Shadow|TMZ|aus?c(ompgeek|g|ow)|Jan/,
 		"nokick.hosts": /bot|spam|staff|developer|math/,
 		// regex for allowed hosts to use =rctrl command
-		suHosts: /support\.team\.at\.shellium\.org|trek|aus?c(ompgeek|g)|^(FOSSnet|freenode)\/(staff|dev)|oper|netadmin|[Gg]ryllida|bot(ter|)s|spam/
+		suHosts: /support\.team\.at\.shellium\.org|trek|aus?c(ompgeek|g)|^(FOSSnet|freenode)\/(staff|dev)|oper|netadmin|localhost|[Gg]ryllida|bot(ter|)s|spam/
 	};
-	return "Calc bot initialised. Type calcbot.start(serv,port,user,pass,chans) to start the bot.";
+	return true;
 }
 
 calcbot.start =
-function startBot(serv, port, user, pass, chans)
+function startBot(serv, port, pass, chans)
 {	var channels = ["#bots"], i;
 	this.started = new Date().getTime();
 	serv = serv || "localhost"; port = parseInt(port) || 6667;
@@ -128,7 +126,7 @@ function startBot(serv, port, user, pass, chans)
 	{	this.serv = new Stream("net://" + serv + ":" + port); // XXX Add multi-server support.
 		pass && this.send(serv, "PASS", pass); pass = 0;
 		this.send(serv, "NICK", this.nick);
-		this.send(serv, "USER", user || "aucg", "8 * :\x033\17auscompgeek's JS calc bot, see =help");
+		this.send(serv, "USER calcbot 8 * :\x033\17auscompgeek's JS calc bot, see =help");
 		if (typeof chans == "array")
 			channels = chans, chans = 0;
 		else if (typeof chans == "string")
@@ -190,7 +188,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 	 */
 	var fromUs = host == this.host || nick == this.nick,
 		kb = at && !(fromUs || nick.match(this.prefs["nokick.nicks"]) || host.match(this.prefs["nokick.hosts"]) || host.match(this.prefs.suHosts) /*|| this.cmodes[dest][nick] != []*/) /*&& this.cmodes[dest][this.nick] == []*/,
-		meping = RegExp("^@?" + this.nick.replace(/[^\w\d]/g, "\\$&") + "([:,!.] ?| |$)", "i"),
+		meping = RegExp("^@?" + this.nick.replace(/\W/g, "\\$&") + "([:,!.] ?| |$)", "i"),
 		relay = 0, equals = 0, now = new Date().getTime(), s;
 	// fix for buffer playback on ZNC, may produce false positives, dangerous
 	if (this.prefs.fixZNCBuffer) msg = msg.replace(/^\[\d\d?:\d\d(:\d\d|)\] /, "");
@@ -229,7 +227,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 			if (host.match(this.prefs.suHosts) && /^=rctrl (\S+)(?: (.+)|)/.test(msg))
 				return this.remoteControl(RegExp.$1, RegExp.$2, dest, at, nick, serv);
 			msg = msg.replace(/^[= ]+/, "").toLowerCase();
-			if (/^['"^-]*[dpsczo0?(){}\/|\\!<>.;]*( |$)/.test(msg)) return; // Begins with a smiley.
+			if (/^['"^-]*[dpsczo0?(){}\/|\\!<>.;=]*( |$)/.test(msg)) return; // Begins with a smiley.
 			if (msg.match(this.abuse))
 			{	if (!fromUs)
 				{	if (kb)
@@ -299,38 +297,38 @@ calcbot.parseMsg =
 function parseMsg(msg)
 {	if (/ping/.test(msg)) return "pong";
 	if (/ha?ow('?s| (is|are|r|do)) (things|(|yo)u)|hr[yu]|(are|r) (|yo)u o*k/.test(msg))
-			return "fine thanks! I've been up " + this.up() + " now!";
+		return "fine thanks! I've been up " + this.up() + " now!";
 	if (/stat|up ?time/.test(msg)) return "I've been up " + this.up() + ".";
-	if (/source|url/.test(msg)) return "Old cZ code: http://sites.google.com/site/davidvo2/calc.js | New JSDB code: http://ssh.shellium.org/~auscompgeek/calcbot.js";
+	if (/source|url/.test(msg)) return "Old cZ code: http://sites.google.com/site/davidvo2/calc.js | New JSDB code: http://ssh.shellium.org/~auscompgeek/calcbot.js | GitHub: www.github.com/auscompgeek/calcbot";
 	if (/\bver/.test(msg)) return !/what/.test(msg) ? this.version : undefined;
 	if (/(is|a?re? (|yo)u) a bot/.test(msg)) return "Of course I'm a bot! Do you think a human can reply this fast?";
-	if (/^(help|command|list)|^\?[^?]/.test(msg)) return calchelp(msg);
-	if (msg.match(this.nick.replace(/[^\w\d]/g, "\\$&") + "|you|who a?re? u")) return "I'm a calc bot. /msg me help for a list of functions.";
-	if (/bye|bai|bbl|brb/.test(msg)) return "Ok, hope I see you soon. :(";
+	if (/help|command|list|^\?[^?]/.test(msg)) return calchelp(msg);
 	if (/bad ?bot/.test(msg)) return "Whyyyyy?? :(";
 	if (/botsnack|good ?bot/.test(msg)) return ":)";
+	if (msg.match(this.nick.replace(/\W/g, "\\$&") + "|you|who a?re? u")) return "I'm a calc bot. /msg me help for a list of functions.";
+	if (/bye|bai|bbl|brb/.test(msg)) return "Ok, hope I see you soon. :(";
 	if (this.prefs.easterEggs) // Time for some Easter Eggs! *dance*
 	{	if (/^6 ?\* ?9$/.test(msg)) return "42... Jokes, 54 ;)"; // 'The Hitchhiker's Guide to the Galaxy'!
 		if (/\/ ?0([^\d.!]|$)/.test(msg)) return "divide.by.zero.at.shellium.org";
 		if (/lol|rofl/.test(msg)) return "Stop laughing!";
 		if (/stfu|shut ?up|quiet/.test(msg)) return "Don't tell me to be quiet!";
-		if (msg == "404" || /not|found/.test(msg)) return "404.not.found.shellium.org";
+		if (/hamburger|beef/.test(msg)) return "Mmm, I shall eat you!";
+		if (/moo|cow/.test(msg)) return "Moooooooooooooooooooo!";
 		if (/u'?re? dumb/.test(msg)) return "I'm dumb? Look who's talking!";
 		if (/a\/?s\/?l/.test(msg)) return "In case you're wondering, I'm too young for you.";
 		if (/aus?(co(mpgeek|w)|cg|blah)/.test(msg))
-			   return "auscompgeek is the coolest Australian computer geek/nerd/whiz/expert around here!";
+			return "auscompgeek is the coolest Australian computer geek/nerd/whiz/expert around here!";
 		if (/boo|ban|kick/.test(msg)) return "AHHHHH!!! NO!!!! Get it off! Get it off!";
 		if (/destruct|explode|die|diaf/.test(msg)) return "10... 9... 8... 7... 6... 5... 4... 3... 2... 1... 0... *boom*";
 		if (/danc(e|ing)/.test(msg)) return "free.dancing.bot.at.shellium.org! \\o/ |o| \\o\\ |o| /o/ |o| \\o/";
 		if (/nul/.test(msg)) return "dev.null.route.shellium.org";
 		if (/support/.test(msg)) return "support.team.at.shellium.org";
-		if (/[bz]nc|egg/.test(msg)) return "free.psybnc.and.eggdrop.at.shellium.org";
 		if (/kill/.test(msg)) return "kill.dash.nine.on.shellium.org";
 		if (/rat/.test(msg)) return "rats.run.the.shell.on.shellium.org";
 		if (/cookie/.test(msg)) return "free.cookies.at.shellium.org";
 		if (/\b(|wo)m[ea]n/.test(msg)) return "all.the.women.are.men.at.shellium.org";
-		if (/hamburger|beef/.test(msg)) return "Mmm, I shall eat you!";
-		if (/moo|cow/.test(msg)) return "Moooooooooooooooooooo!";
+		if (/[bz]nc|egg/.test(msg)) return "free.psybnc.and.eggdrop.at.shellium.org";
+		if (msg == "404" || /not|found/.test(msg)) return "404.not.found.shellium.org";
 	}
 	if (msg == "" || /\bh(a?i|ello|ey)|bon(jou|soi)r|salut|yo|[sz]up|wb/.test(msg)) return "Hey man!";
 	if (/self|shut|stfu|d(anc|ie|iaf|es)|str|our|(nu|lo|rof|ki)l|nc|egg|rat|cook|m[ea]n|kick|ban|[bm]o[ow]|ham|beef|a\/?s\/?l|au|not|found|up|quiet|bot/.test(msg)) return;
@@ -400,12 +398,12 @@ function onCTCP(type, msg, nick, dest, serv)
 				"\1ACTION solves partial differential equations\1"
 			];
 			msg.match("(hit|kick|slap|eat|prod|stab|kill|whack|insult|teabag|(punch|bash|touch|pok)e)s " +
-				this.nick.replace(/[^\w\d]/g, "\\$&") + "\\b", "i") &&
+				this.nick.replace(/\W/g, "\\$&") + "\\b", "i") &&
 				this.send(serv, "PRIVMSG", dest, ":" + res[ranint(0, res.length - 1)]);
 			break;
 		case "version":
 			this.nctcp(serv, nick, type, "aucg's JS IRC calc bot " + this.version +
-					" (JSDB " + system.release + ", JS " + (system.version / 100));
+					" (JSDB " + system.release + ", JS " + (system.version / 100) + ")");
 			break;
 		case "time":
 			this.nctcp(serv, nick, type, new Date());
@@ -458,7 +456,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 		case "die":
 			this.send(serv, "QUIT :" + at + args);
 			break;
-		case "connect": // This might cause a memory leak. This is used to quit the bot & connect elsewhere.
+		case "connect": // Might cause a memory leak. Used to quit & connect elsewhere.
 			var argary = /^(?:irc:\/\/|)(\w[\w.-]+\w)(?::([1-5]\d{0,4}|[6-9]\d{0,3}|6[0-5]{2}[0-3][0-5])|)(?:\/([^?]*)|)(?:\?pass=(.+)|)$/.exec(args);
 			if (!argary) // Invalid URL?!?!?
 			{	writeln("[ERROR] Invalid URL! ^^^^^");
@@ -505,7 +503,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			break;
 		case "echo":
 		case "say":
-			this.send(serv, "PRIVMSG", dest, (/ |^:/.test(args) ? ":" + args : args));
+			this.send(serv, "PRIVMSG", dest, ":" + args);
 			break;
 		case "quote":
 		case "raw":
@@ -802,4 +800,4 @@ function calchelp(e)
 	return calcbot.prefs.italicsInHelp ? s.replace(/</g, "\x1b[3m").replace(/>/g, "\x1b[23m") : s; // ANSI SGR italics!
 }
 
-calcbot.help || writeln("Don't forget to do calcbot.init() first!");
+calcbot.help || calcbot.init() && writeln("Calc bot initialised. Type calcbot.start(serv,port,pass,chans) to start the bot.");
