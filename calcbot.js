@@ -113,7 +113,7 @@ if (!calcbot) var calcbot =
 }, ans;
 calcbot.init =
 function initBot()
-{	this.version = "1.1 (24 Dec 2010)";
+{	this.version = "1.2 (25 Dec 2010)";
 	this.help = "This is aucg's JS calc bot v" + this.version + ". Usage: =<expr>. " + this.list + " Type =?<topic> for more information.";
 	return "Type calcbot.start(serv,port,pass,chans) to start the bot.";
 }
@@ -320,6 +320,11 @@ function parseMsg(msg)
 		if (msg == "404" || /not|found/.test(msg)) return "404.not.found.shellium.org";
 	}
 	if (msg == "" || /\bh(a?i|ello|ey)|bon(jou|soi)r|salut|yo|[sz]up|wb/.test(msg)) return "Hey man!";
+	if (/listmods|modlist/.test(msg))
+	{	var modlist = [];
+		for (i in this.modules) modlist.push(i + " " + this.modules[i].version);
+		return "Modules loaded: " + modlist.join(", ");
+	}
 	if (/self|shut|stfu|d(anc|ie|iaf|es)|str|our|(nu|lo|rof|ki)l|nc|egg|rat|cook|m[ea]n|kick|ban|[bm]o[ow]|ham|beef|a\/?s\/?l|au|not|found|up|quiet|bot/.test(msg)) return;
 	if (/[jkz]/.test(msg)) return "I don't do algebra. Sorry for any inconvienience.";
 	if (/^([-+]?(\d+(?:\.\d+|)|\.\d+)) ?f$/.test(msg)) return f(RegExp.$1) + "C";
@@ -513,12 +518,6 @@ function rcBot(cmd, args, dest, at, nick, serv)
 		case "log":
 			this.log(serv, "LOG", nick + (at ? " in " + dest : ""), args);
 			break;
-		case "listmods":
-		case "modlist":
-			var modlist = [];
-			for (i in this.modules) modlist.push(i + " " + this.modules[i].version);
-			this.send(serv, "PRIVMSG", dest, ":Modules loaded:", modlist.join(", "));
-			break;
 		case "loadmod":
 			module = {};
 			run(args + ".cbm");
@@ -626,6 +625,7 @@ function d(sides, count, modifier) // Partially from cZ dice plugin.
 {	var total = 0, i;
 	sides = parseInt(sides) || 6;
 	count = parseInt(count) || 1;
+	if (sides > 100) sides = 100;
 	for (i = 0; i < count; i++)
 		total += ranint(1, sides);
 	return total + (parseFloat(modifier) || 0);
@@ -645,6 +645,7 @@ function cmdDice(sides, count) // Partially from cZ dice plugin.
 {	var ary = [], total = 0, i;
 	sides = parseInt(sides) || 6;
 	count = parseInt(count) || 1;
+	if (sides > 100) sides = 100;
 	for (i = 0; i < count; i++)
 	{	ary[i] = ranint(1, sides);
 		total += ary[i];

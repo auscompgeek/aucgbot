@@ -41,7 +41,8 @@
 module.id = "elf";
 module.version = "0.2 (24 Dec 2010)";
 module.prefix = "%";
-run("elfscores.js") || (module.score = {}, module.coins = {}, module.materials = {}, module.reputation = {}, module.total = {});
+module.score = {}, module.coins = {}, module.materials = {}, module.reputation = {}, module.total = {};
+run("elfscores.js");
 module.parseln =
 function parseln(ln, serv)
 {	if (/^:(\S+)!\S+@\S+ JOIN :#elf\r/.test(ln) && RegExp.$1 != calcbot.nick)
@@ -90,19 +91,25 @@ function onMsg(dest, msg, nick, host, at, serv)
 					case "voice":
 						if (this.coins[nick] >= 800)
 						{	this.coins[nick] -= 800;
-							calcbot.send(serv, "CS VOP #elf ADD", nick);
+							//this.send("CS VOP #elf ADD", nick);
+							this.send("CS ACCESS #elf ADD", nick, "VOP");
+							this.send("MODE #elf +v", nick);
 							break;
 						}
 					case "hop":
 						if (this.coins[nick] >= 7500)
 						{	this.coins[nick] -= 7500;
-							calcbot.send(serv, "CS HOP #elf ADD", nick);
+							//this.send("CS HOP #elf ADD", nick);
+							this.send("CS ACCESS #elf ADD", nick, "HOP");
+							this.send("MODE #elf +vh", nick, nick);
 							break;
 						}
 					case "op":
 						if (this.coins[nick] >= 20000)
 						{	this.coins[nick] -= 20000;
-							calcbot.send(serv, "CS AOP #elf ADD", nick);
+							//this.send("CS AOP #elf ADD", nick);
+							this.send("CS ACCESS #elf ADD", nick, "AOP");
+							this.send("MODE #elf +o", nick);
 							break;
 						}
 					default:
