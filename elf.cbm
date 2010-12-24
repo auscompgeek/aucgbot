@@ -41,25 +41,25 @@
 module.id = "elf";
 module.version = "0.2 (24 Dec 2010)";
 module.prefix = "%";
-module.points = module.coins = module.materials = module.reputation = module.total = {};
+run("elfscores.js") || (module.score = {}, module.coins = {}, module.materials = {}, module.reputation = {}, module.total = {});
 module.parseln =
 function parseln(ln, serv)
 {	if (/^:(\S+)!\S+@\S+ JOIN :#elf\r/.test(ln) && RegExp.$1 != calcbot.nick)
 	{	nick = RegExp.$1;
-		if (this.points[nick])
+		if (this.score[nick])
 			calcbot.send(serv, "PRIVMSG #elf :Welcome", nick + ". You have",
-				this.points[nick], "points,", this.coins[nick], "coins and",
+				this.score[nick], "points,", this.coins[nick], "coins and",
 				this.materials[nick], "materials.");
 		else
 		{	calcbot.send(serv, "PRIVMSG #elf :Hey. Looks like you are new!",
 				"You have been given 5 free materials to get you started.");
-			this.points[nick] = 1;
-			this.materials[nick] = 5;
 			this.coins[nick] = this.reputation[nick] = this.total[nick] = 0;
+			this.score[nick] = 1;
+			this.materials[nick] = 5;
 			calcbot.send(serv, "NOTICE", nick,
-				":[#elf] Hey! It looks like you are a new user.",
-				"Type", this.prefix + "rules for more info on the game.",
-				"You need to start off by making some toys using !make.");
+				":[#elf] Hey! It looks like you are a new user. Type",
+				this.prefix + "rules for more info on the game.",
+				"Start by making some toys using", this.prefix + "make.");
 		}
 		return true;
 	}
@@ -71,8 +71,8 @@ function onMsg(dest, msg, nick, host, at, serv)
 		switch (msg[0])
 		{	case "info":
 				nick = msg[1] || nick;
-				calcbot.send(serv, "PRIVMSG", dest, ":" + nick + ": Score:",
-					this.points[nick] + ", ", this.materials[nick], "materials,",
+				calcbot.send(serv, "PRIVMSG", dest, ":" + nick + ":",
+					this.score[nick], "points,", this.materials[nick], "materials,",
 					this.coins[nick], "coins,", "Reputation:", this.reputation[nick] +
 					", made", this.total[nick], "toys.");
 				return true;
@@ -108,51 +108,67 @@ function onMsg(dest, msg, nick, host, at, serv)
 					default:
 						calcbot.send(serv, "PRIVMSG", dest, ":material <amount>: costs twice the amount, so if you bought 4, you would pay 8 coins.");
 						calcbot.send(serv, "PRIVMSG", dest, ":voice: costs 800 coins. | hop: costs 7500 coins. | op: costs 20000 coins.");
+						calcbot.send(serv, "PRIVMSG", dest, ":" + nick, "currently has", this.coins[nick], "coins.");
 				}
 				return true;
 			case "make":
 				if (this.materials[nick] < 1)
 					calcbot.send(serv, "NOTICE", nick, ":You don't have enough materials to make a toy.");
-				else switch (ranint(1, 4))
-				{	case 1:
-						this.points[nick] += 100;
-						this.coins[nick] += 150;
-						calcbot.send(serv, "PRIVMSG #elf :" + nick, "makes a toy car.",
-							"The toy car is fine but is a little scratched.",
-							nick, "gets 100 points and 150 coins.");
-						break;
-					case 2:
-						this.points[nick] += 500;
-						this.coins[nick] += 300;
-						calcbot.send(serv, "PRIVMSG #elf :" + nick, "makes a toy car.",
-							"The toy car is perfectly made and Santa is very happy.",
-							nick, "gets 500 points and 300 coins.");
-						break;
-					case 3:
-						this.points[nick] += 50;
-						this.coins[nick] += 50;
-						calcbot.send(serv, "PRIVMSG #elf :" + nick, "makes a teddy bear.",
-							"The teddy bear is poorly made and is nearly falling apart.",
-							"Santa is not happy.", nick, "gets 50 points and 50 coins.");
-						break;
-					case 4:
-						this.points[nick] += 250;
-						this.coins[nick] += 150;
-						calcbot.send(serv, "PRIVMSG #elf :" + nick, "makes a teddy bear.",
-							"The teddy bear is in good condition and is ready to sell.",
-							nick, "gets 250 points and 150 coins.");
-						break;
+				else
+				{	this.materials[nick]--;
+					this.total[nick]++;
+					switch (ranint(1, 4))
+					{	case 1:
+							this.score[nick] += 100;
+							this.coins[nick] += 150;
+							this.reputation[nick] += 250;
+							calcbot.send(serv, "PRIVMSG #elf :" + nick, "makes a toy car.",
+								"The toy car is fine but is a little scratched.",
+								nick, "gets 100 points and 150 coins.");
+							break;
+						case 2:
+							this.score[nick] += 500;
+							this.coins[nick] += 300;
+							this.reputation[nick] += 750;
+							calcbot.send(serv, "PRIVMSG #elf :" + nick, "makes a toy car.",
+								"The toy car is perfectly made and Santa is very happy.",
+								nick, "gets 500 points and 300 coins.");
+							break;
+						case 3:
+							this.score[nick] += 50;
+							this.coins[nick] += 50;
+							this.reputation[nick] += 150;
+							calcbot.send(serv, "PRIVMSG #elf :" + nick, "makes a teddy bear.",
+								"The teddy bear is poorly made and is nearly falling apart.",
+								"Santa is not happy.", nick, "gets 50 points and 50 coins.");
+							break;
+						case 4:
+							this.score[nick] += 250;
+							this.coins[nick] += 150;
+							this.reputation[nick] += 500;
+							calcbot.send(serv, "PRIVMSG #elf :" + nick, "makes a teddy bear.",
+								"The teddy bear is in good condition and is ready to sell.",
+								nick, "gets 250 points and 150 coins.");
+							break;
+					}
 				}
 				return true;
 			case "rules":
-				calcbot.send(serv, "PRIVMSG", dest, ":buy: Buy items to use in the game. make: Make a toy. info: Show your current scores.");
+				calcbot.send(serv, "PRIVMSG", dest, ":buy: Buy items to use in the game. | make: Make a toy. | info: Show your current scores.");
 				return true;
 			case "elfreset":
 				if (calcbot.prefs.suHosts.test(host))
-				{	this.points = this.coins = this.materials = this.reputation = this.total = {};
+				{	this.score = {}, this.coins = {}, this.materials = {}, this.reputation = {}, this.total = {};
 					calcbot.log(serv, "ELF RESET", nick + (at ? " in " + dest : ""));
 					calcbot.send(serv, "PRIVMSG #elf :Variables reset!!!");
 				}
+				return true;
+			case "writescores":
+				file = new Stream("file://" + system.cwd.replace(/\\/g, "/") + "/elfscores.js", "w");
+				file.write("module.score=", uneval(this.score), ";module.coins=", uneval(this.coins),
+					";module.materials=", uneval(this.materials), ";module.total=", uneval(this.total),
+					";module.reputation=", uneval(this.reputation));
+				file.close();
 				return true;
 		}
 	}
