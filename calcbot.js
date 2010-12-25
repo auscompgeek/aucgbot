@@ -233,9 +233,9 @@ function onMsg(dest, msg, nick, host, at, serv)
 				this.onCTCP(RegExp.$1.toLowerCase(), RegExp.$2, nick, dest, serv);
 		} else if (msg.substr(0, this.prefs.prefix.length) == this.prefs.prefix) // Starts with prefix.
 		{	equals = 1;
-			msg = msg.substr(this.prefs.prefix.length).replace(/^ | $/g, "").toLowerCase();
-			if (host.match(this.prefs.suHosts) && /^rctrl (\S+)(?: (.+)|)/.test(msg))
+			if (host.match(this.prefs.suHosts) && /^rctrl (\S+)(?: (.+)|)/.test(msg.substr(this.prefs.prefix.length)))
 				return this.remoteControl(RegExp.$1, RegExp.$2, dest, at, nick, serv);
+			msg = msg.substr(this.prefs.prefix.length).replace(/^ | $/g, "").toLowerCase();
 			if (/^['"^-]*[dpsczo0?(){}\[\]\/|\\!<>.;=]+( |$)/.test(msg)) return; // Begins with a smiley.
 			if (msg.match(this.abuse))
 			{	if (!fromUs)
