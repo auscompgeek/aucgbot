@@ -70,7 +70,6 @@ if (!calcbot) var calcbot =
 			apologise: false,
 			apologymsg: "Sorry, I encountered an error while trying to evaluate your expression."
 		},
-		fixZNCBuffer: false,
 		userfriendly: false,
 		abuse:
 		{	log: true, // when triggered with =
@@ -113,7 +112,7 @@ if (!calcbot) var calcbot =
 }, ans;
 calcbot.init =
 function initBot()
-{	this.version = "1.2 (25 Dec 2010)";
+{	this.version = "1.3 (26 Dec 2010)";
 	this.help = "This is aucg's JS calc bot v" + this.version + ". Usage: =<expr>. " + this.list + " Type =?<topic> for more information.";
 	return "Type calcbot.start(serv,port,pass,chans) to start the bot.";
 }
@@ -195,33 +194,41 @@ function onMsg(dest, msg, nick, host, at, serv)
 		kb = at && !(fromUs || nick.match(this.prefs["nokick.nicks"]) || host.match(this.prefs["nokick.hosts"]) || host.match(this.prefs.suHosts) /*|| this.cmodes[dest][nick] != []*/) /*&& this.cmodes[dest][this.nick] == []*/,
 		meping = RegExp("^@?" + this.nick.replace(/\W/g, "\\$&") + "([:,!.] ?| |$)", "i"),
 		relay = 0, equals = 0, now = new Date().getTime(), s;
-	// fix for buffer playback on ZNC, may produce false positives, dangerous
-	if (this.prefs.fixZNCBuffer) msg = msg.replace(/^\[\d\d?:\d\d(:\d\d|)\] /, "");
+	// fix for buffer playback on ZNC
+	if (nick == "***")
+	{	if (msg == "Buffer playback...")
+			this.buffer = true;
+		else if (msg == "Playback complete")
+			this.buffer = false;
+		return;
+	} else if (this.buffer) msg = msg.replace(/^\[\d\d?:\d\d(:\d\d|)\] /, "");
 	// fix for message relay bots
 	if (this.prefs["relay.check"] && nick.match(this.prefs["relay.bots"]) && /^<.+> /.test(msg))
 		msg = msg.replace(/^<(.+?)> /, ""), nick = RegExp.$1, at = nick + ": ",
 		relay = 1, kb = 0, fromUs = nick == this.nick || fromUs;
 	if ((/^bot|bot[\d_|]*$|Serv|Op$/i.test(nick) || /bot[\/.]/.test(host)) && !fromUs && !relay) return;
-	if (now - this.lastTime > this.prefs.flood.secs * 1000) this.lines = 0;
-	if (this.lines >= this.prefs.flood.lines && now - this.lastTime <= this.prefs.flood.secs * 1000)
-	{	this.lastTime = now;
-		if (this.flood)
-		{	if (kb)
-			{	this.prefs.flood.kick && this.send(serv, "KICK", dest, nick, ":No flooding!");
-				this.prefs.flood.ban && this.send(serv, "MODE", dest, "+b *!*@" + host);
+	if (!this.buffer)
+	{	if (now - this.lastTime > this.prefs.flood.secs * 1000) this.lines = 0;
+		if (this.lines >= this.prefs.flood.lines && now - this.lastTime <= this.prefs.flood.secs * 1000 &&)
+		{	this.lastTime = now;
+			if (this.flood)
+			{	if (kb)
+				{	this.prefs.flood.kick && this.send(serv, "KICK", dest, nick, ":No flooding!");
+					this.prefs.flood.ban && this.send(serv, "MODE", dest, "+b *!*@" + host);
+				}
+			} else
+			{	this.flood = true;
+				writeln("[WARNING] Flood detected!");
+				kb && this.prefs.flood.kick ? this.send(serv, "KICK", dest, nick, ":No flooding!") :
+				this.prefs.flood.warn && !relay && this.send(serv, "NOTICE", nick, ":Please don't flood.");
 			}
-		} else
-		{	this.flood = true;
-			writeln("[WARNING] Flood detected!");
-			kb && this.prefs.flood.kick ? this.send(serv, "KICK", dest, nick, ":No flooding!") :
-			this.prefs.flood.warn && !relay && this.send(serv, "NOTICE", nick, ":Please don't flood.");
+			this.prefs.flood.log && this.log(serv, "Flood", nick + (at ? " in " + dest : ""), msg);
+			return;
 		}
-		this.prefs.flood.log && this.log(serv, "Flood", nick + (at ? " in " + dest : ""), msg);
-		return;
+		this.flood = false;
+		this.lastTime = now;
+		this.lines++;
 	}
-	this.flood = 0;
-	this.lastTime = now;
-	this.lines++;
 	msg = msg.replace(/\s+/g, " ");
 	for (i in this.modules)
 		if (typeof this.modules[i].onMsg == "function")
@@ -468,10 +475,11 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			this.send(serv, "JOIN", args.join(","));
 			break;
 		case "leave":
-			var argary = args.split(" "),
-				chan = argary.shift();
-			if (/^[^#&+!]/.test(chan)) chan = "#" + chan;
-			this.send(serv, "PART", chan, ":" + at + argary.join(" "));
+			var args = args.split(" "),
+				chans = args.shift().split(",");
+			for (var i = 0; i < args.length; i++)
+				args[i] = /^[#&+!]/.test(args[i]) ? args[i] : "#" + args[i];
+			this.send(serv, "PART", chans.join(","), ":" + at + args.join(" "));
 			break;
 		case "kick":
 			var argary = args.split(" "),
@@ -493,7 +501,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 				this.prefs.abuse.log && this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), cmd + (args ? " " + args : ""));
 				break;
 			}
-			this.send(serv, "PRIVMSG", argary.shift(), (argary.length > 1 || argary[0][0] == ":" ? ":" + argary.join(" ") : argary[0]));
+			this.send(serv, "PRIVMSG", argary.shift(), ":" + argary.join(" "));
 			break;
 		case "echo":
 		case "say":
@@ -518,6 +526,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 		case "log":
 			this.log(serv, "LOG", nick + (at ? " in " + dest : ""), args);
 			break;
+		case "modload":
 		case "loadmod":
 			module = {};
 			run(args + ".cbm");
