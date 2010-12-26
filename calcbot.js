@@ -46,13 +46,11 @@
  *	- Temperature conversion.
  *
  * Basic usage:
- *	calcbot.init();
  *	calcbot.start();
  *
  * Advanced usage:
  *	calcbot.nick = "nick";
  *	calcbot.prefs[pref] = setting;
- *	calcbot.init();
  *	calcbot.start(server, port, pass, channels);
  *
  * TODO:
@@ -107,15 +105,10 @@ if (!calcbot) var calcbot =
 	cmodes: {}, // XXX Parse MODE lines.
 	modules: {},
 	lines: 0,
+	version: "1.3 (26 Dec 2010)",
 	list: "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, log, pow, sqrt, abs, ceil, max, min, floor, round, random, ranint, fact, mean, dice, f, c. Constants: e, pi, phi. Operators: %, ^, **. Other: decimal, source.",
 	abuse: /load|java|ecma|op|doc|cli|(qui|exi|aler|prin|insul|impor)t|undef|raw|throw|window|nan|open|con|pro|patch|plug|play|infinity|my|for|(fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|this|js|sys|scr|(de|loca|unti|rctr|eva)l|[\["\]]|(?!what)'(?!s)/
 }, ans;
-calcbot.init =
-function initBot()
-{	this.version = "1.3 (26 Dec 2010)";
-	this.help = "This is aucg's JS calc bot v" + this.version + ". Usage: =<expr>. " + this.list + " Type =?<topic> for more information.";
-	return "Type calcbot.start(serv,port,pass,chans) to start the bot.";
-}
 
 calcbot.start =
 function startBot(serv, port, pass, chans)
@@ -140,7 +133,7 @@ function startBot(serv, port, pass, chans)
 		channels[i] = /^[#&+!]/.test(channels[i]) ? channels[i] : "#" + channels[i];
 	while ((ln = this.serv.readln()))
 	{	writeln(ln);
-		if (channels && /^:\S+ 005 /.test(ln) && this.send(serv, "JOIN", channels.join(",")))
+		if (channels && /^:\S+ 004 ./.test(ln) && this.send(serv, "JOIN", channels.join(",")))
 			channels = 0;
 		else
 			this.parseln(ln, serv);
@@ -209,7 +202,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 	if ((/^bot|bot[\d_|]*$|Serv|Op$/i.test(nick) || /bot[\/.]/.test(host)) && !fromUs && !relay) return;
 	if (!this.buffer)
 	{	if (now - this.lastTime > this.prefs.flood.secs * 1000) this.lines = 0;
-		if (this.lines >= this.prefs.flood.lines && now - this.lastTime <= this.prefs.flood.secs * 1000 &&)
+		if (this.lines >= this.prefs.flood.lines && now - this.lastTime <= this.prefs.flood.secs * 1000)
 		{	this.lastTime = now;
 			if (this.flood)
 			{	if (kb)
@@ -805,9 +798,10 @@ function calchelp(e)
 			s = calcbot.list;
 			break;
 		default:
-			s = calcbot.help;
+			s = "This is aucg's JS calc bot v" + calcbot.version + ". Usage: " + calcbot.prefs.prefix +
+				"<expr>. " + this.list + " Type " + calcbot.prefs.prefix + "?<topic> for more information.";
 	}
 	return calcbot.prefs.italicsInHelp ? s.replace(/</g, "\x1b[3m").replace(/>/g, "\x1b[23m") : s; // ANSI SGR italics!
 }
 
-calcbot.help || writeln("Type calcbot.init() to initialise the bot after modifying calcbot.prefs.");
+writeln("Type calcbot.start(serv,port,pass,chans) to start the bot.");
