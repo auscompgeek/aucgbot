@@ -38,8 +38,7 @@
  * ***** END LICENSE BLOCK *****
  */
 
-module.id = "elf";
-module.version = "0.2 (24 Dec 2010)";
+module.version = "0.3 (21 Jan 2011)";
 module.prefix = "%";
 module.score = {}, module.coins = {}, module.materials = {}, module.reputation = {}, module.total = {};
 run("elfscores.js");
@@ -67,8 +66,8 @@ function parseln(ln, serv)
 }
 module.onMsg =
 function onMsg(dest, msg, nick, host, at, serv)
-{	if (msg.substr(0, this.prefix.length) == this.prefix) // Starts with !.
-	{	msg = msg.substr(this.prefix.length).toLowerCase().split(/\s+/);
+{	if (msg.substr(0, this.prefix.length) == this.prefix) // Starts with prefix.
+	{	msg = msg.substr(this.prefix.length).toLowerCase().split(" ");
 		switch (msg[0])
 		{	case "info":
 				nick = msg[1] || nick;
@@ -91,25 +90,25 @@ function onMsg(dest, msg, nick, host, at, serv)
 					case "voice":
 						if (this.coins[nick] >= 800)
 						{	this.coins[nick] -= 800;
-							//this.send("CS VOP #elf ADD", nick);
-							this.send("CS ACCESS #elf ADD", nick, "VOP");
-							this.send("MODE #elf +v", nick);
+							//calcbot.send("CS VOP #elf ADD", nick);
+							calcbot.send("CS ACCESS #elf ADD", nick, "VOP");
+							calcbot.send("MODE #elf +v", nick);
 							break;
 						}
 					case "hop":
 						if (this.coins[nick] >= 7500)
 						{	this.coins[nick] -= 7500;
-							//this.send("CS HOP #elf ADD", nick);
-							this.send("CS ACCESS #elf ADD", nick, "HOP");
-							this.send("MODE #elf +vh", nick, nick);
+							//calcbot.send("CS HOP #elf ADD", nick);
+							calcbot.send("CS ACCESS #elf ADD", nick, "HOP");
+							calcbot.send("MODE #elf +vh", nick, nick);
 							break;
 						}
 					case "op":
 						if (this.coins[nick] >= 20000)
 						{	this.coins[nick] -= 20000;
-							//this.send("CS AOP #elf ADD", nick);
-							this.send("CS ACCESS #elf ADD", nick, "AOP");
-							this.send("MODE #elf +o", nick);
+							//calcbot.send("CS AOP #elf ADD", nick);
+							calcbot.send("CS ACCESS #elf ADD", nick, "AOP");
+							calcbot.send("MODE #elf +o", nick);
 							break;
 						}
 					default:

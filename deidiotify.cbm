@@ -37,27 +37,31 @@
  *
  * ***** END LICENSE BLOCK *****
  */
-
-module.version = "0.2 (21 Jan 2011)";
+ 
+module.version = "0.3.1 (4 Feb 2011)";
 module.onMsg =
 function onMsg(dest, msg, nick, host, at, serv)
-{	if (/hamburger|beef/i.test(msg) && !/^au/.test(nick))
-		calcbot.send(serv, "PRIVMSG", dest, ":\1ACTION eats", nick + "\1");
-	else if (/moo|cow/i.test(msg))
-	{	s =
-		[	"Mooooooooooo!", "MOO!", "Moo.", "Moo. Moo.", "Moo Moo Moo, Moo Moo.", "fish go m00!",
-			"\1ACTION nibbles on some grass\1",
-			"\1ACTION goes and gets a drink\1",
-			"\1ACTION looks in the " + dest + " fridge\1",
-			"\1ACTION quietly meditates on the purpose of " + dest + "\1",
-			"\1ACTION races across the channel\1",
-			"\1ACTION runs around in circles and falls over\1",
-			"\1ACTION wanders aimlessly\1",
-			"\1ACTION eyes " + nick + " menacingly\1",
-			"\1ACTION sniffs " + nick + "\1",
-			"\1ACTION thumps " + nick + "\1",
-			"\1ACTION solves partial differential equations\1"
-		];
-		calcbot.send(serv, "PRIVMSG", dest, ":" + s[ranint(0, s.length - 1)]);
+{	var msg = msg.split(" ");
+	switch (msg[0])
+	{	case "ciao":
+			calcbot.send(serv, "NOTICE", nick, ":Welcome. Please note we do not support warez around here, as this is an free, open-source software network.");
+			return true;
+		case "!list":
+			calcbot.send(serv, "KICK", nick, ":Didn't I say no warez?");
+			return true;
+		case "!kick":
+			if (!msg[1] || msg[1] == nick) calcbot.send(serv, "KICK", nick, dest, ":you asked for it");
+			return true;
+		case "!ban":
+			if (!msg[1] || msg[1] == nick) calcbot.send(serv, "MODE", dest, "+b", "*!*@" + host);
+			return true;
+		case "!kick-ban":
+		case "!kickban":
+		case "!kb":
+			if (!msg[1] || msg[1] == nick)
+			{	calcbot.send(serv, "KICK", nick, dest, ":you asked for it");
+				calcbot.send(serv, "MODE", dest, "+b", "*!*@" + host);
+			}
+			return true;
 	}
 }

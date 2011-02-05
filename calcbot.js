@@ -55,9 +55,8 @@
  *
  * TODO:
  *	- Fix "pow(pow(a,b),c) ** x"!
- *	- Multi-network support.
+ *	- Auto-add () to rnd when omitted.
  *	- Parse NAMES, MODEs e.g. +o, 005.
- *	- SSL support.
  */
 
 if (!calcbot) var calcbot =
@@ -74,8 +73,6 @@ if (!calcbot) var calcbot =
 			"log.ctcp": true,
 			"log.ping": true,
 			"log.pm": true,
-			kick: false, // only if user used =, not if message was relayed
-			ban: false,
 			warn: true // warn user sending message
 		},
 		flood:
@@ -86,7 +83,7 @@ if (!calcbot) var calcbot =
 			ban: false, // during flood
 			warn: false // warn user sending message in PM when flood starts
 		},
-		actDice: false, // display output of <x>d<y> as /me rolls a d<y> x times: a, b, c, total: d
+		actDice: false, // output <x>d<y> as /me rolls a d<y> x times: a, b, c, total: d
 		log: true, // toggle all logging
 		"relay.check": true, // toggle relay bot checking
 		"relay.bots": /^(lcp|bik_link|iRelayer|janus|Mingbeast|irfail)$/, // regex tested against nicks to check for relay bots
@@ -94,18 +91,19 @@ if (!calcbot) var calcbot =
 		"keyboard.sendInput": true, // XXX Doesn't work on Windows?
 		"keyboard.dieOnInput": false, // if keyboard.sendInput is false
 		easterEggs: true, // toggle Easter eggs :-)
-		rejoinOnKick: false,
+		"kick.rejoin": false,
+		"kick.log": true, // on bot kicked
 		prefix: "=",
 		// RegExps to not ban/kick nicks/hosts
 		"nokick.nicks": /Tanner|Mardeg|aj00200|ChrisMorgan|JohnTHaller|Bensawsome|juju|Shadow|TMZ|aus?c(ompgeek|g|ow)|Jan/,
 		"nokick.hosts": /bot|spam|staff|developer|math/,
 		// regex for allowed hosts to use =rctrl command
-		suHosts: /support\.team\.at\.shellium\.org|trek|aus?c(ompgeek|g)|^(FOSSnet|freenode)\/(staff|dev)|oper|netadmin|localhost|thegeek|[Gg]ryllida|bot(ter|)s|spam/
+		suHosts: /support\.team\.at\.shellium\.org|trek|aucg|^(FOSSnet|freenode)\/(staff|dev)|oper|netadmin|localhost|geek|[Gg]ryllida|bot(ter|)s|spam/
 	},
 	cmodes: {}, // XXX Parse MODE lines.
 	modules: {},
 	lines: 0,
-	version: "1.3 (26 Dec 2010)",
+	version: "1.4 (5 Feb 2011)",
 	list: "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, log, pow, sqrt, abs, ceil, max, min, floor, round, random, ranint, fact, mean, dice, f, c. Constants: e, pi, phi. Operators: %, ^, **. Other: decimal, source.",
 	abuse: /load|java|ecma|op|doc|cli|(qui|exi|aler|prin|insul|impor)t|undef|raw|throw|window|nan|open|con|pro|patch|plug|play|infinity|my|for|(fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|this|js|sys|scr|(de|loca|unti|rctr|eva)l|[\["\]]|(?!what)'(?!s)/
 }, ans;
@@ -116,7 +114,6 @@ function startBot(serv, port, pass, chans)
 	this.started = new Date().getTime();
 	serv = serv || "localhost"; port = parseInt(port) || 6667;
 	this.nick = this.nick || "aucgbot";
-	system.gc();
 	this.serv = new Stream("net://" + serv + ":" + port); // XXX Add multi-server support.
 	pass && this.send(serv, "PASS", pass); pass = 0;
 	this.send(serv, "NICK", this.nick);
@@ -131,6 +128,7 @@ function startBot(serv, port, pass, chans)
 		writeln("[WARNING] Can't join channels specified! Joining ", channels);
 	for (i = 0; i < channels.length; i++)
 		channels[i] = /^[#&+!]/.test(channels[i]) ? channels[i] : "#" + channels[i];
+	system.gc();
 	while ((ln = this.serv.readln()))
 	{	writeln(ln);
 		if (channels && /^:\S+ 004 ./.test(ln) && this.send(serv, "JOIN", channels.join(",")))
@@ -164,8 +162,10 @@ function parseIRCln(ln, serv)
 	{	if (RegExp.$1 == this.nick) this.nick = RegExp.$4;
 	} else if (/^:(\S+)(?:!(\S+)@(\S+)|) MODE (\S+)(?: (.+)|)/.test(ln))
 	{	// XXX Parse!
-	} else if (/^:(\S+)(?:!(\S+)@(\S+)|) KICK (\S+) (\S+) :(.*)/.test(ln))
-		RegExp.$5 == this.nick && this.prefs.rejoinOnKick && this.send(serv, "JOIN", RegExp.$4);
+	} else if (/^:(\S+)(?:!(\S+)@(\S+)|) KICK (\S+) (\S+) :(.*)/.test(ln) && RegExp.$5 == this.nick)
+	{	this.prefs["kick.rejoin"] && this.send(serv, "JOIN", RegExp.$4);
+		this.prefs["kick.log"] && this.log(serv, "KICK", RegExp.$1, RegExp.$4, RegExp.$6);
+	}
 	else if (/^:\S+ 433 \* ./.test(ln)) // Nick collision on connect.
 	{	this.nick += "_";
 		this.send(serv, "NICK", this.nick);
@@ -194,7 +194,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 		else if (msg == "Playback complete")
 			this.buffer = false;
 		return;
-	} else if (this.buffer) msg = msg.replace(/^\[\d\d?:\d\d(:\d\d|)\] /, "");
+	} else if (this.buffer) msg = msg.replace(/^\[[0-2]?\d:[0-5]\d(:[0-5]\d|)\] /, "");
 	// fix for message relay bots
 	if (this.prefs["relay.check"] && nick.match(this.prefs["relay.bots"]) && /^<.+> /.test(msg))
 		msg = msg.replace(/^<(.+?)> /, ""), nick = RegExp.$1, at = nick + ": ",
@@ -238,12 +238,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 			msg = msg.substr(this.prefs.prefix.length).replace(/^ | $/g, "").toLowerCase();
 			if (/^['"^-]*[dpsczo0?(){}\[\]\/|\\!<>.;=]+( |$)/.test(msg)) return; // Begins with a smiley.
 			if (msg.match(this.abuse))
-			{	if (!fromUs)
-				{	if (kb)
-					{	this.prefs.abuse.kick && this.send(serv, "KICK", dest, nick, ":Don't abuse me!");
-						this.prefs.abuse.ban && this.send(serv, "MODE", dest, "+b *!*@" + host);
-					} else !relay && this.prefs.abuse.warn && this.send(serv, "NOTICE", nick, ":Whoa! Careful dude!");
-				}
+			{	this.prefs.abuse.warn && !relay && !fromUs && this.send(serv, "NOTICE", nick, ":Whoa! Careful dude!");
 				writeln("[WARNING] Abuse detected! ^^^^^");
 				this.prefs.abuse.log && this.log(serv, "Abuse", nick + (at ? " in " + dest : ""), msg);
 				return;
@@ -294,7 +289,8 @@ function parseMsg(msg)
 	if (/help|command|list|^\?[^?]/.test(msg)) return calchelp(msg);
 	if (/bad ?bot/.test(msg)) return "Whyyyyy?? :(";
 	if (/botsnack|good ?bot/.test(msg)) return ":)";
-	if (msg.match(this.nick.replace(/\W/g, "\\$&") + "|you|who a?re? u")) return "I'm a calc bot. /msg me help for a list of functions.";
+	if (msg == "" || /\bh(a?i|ello|ey)|bon(jou|soi)r|salut|yo|[sz]up|wb/.test(msg)) return "g'day mate";
+	if (msg.match(this.nick.replace(/\W/g, "\\$&") + "|you|who a*re* u")) return "I'm a calc bot. /msg me help for a list of functions.";
 	if (/bye|bai|bbl|brb/.test(msg)) return "Ok, hope I see you soon. :(";
 	if (this.prefs.easterEggs) // Time for some Easter Eggs! *dance*
 	{	if (/^6 ?\* ?9$/.test(msg)) return "42... Jokes, 54 ;)"; // 'The Hitchhiker's Guide to the Galaxy'!
@@ -318,14 +314,14 @@ function parseMsg(msg)
 		if (/\b(|wo)m[ea]n/.test(msg)) return "all.the.women.are.men.at.shellium.org";
 		if (/[bz]nc|egg/.test(msg)) return "free.psybnc.and.eggdrop.at.shellium.org";
 		if (msg == "404" || /not|found/.test(msg)) return "404.not.found.shellium.org";
+		if (/pie/.test(msg)) return "Mmmm, pie...";
 	}
-	if (msg == "" || /\bh(a?i|ello|ey)|bon(jou|soi)r|salut|yo|[sz]up|wb/.test(msg)) return "Hey man!";
 	if (/listmods|modlist/.test(msg))
 	{	var modlist = [];
 		for (i in this.modules) modlist.push(i + " " + this.modules[i].version);
 		return "Modules loaded: " + modlist.join(", ");
 	}
-	if (/self|shut|stfu|d(anc|ie|iaf|es)|str|our|(nu|lo|rof|ki)l|nc|egg|rat|cook|m[ea]n|kick|ban|[bm]o[ow]|ham|beef|a\/?s\/?l|au|not|found|up|quiet|bot/.test(msg)) return;
+	if (/self|shut|stfu|d(anc|ie|iaf|es)|str|our|(nu|lo|rof|ki)l|nc|egg|rat|cook|m[ea]n|kick|ban|[bm]o[ow]|ham|beef|a\/?s\/?l|au|not|found|up|quiet|bot|pie/.test(msg)) return;
 	if (/[jkz]/.test(msg)) return "I don't do algebra. Sorry for any inconvienience.";
 	if (/^([-+]?(\d+(?:\.\d+|)|\.\d+)) ?f$/.test(msg)) return f(RegExp.$1) + "C";
 	if (/^([-+]?(\d+(?:\.\d+|)|\.\d+)) ?c$/.test(msg)) return c(RegExp.$1) + "F";
@@ -377,8 +373,10 @@ function onCTCP(type, msg, nick, dest, serv)
 				"\1ACTION slaps " + nick + " with a trout\1",
 				"\1ACTION whacks " + nick + " with a suspicious brick\1",
 				"\1ACTION puts " + nick + "'s fingers in a Chinese finger lock\1",
+				"\1ACTION randomly slaps " + nick + "\1",
+				"\1ACTION pies " + nick + "\1",
 				"Hey! Stop it!", "Go away!", "GETOFF!",
-				"Mooooooooooo!", "MOO!", "Moo.", "Moo. Moo.", "Moo Moo Moo, Moo Moo.",
+				"Mooooooooooo!", "MOO!", "Moo.", "Moo. Moo.", "Moo Moo Moo, Moo Moo.", "fish go m00!",
 				"\1ACTION nibbles on some grass\1",
 				"\1ACTION goes and gets a drink\1",
 				"\1ACTION looks in the " + dest + " fridge\1",
@@ -458,7 +456,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 				break;
 			}
 			argary.shift();
-			this.send(serv, "QUIT :" + at + "Connecting to", argary[0] + (argary[1] ? ":" + argary[1] : "."));
+			this.send(serv, "QUIT :I was asked to connect to another server by", nick + ".");
 			this.start(argary[0], argary[1], "", argary[3], argary[2]);
 			break;
 		case "join":
@@ -523,7 +521,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 		case "loadmod":
 			module = {};
 			run(args + ".cbm");
-			module.id ? this.modules[module.id] = module : this.send(serv, "PRIVMSG", dest, ":" + at + "Not a module.");
+			module.version ? this.modules[args] = module : this.send(serv, "PRIVMSG", dest, ":" + at + "Not a module.");
 			break;
 		case "reload":
 			if (!run("calcbot.js"))
@@ -742,7 +740,7 @@ function calchelp(e)
 		case "random":
 		case "rand":
 		case "rnd":
-			s = "rnd(): Get a random decimal e.g. floor(rnd()*(max-min+1))+min. See also: floor, round, ranint";
+			s = "rnd(): Get a random decimal e.g. floor(rnd()*(max-min+1))+min. TODO: Automatically add () when omitted. See also: floor, round, ranint";
 			break;
 		case "randomi": // random integer
 		case "randomr": // randomRange

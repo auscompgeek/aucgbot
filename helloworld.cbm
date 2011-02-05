@@ -38,10 +38,9 @@
  * ***** END LICENSE BLOCK *****
  */
  
-// Load this by send the calcbot: =rctrl loadmod helloworld
+// Load this by sending the calcbot: =rctrl loadmod helloworld
 
-module.id = "helloworld"; // id is required to identify module
-module.version = "0.2 (23 Dec 2010)";
+module.version = "0.3 (21 Jan 2011)";
 /* Do NOT do this! Use onMsg() instead so that the flood protection is triggered.
 module.parseln =
 function parseln(ln, serv)
@@ -59,7 +58,7 @@ function parseln(ln, serv)
 module.onMsg =
 function onMsg(dest, msg, nick, host, at, serv)
 {	if (msg.match("hello bot"))
-	{	calcbot.send(serv, "PRIVMSG", dest, ":Hello world!");
+	{	calcbot.send(serv, "PRIVMSG", dest, ":Hello, World!");
 		return true; // Stop processing of message.
 	}
 }
