@@ -10,17 +10,14 @@ Features:
 	- Temperature conversion.
 
 Basic usage:
-	calcbot.init();
 	calcbot.start();
 
 Advanced usage:
-	calcbot.init();
 	calcbot.nick = "nick";
 	calcbot.prefs[pref] = setting;
 	calcbot.start(server, port, ident, pass, channels);
 
 TODO:
+	- Auto-add () to rnd when omitted.
 	- Fix "pow(pow(a,b),c) ** x"!
-	- Multi-network support.
 	- Parse NAMES, MODEs e.g. +o.
-	- SSL support.
