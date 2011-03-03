@@ -38,29 +38,32 @@
  * ***** END LICENSE BLOCK *****
  */
  
-module.version = "0.3.1 (4 Feb 2011)";
+module.version = "0.3.2 (1 Mar 2011)";
 module.onMsg =
 function onMsg(dest, msg, nick, host, at, serv)
 {	var msg = msg.split(" ");
 	switch (msg[0])
 	{	case "ciao":
-			calcbot.send(serv, "NOTICE", nick, ":Welcome. Please note we do not support warez around here, as this is an free, open-source software network.");
+			calcbot.send("NOTICE", nick, ":Welcome. Please note we do not support warez around here, as this is an free, open-source software network.");
 			return true;
 		case "!list":
-			calcbot.send(serv, "KICK", nick, ":Didn't I say no warez?");
+			calcbot.send("KICK", dest, nick, ":Didn't I say no warez?");
 			return true;
 		case "!kick":
-			if (!msg[1] || msg[1] == nick) calcbot.send(serv, "KICK", nick, dest, ":you asked for it");
+		case "!k"
+			if (!msg[1] || msg[1] == nick) calcbot.send("KICK", dest, nick, ":you asked for it");
 			return true;
 		case "!ban":
-			if (!msg[1] || msg[1] == nick) calcbot.send(serv, "MODE", dest, "+b", "*!*@" + host);
+		case "!b":
+			if ((!msg[1] || msg[1] == nick) && !calcbot.prefs["nokick.nicks"].test(nick) && !calcbot.prefs["nokick.hosts"].test(host))
+				calcbot.send("MODE", dest, "+b", "*!*@" + host);
 			return true;
 		case "!kick-ban":
 		case "!kickban":
 		case "!kb":
-			if (!msg[1] || msg[1] == nick)
-			{	calcbot.send(serv, "KICK", nick, dest, ":you asked for it");
-				calcbot.send(serv, "MODE", dest, "+b", "*!*@" + host);
+			if ((!msg[1] || msg[1] == nick) && !calcbot.prefs["nokick.nicks"].test(nick) && !calcbot.prefs["nokick.hosts"].test(host))
+			{	calcbot.send("KICK", dest, nick, ":you asked for it");
+				calcbot.send("MODE", dest, "+b", "*!*@" + host);
 			}
 			return true;
 	}

@@ -115,9 +115,9 @@ function startBot(serv, port, pass, chans)
 	serv = serv || "localhost"; port = parseInt(port) || 6667;
 	this.nick = this.nick || "aucgbot";
 	this.serv = new Stream("net://" + serv + ":" + port); // XXX Add multi-server support.
-	pass && this.send(serv, "PASS", pass); pass = 0;
-	this.send(serv, "NICK", this.nick);
-	this.send(serv, "USER calcbot 8 * :\x033\17auscompgeek's JS calc bot, see", this.prefs.prefix + "help");
+	pass && this.send("PASS", pass); pass = 0;
+	this.send("NICK", this.nick);
+	this.send("USER calcbot 8 * :\x033\17auscompgeek's JS calc bot, see", this.prefs.prefix + "help");
 	if (typeof chans == "array")
 		channels = chans, chans = 0;
 	else if (typeof chans == "string")
@@ -131,14 +131,14 @@ function startBot(serv, port, pass, chans)
 	system.gc();
 	while ((ln = this.serv.readln()))
 	{	writeln(ln);
-		if (channels && /^:\S+ 004 ./.test(ln) && this.send(serv, "JOIN", channels.join(",")))
+		if (channels && /^:\S+ 004 ./.test(ln) && this.send("JOIN", channels.join(",")))
 			channels = 0;
 		else
 			this.parseln(ln, serv);
 		if (this.prefs["keyboard.sendInput"] && system.kbhit())
-			this.send(serv, readln());
+			this.send(readln());
 		else if (this.prefs["keyboard.dieOnInput"] && system.kbhit())
-			this.send(serv, "QUIT :Keyboard input.");
+			this.send("QUIT :Keyboard input.");
 	}
 }
 
@@ -155,20 +155,19 @@ function parseIRCln(ln, serv)
 		if (/^[#&+!]/.test(lnary[3])) at = lnary[0] + ": ", dest = lnary[3];
 		this.onMsg(dest, lnary[4], lnary[0], lnary[2], at, serv);
 	} else if (/^PING (.+)/.test(ln))
-		this.send(serv, "PONG", RegExp.$1);
+		this.send("PONG", RegExp.$1);
 	else if (/^:(\S+)!(\S+)@(\S+) INVITE (\S+) :(\S+)/.test(ln))
-		this.send(serv, "JOIN", RegExp.$5);
+		this.send("JOIN", RegExp.$5);
 	else if (/^:(\S+)!(\S+)@(\S+) NICK :(\S+)/.test(ln))
 	{	if (RegExp.$1 == this.nick) this.nick = RegExp.$4;
 	} else if (/^:(\S+)(?:!(\S+)@(\S+)|) MODE (\S+)(?: (.+)|)/.test(ln))
 	{	// XXX Parse!
-	} else if (/^:(\S+)(?:!(\S+)@(\S+)|) KICK (\S+) (\S+) :(.*)/.test(ln) && RegExp.$5 == this.nick)
-	{	this.prefs["kick.rejoin"] && this.send(serv, "JOIN", RegExp.$4);
-		this.prefs["kick.log"] && this.log(serv, "KICK", RegExp.$1, RegExp.$4, RegExp.$6);
-	}
-	else if (/^:\S+ 433 \* ./.test(ln)) // Nick collision on connect.
+	} else if (/^:([^!@ ]![^!@ ]@[^! ]) KICK (\S+) (\S+) :(.*)/.test(ln) && RegExp.$3 == this.nick)
+	{	this.prefs["kick.rejoin"] && this.send("JOIN", RegExp.$2);
+		this.prefs["kick.log"] && this.log(serv, "KICK", RegExp.$1, RegExp.$2, RegExp.$4);
+	} else if (/^:\S+ 433 \* ./.test(ln)) // Nick collision on connect.
 	{	this.nick += "_";
-		this.send(serv, "NICK", this.nick);
+		this.send("NICK", this.nick);
 	}
 }
 
@@ -199,21 +198,21 @@ function onMsg(dest, msg, nick, host, at, serv)
 	if (this.prefs["relay.check"] && nick.match(this.prefs["relay.bots"]) && /^<.+> /.test(msg))
 		msg = msg.replace(/^<(.+?)> /, ""), nick = RegExp.$1, at = nick + ": ",
 		relay = 1, kb = 0, fromUs = nick == this.nick || fromUs;
-	if ((/^bot|bot[\d_|]*$|Serv|Op$/i.test(nick) || /bot[\/.]/.test(host)) && !fromUs && !relay) return;
+	if ((/^bot|bot[\d_|]*$|Serv|Op$/i.test(nick) || /\/bot\//.test(host)) && !fromUs && !relay) return;
 	if (!this.buffer)
 	{	if (now - this.lastTime > this.prefs.flood.secs * 1000) this.lines = 0;
 		if (this.lines >= this.prefs.flood.lines && now - this.lastTime <= this.prefs.flood.secs * 1000)
 		{	this.lastTime = now;
 			if (this.flood)
 			{	if (kb)
-				{	this.prefs.flood.kick && this.send(serv, "KICK", dest, nick, ":No flooding!");
-					this.prefs.flood.ban && this.send(serv, "MODE", dest, "+b *!*@" + host);
+				{	this.prefs.flood.kick && this.send("KICK", dest, nick, ":No flooding!");
+					this.prefs.flood.ban && this.send("MODE", dest, "+b *!*@" + host);
 				}
 			} else
 			{	this.flood = true;
 				writeln("[WARNING] Flood detected!");
-				kb && this.prefs.flood.kick ? this.send(serv, "KICK", dest, nick, ":No flooding!") :
-				this.prefs.flood.warn && !relay && this.send(serv, "NOTICE", nick, ":Please don't flood.");
+				kb && this.prefs.flood.kick ? this.send("KICK", dest, nick, ":No flooding!") :
+				this.prefs.flood.warn && !relay && this.send("NOTICE", nick, ":Please don't flood.");
 			}
 			this.prefs.flood.log && this.log(serv, "Flood", nick + (at ? " in " + dest : ""), msg);
 			return;
@@ -238,42 +237,42 @@ function onMsg(dest, msg, nick, host, at, serv)
 			msg = msg.substr(this.prefs.prefix.length).replace(/^ | $/g, "").toLowerCase();
 			if (/^['"^-]*[dpsczo0?(){}\[\]\/|\\!<>.;=]+( |$)/.test(msg)) return; // Begins with a smiley.
 			if (msg.match(this.abuse))
-			{	this.prefs.abuse.warn && !relay && !fromUs && this.send(serv, "NOTICE", nick, ":Whoa! Careful dude!");
+			{	this.prefs.abuse.warn && !relay && !fromUs && this.send("NOTICE", nick, ":Whoa! Careful dude!");
 				writeln("[WARNING] Abuse detected! ^^^^^");
 				this.prefs.abuse.log && this.log(serv, "Abuse", nick + (at ? " in " + dest : ""), msg);
 				return;
 			}
-			if (/^(\d*)d(\d+)$/.test(msg)) return this.send(serv, "PRIVMSG", dest, cmdDice(RegExp.$2, RegExp.$1));
-			(s = this.parseMsg(msg)) != null && this.send(serv, "PRIVMSG", dest, ":" + at + s);
+			if (/^(\d*)d(\d+)$/.test(msg)) return this.send("PRIVMSG", dest, cmdDice(RegExp.$2, RegExp.$1));
+			(s = this.parseMsg(msg)) != null && this.send("PRIVMSG", dest, ":" + at + s);
 		} else if (meping.test(msg) || /^(what('| i)s |calc|math )/i.test(msg))
 		{	msg = msg.replace(meping, "").toLowerCase();
 			if (this.abuse.test(msg))
 			{	this.prefs.abuse["log.ping"] && this.log(serv, "Ping", nick + (at ? " in " + dest : ""), msg);
 				return;
 			}
-			if (/^(\d*)d(\d+)$/.test(msg)) return this.send(serv, "PRIVMSG", dest, cmdDice(RegExp.$2, RegExp.$1));
+			if (/^(\d*)d(\d+)$/.test(msg)) return this.send("PRIVMSG", dest, cmdDice(RegExp.$2, RegExp.$1));
 			(s = this.parseMsg(msg)) != null && ((typeof s == "number" && !isNaN(s)) ||
 				s != "That isn't a real number." && s != "I don't do algebra. Sorry for any inconvienience."
-			) && this.send(serv, "PRIVMSG", dest, ":" + at + s);
+			) && this.send("PRIVMSG", dest, ":" + at + s);
 		} else if (!at) // PM!
 		{	msg = msg.toLowerCase();
 			if (this.abuse.test(msg))
 			{	this.prefs.abuse["log.pm"] && this.log(serv, "PM", nick, msg);
 				return;
 			}
-			if (/^(\d*)d(\d+)$/.test(msg)) return this.send(serv, "PRIVMSG", nick, cmdDice(RegExp.$2, RegExp.$1));
+			if (/^(\d*)d(\d+)$/.test(msg)) return this.send("PRIVMSG", nick, cmdDice(RegExp.$2, RegExp.$1));
 			(s = this.parseMsg(msg)) != null && ((typeof s == "number" && !isNaN(s)) ||
 				s != "That isn't a real number." && s != "I don't do algebra. Sorry for any inconvienience."
-			) && this.send(serv, "NOTICE", nick, ":" + s);
+			) && this.send("NOTICE", nick, ":" + s);
 		} else if (/^help!?$/i.test(msg))
-			this.send(serv, "PRIVMSG", dest, ":" + at +
+			this.send("PRIVMSG", dest, ":" + at +
 							"Welcome! To get help, please state your problem. Being specific will get you help faster.");
 	} catch(ex)
 	{	if (equals) // Error, tell the user only if explicitly run.
 		{	writeln("[ERROR] ", ex);
 			this.prefs.error.log && this.log(serv, "ERROR", msg, nick + (at ? " in " + dest : ""), ex);
-			this.prefs.error.apologise && this.send(serv, "PRIVMSG", dest, ":" + at + this.prefs.error.apologymsg);
-			this.prefs.error.sendError && this.send(serv, "PRIVMSG", dest, ":" + at + ex);
+			this.prefs.error.apologise && this.send("PRIVMSG", dest, ":" + at + this.prefs.error.apologymsg);
+			this.prefs.error.sendError && this.send("PRIVMSG", dest, ":" + at + ex);
 		}
 	}
 }
@@ -286,6 +285,11 @@ function parseMsg(msg)
 	if (/source|url/.test(msg)) return "Old cZ code: http://sites.google.com/site/davidvo2/calc.js | New JSDB code: http://ssh.shellium.org/~auscompgeek/calcbot.js | GitHub: www.github.com/auscompgeek/calcbot";
 	if (/\bver/.test(msg)) return !/what/.test(msg) ? this.version : undefined;
 	if (/(is|re* (|yo)u) a bot/.test(msg)) return "Of course I'm a bot! Do you think a human can reply this fast?";
+	if (/listmods|modlist/.test(msg))
+	{	var modlist = [];
+		for (i in this.modules) modlist.push(i + " " + this.modules[i].version);
+		return "Modules loaded: " + modlist.join(", ");
+	}
 	if (/help|command|list|^\?[^?]/.test(msg)) return calchelp(msg);
 	if (/bad ?bot/.test(msg)) return "Whyyyyy?? :(";
 	if (/botsnack|good ?bot/.test(msg)) return ":)";
@@ -294,6 +298,7 @@ function parseMsg(msg)
 	if (/bye|bai|bbl|brb/.test(msg)) return "Ok, hope I see you soon. :(";
 	if (this.prefs.easterEggs) // Time for some Easter Eggs! *dance*
 	{	if (/^6 ?\* ?9$/.test(msg)) return "42... Jokes, 54 ;)"; // 'The Hitchhiker's Guide to the Galaxy'!
+		if (msg == "9001") return "Over 9000! :O";
 		if (/\/ ?0([^\d.!]|$)/.test(msg)) return "divide.by.zero.at.shellium.org";
 		if (/lol|rofl/.test(msg)) return "Stop laughing!";
 		if (/stfu|shut ?up|quiet/.test(msg)) return "Don't tell me to be quiet!";
@@ -315,11 +320,6 @@ function parseMsg(msg)
 		if (/[bz]nc|egg/.test(msg)) return "free.psybnc.and.eggdrop.at.shellium.org";
 		if (msg == "404" || /not|found/.test(msg)) return "404.not.found.shellium.org";
 		if (/pie/.test(msg)) return "Mmmm, pie...";
-	}
-	if (/listmods|modlist/.test(msg))
-	{	var modlist = [];
-		for (i in this.modules) modlist.push(i + " " + this.modules[i].version);
-		return "Modules loaded: " + modlist.join(", ");
 	}
 	if (/self|shut|stfu|d(anc|ie|iaf|es)|str|our|(nu|lo|rof|ki)l|nc|egg|rat|cook|m[ea]n|kick|ban|[bm]o[ow]|ham|beef|a\/?s\/?l|au|not|found|up|quiet|bot|pie/.test(msg)) return;
 	if (/[jkz]/.test(msg)) return "I don't do algebra. Sorry for any inconvienience.";
@@ -391,39 +391,39 @@ function onCTCP(type, msg, nick, dest, serv)
 			];
 			msg.match("(hit|kick|slap|eat|prod|stab|kill|whack|insult|teabag|(punch|bash|touch|pok)e)s " +
 				this.nick.replace(/\W/g, "\\$&") + "\\b", "i") &&
-				this.send(serv, "PRIVMSG", dest, ":" + res[ranint(0, res.length - 1)]);
+				this.send("PRIVMSG", dest, ":" + res[ranint(0, res.length - 1)]);
 			break;
 		case "version":
-			this.nctcp(serv, nick, type, "aucg's JS IRC calc bot " + this.version +
+			this.nctcp(nick, type, "aucg's JS IRC calc bot " + this.version +
 					" (JSDB " + system.release + ", JS " + (system.version / 100) + ")");
 			break;
 		case "time":
-			this.nctcp(serv, nick, type, new Date());
+			this.nctcp(nick, type, new Date());
 			break;
 		case "source":
 		case "url":
-			this.nctcp(serv, nick, type, "http://ssh.shellium.org/~auscompgeek/calcbot.js on http://jsdb.org");
+			this.nctcp(nick, type, "http://ssh.shellium.org/~auscompgeek/calcbot.js on http://jsdb.org");
 			break;
 		case "ping":
-			this.nctcp(serv, nick, type, msg);
+			this.nctcp(nick, type, msg);
 			break;
 		case "uptime":
 		case "age":
-			this.nctcp(serv, nick, type, this.up());
+			this.nctcp(nick, type, this.up());
 			break;
 		case "prefix":
-			this.nctcp(serv, nick, type, this.prefs.prefix);
+			this.nctcp(nick, type, this.prefs.prefix);
 			break;
 		case "gender":
 		case "sex":
-			this.nctcp(serv, nick, type, "bot");
+			this.nctcp(nick, type, "bot");
 			break;
 		case "location":
-			this.nctcp(serv, nick, type, "behind you");
+			this.nctcp(nick, type, "behind you");
 			break;
 		case "a/s/l":
 		case "asl":
-			this.nctcp(serv, nick, type, "2m/bot/behind you");
+			this.nctcp(nick, type, "2m/bot/behind you");
 			break;
 		case "avatar":
 		case "icon":
@@ -431,7 +431,7 @@ function onCTCP(type, msg, nick, dest, serv)
 			break;
 		case "languages":
 		case "language":
-			this.nctcp(serv, nick, type, "JS,math,en");
+			this.nctcp(nick, type, "JS,math,en");
 			break;
 		default:
 			writeln("[ERROR] Unknown CTCP! ^^^^^");
@@ -443,10 +443,10 @@ function rcBot(cmd, args, dest, at, nick, serv)
 {	switch (cmd)
 	{	case "self-destruct": // Hehe, I had to put this in :D
 		case "explode":
-			this.send(serv, "QUIT :" + at, "10... 9... 8... 7... 6... 5... 4... 3... 2... 1... 0... *boom*", args);
+			this.send("QUIT :" + at, "10... 9... 8... 7... 6... 5... 4... 3... 2... 1... 0... *boom*", args);
 			break;
 		case "die":
-			this.send(serv, "QUIT :" + at + args);
+			this.send("QUIT :" + at + args);
 			break;
 		case "connect": // Might cause a memory leak. Used to quit & connect elsewhere.
 			var argary = /^(?:irc:\/\/|)(\w[\w.-]+\w)(?::([1-5]\d{0,4}|[6-9]\d{0,3}|6[0-5]{2}[0-3][0-5])|)(?:\/([^?]*)|)(?:\?pass=(.+)|)$/.exec(args);
@@ -456,64 +456,69 @@ function rcBot(cmd, args, dest, at, nick, serv)
 				break;
 			}
 			argary.shift();
-			this.send(serv, "QUIT :I was asked to connect to another server by", nick + ".");
+			this.send("QUIT :I was asked to connect to another server by", nick + ".");
 			this.start(argary[0], argary[1], "", argary[3], argary[2]);
 			break;
 		case "join":
 			args = args.split(",");
 			for (var i = 0; i < args.length; i++)
 				args[i] = /^[#&+!]/.test(args[i]) ? args[i] : "#" + args[i];
-			this.send(serv, "JOIN", args.join(","));
+			this.send("JOIN", args.join(","));
 			break;
 		case "leave":
 			var args = args.split(" "),
 				chans = args.shift().split(",");
 			for (var i = 0; i < args.length; i++)
 				args[i] = /^[#&+!]/.test(args[i]) ? args[i] : "#" + args[i];
-			this.send(serv, "PART", chans.join(","), ":" + at + args.join(" "));
+			this.send("PART", chans.join(","), ":" + at + args.join(" "));
 			break;
 		case "kick":
 			var argary = args.split(" "),
 				chan = argary.shift();
 			if (argary[0] == this.nick)
-			{	this.send(serv, "PRIVMSG", dest, ":" + at + "Get me to kick myself, yeah, great idea...");
+			{	this.send("PRIVMSG", dest, ":" + at + "Get me to kick myself, yeah, great idea...");
 				this.prefs.abuse.log && this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), "kick " + args);
 				break;
 			}
 			if (/^[^#&+!]/.test(chan)) chan = "#" + chan;
-			this.send(serv, "KICK", chan, argary.shift(), ":" + at + argary.join(" "));
+			this.send("KICK", chan, argary.shift(), ":" + at + argary.join(" "));
 			break;
 		case "msg":
 		case "privmsg":
 		case "message":
 			var argary = args.split(" ");
 			if (argary[0] == this.nick)
-			{	this.send(serv, "PRIVMSG", dest, ":" + at + "Get me to talk to myself, yeah, great idea...");
+			{	this.send("PRIVMSG", dest, ":" + at + "Get me to talk to myself, yeah, great idea...");
 				this.prefs.abuse.log && this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), cmd + (args ? " " + args : ""));
 				break;
 			}
-			this.send(serv, "PRIVMSG", argary.shift(), ":" + argary.join(" "));
+			this.send("PRIVMSG", argary.shift(), ":" + argary.join(" "));
 			break;
 		case "echo":
 		case "say":
-			this.send(serv, "PRIVMSG", dest, ":" + args);
+			this.send("PRIVMSG", dest, ":" + args);
 			break;
 		case "quote":
 		case "raw":
-			this.send(serv, args);
+			this.send(args);
 			break;
 		case "eval":
 		case "js": // Dangerous!
 			if (/uneval.*\(.*(calcbot|this).*\)/i.test(args))
 			{	writeln("[WARNING] Possible abuse! ^^^^^");
 				this.prefs.abuse.log && this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), cmd + (args ? " " + args : ""));
-				this.prefs.abuse.warn && this.send(serv, "NOTICE", nick, ":Please don't try to abuse my remote control.");
+				this.prefs.abuse.warn && this.send("NOTICE", nick, ":Please don't try to abuse my remote control.");
 				break;
 			}
 			var res = eval(args);
 			if (typeof res == "function") res = "function";
-			res && this.send(serv, "PRIVMSG", dest, ":" + at + res);
+			res && this.send("PRIVMSG", dest, ":" + at + res);
 			break;
+		case "pref":
+			var args = args.split(" ");
+			if (this.prefs[args[0]] == undefined)
+			{	this.send("NOTICE", nick)
+			}
 		case "log":
 			this.log(serv, "LOG", nick + (at ? " in " + dest : ""), args);
 			break;
@@ -521,33 +526,30 @@ function rcBot(cmd, args, dest, at, nick, serv)
 		case "loadmod":
 			module = {};
 			run(args + ".cbm");
-			module.version ? this.modules[args] = module : this.send(serv, "PRIVMSG", dest, ":" + at + "Not a module.");
+			module.version ? this.modules[args] = module : this.send("PRIVMSG", dest, ":" + at + "Not a module.");
 			break;
 		case "reload":
 			if (!run("calcbot.js"))
-			{	this.send(serv, "PRIVMSG", dest, ":" + at + "I can't find myself!");
+			{	this.send("PRIVMSG", dest, ":" + at + "I can't find myself!");
 				this.log(serv, nick + (at ? " in " + dest : ""), "Can't reload calcbot!");
 			}
 			break;
 		default:
 			writeln("[ERROR] Possible abuse! ^^^^^");
 			this.prefs.abuse.log && this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), cmd + (args ? " " + args : ""));
-			this.prefs.abuse.warn && this.send(serv, "NOTICE", nick, ":Hmm? Didn't quite get that.");
+			this.prefs.abuse.warn && this.send("NOTICE", nick, ":Hmm? Didn't quite get that.");
 	}
 }
 
 calcbot.send =
-function send(serv)
-{	var s = [];
-	for (var i = 1; i < arguments.length; i++)
-		s[i - 1] = arguments[i];
+function send()
+{	var s = Array.prototype.splice.call(arguments);
 	if (s[0])
-		//this.servs[serv].writeln(s.join(" ").replace(/\s+/, " ").replace(/^ | $/g, ""));
 		this.serv.writeln(s.join(" ").replace(/\s+/, " ").replace(/^ | $/g, ""));
 	else writeln("[ERROR] Call to send() without arguments?");
 }
-calcbot.nctcp = function nctcp(serv, nick, type, msg)
-	this.send(serv, "NOTICE", nick, ":\1" + type.toUpperCase(), msg + "\1");
+calcbot.nctcp = function nctcp(nick, type, msg)
+	this.send("NOTICE", nick, ":\1" + type.toUpperCase(), msg + "\1");
 calcbot.log =
 function log(serv)
 {	if (!this.prefs.log) return;
@@ -797,7 +799,7 @@ function calchelp(e)
 			break;
 		default:
 			s = "This is aucg's JS calc bot v" + calcbot.version + ". Usage: " + calcbot.prefs.prefix +
-				"<expr>. " + this.list + " Type " + calcbot.prefs.prefix + "?<topic> for more information.";
+				"<expr>. " + calcbot.list + " Type " + calcbot.prefs.prefix + "?<topic> for more information.";
 	}
 	return calcbot.prefs.italicsInHelp ? s.replace(/</g, "\x1b[3m").replace(/>/g, "\x1b[23m") : s; // ANSI SGR italics!
 }
