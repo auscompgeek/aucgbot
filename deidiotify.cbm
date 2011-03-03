@@ -50,7 +50,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 			calcbot.send("KICK", dest, nick, ":Didn't I say no warez?");
 			return true;
 		case "!kick":
-		case "!k"
+		case "!k":
 			if (!msg[1] || msg[1] == nick) calcbot.send("KICK", dest, nick, ":you asked for it");
 			return true;
 		case "!ban":
