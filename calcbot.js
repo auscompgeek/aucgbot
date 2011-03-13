@@ -543,7 +543,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 
 calcbot.send =
 function send()
-{	var s = Array.prototype.splice.call(arguments);
+{	var s = Array.prototype.slice.call(arguments);
 	if (s[0])
 		this.serv.writeln(s.join(" ").replace(/\s+/, " ").replace(/^ | $/g, ""));
 	else writeln("[ERROR] Call to send() without arguments?");
