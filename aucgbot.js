@@ -77,7 +77,7 @@ if (!aucgbot) var aucgbot =
 	cmodes: {}, // XXX Parse MODE lines.
 	modules: {},
 	lines: 0,
-	version: "2.0 (28 Aug 2011)",
+	version: "2.0 (28 Aug 2011)"
 }, ans;
 
 aucgbot.start =
@@ -209,12 +209,12 @@ function onMsg(dest, msg, nick, host, at, serv)
 
 	if (msg[0] == "\1") // Possible CTCP.
 	{	if (/^\x01([^\1 ]+)(?: ([^\1]*)|)/.test(msg))
-			this.onCTCP(RegExp.$1.toLowerCase(), RegExp.$2, nick, dest, serv);
+			this.onCTCP(RegExp.$1.toUpperCase(), RegExp.$2, nick, dest, serv);
 	} else if (meping.test(msg) || !at)
-	{	msg = msg.replace(meping, "").replace(/^(\S+) /, "");
+	{	msg = msg.replace(meping, "").replace(/^(\S+) ?/, "");
 		var cmd = RegExp.$1.toLowerCase();
 
-		if (cmd == "ping") this.send("PRIVMSG", dest, ":" + at + msg.replace("ping", "pong"));
+		if (cmd == "ping") this.send("PRIVMSG", dest, ":" + at + "pong", msg);
 		if (cmd == "version") this.send("PRIVMSG", dest, ":" + at + this.version);
 		if (cmd == "rc" && host.match(this.prefs.suHosts))
 			this.remoteControl(msg.split(" ")[0], msg.replace(/^(\S+) /, ""), dest, at, nick, serv);
@@ -246,7 +246,7 @@ function uptime()
 aucgbot.onCTCP =
 function onCTCP(type, msg, nick, dest, serv)
 {	switch (type)
-	{	case "action":
+	{	case "ACTION":
 			var res =
 			[	"\1ACTION slaps " + nick + " around a bit with a large trout\1",
 				"\1ACTION slaps " + nick + " around a bit with a small fish\1",
@@ -290,51 +290,48 @@ function onCTCP(type, msg, nick, dest, serv)
 				this.nick.replace(/\W/g, "\\$&") + "\\b", "i") &&
 				this.send("PRIVMSG", dest, ":" + res[ranint(0, res.length - 1)]);
 			break;
-		case "version":
-			this.nctcp(nick, type, "aucg's JS IRC calc bot " + this.version +
+		case "VERSION":
+			nctcp(nick, type, "aucg's JS IRC calc bot " + this.version +
 					" (JSDB " + system.release + ", JS " + (system.version / 100) + ")");
 			break;
-		case "time":
-			this.nctcp(nick, type, new Date());
+		case "TIME":
+			nctcp(nick, type, new Date());
 			break;
-		case "source":
-		case "url":
-			this.nctcp(nick, type, "http://eu.gshellz.org/~aucg/aucgbot.js on http://jsdb.org");
+		case "SOURCE":
+		case "URL":
+			nctcp(nick, type, "http://eu.gshellz.org/~aucg/aucgbot.js on http://jsdb.org");
 			break;
-		case "ping":
-			this.nctcp(nick, type, msg);
+		case "PING":
+			nctcp(nick, type, msg);
 			break;
-		case "uptime":
-		case "age":
-			this.nctcp(nick, type, this.up());
+		case "UPTIME":
+		case "AGE":
+			nctcp(nick, type, this.up());
 			break;
-		case "prefix":
-			this.nctcp(nick, type, this.prefs.prefix);
+		case "GENDER":
+		case "SEX":
+			nctcp(nick, type, "bot");
 			break;
-		case "gender":
-		case "sex":
-			this.nctcp(nick, type, "bot");
+		case "LOCATION":
+			nctcp(nick, type, "behind you");
 			break;
-		case "location":
-			this.nctcp(nick, type, "behind you");
+		case "A/S/L":
+		case "ASL":
+			nctcp(nick, type, "2m/bot/behind you");
 			break;
-		case "a/s/l":
-		case "asl":
-			this.nctcp(nick, type, "2m/bot/behind you");
+		case "AVATAR":
+		case "ICON":
+		case "FACE":
 			break;
-		case "avatar":
-		case "icon":
-		case "face":
-			break;
-		case "languages":
-		case "language":
-			this.nctcp(nick, type, "JS,en");
+		case "LANGUAGES":
+		case "LANGUAGE":
+			nctcp(nick, type, "JS,en");
 			break;
 		default:
 			writeln("[ERROR] Unknown CTCP! ^^^^^");
 			this.log(serv, "CTCP", nick + (nick == dest ? "" : " in " + dest), type, msg);
 	}
-	function nctcp(nick, type, msg) this.send("NOTICE", nick, ":\1" + type.toUpperCase(), msg + "\1");
+	function nctcp(nick, type, msg) this.send("NOTICE", nick, ":\1" + type, msg + "\1");
 }
 aucgbot.remoteControl =
 function rcBot(cmd, args, dest, at, nick, serv)
