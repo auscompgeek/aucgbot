@@ -12,7 +12,7 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is JS IRC Calculator Bot.
+ * The Original Code is aucg's JS IRC bot.
  *
  * The Initial Developer of the Original Code is
  * Netscape Communications Corporation.
@@ -42,7 +42,7 @@ module.version = "0.2 (21 Jan 2011)";
 module.onMsg =
 function onMsg(dest, msg, nick, host, at, serv)
 {	if (/hamburger|beef/i.test(msg) && !/^au/.test(nick))
-		calcbot.send("PRIVMSG", dest, ":\1ACTION eats", nick + "\1");
+		aucgbot.send("PRIVMSG", dest, ":\1ACTION eats", nick + "\1");
 	else if (/moo|cow/i.test(msg))
 	{	s =
 		[	"Mooooooooooo!", "MOO!", "Moo.", "Moo. Moo.", "Moo Moo Moo, Moo Moo.", "fish go m00!",
@@ -58,6 +58,6 @@ function onMsg(dest, msg, nick, host, at, serv)
 			"\1ACTION thumps " + nick + "\1",
 			"\1ACTION solves partial differential equations\1"
 		];
-		calcbot.send("PRIVMSG", dest, ":" + s[ranint(0, s.length - 1)]);
+		aucgbot.send("PRIVMSG", dest, ":" + s[ranint(0, s.length - 1)]);
 	}
 }

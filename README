@@ -1,23 +1,25 @@
-This is auscompgeek's JavaScript IRC calculator bot.
-This bot is designed to be run with JSDB, found at http://jsdb.org/ .
+This is auscompgeek's JavaScript IRC bot.
+This bot is designed to be run with JSDB, found at <http://jsdb.org/>.
 
 Features:
 	- General flood protection.
-	- Error reporting.
 	- Logging.
 	- Remote control.
+
+Calculator features:
+	- Error reporting.
 	- Dice.
 	- Temperature conversion.
 
 Basic usage:
-	calcbot.start();
+	aucgbot.start();
 
 Advanced usage:
-	calcbot.nick = "nick";
-	calcbot.prefs[pref] = setting;
-	calcbot.start(server, port, ident, pass, channels);
+	aucgbot.nick = "nick";
+	aucgbot.prefs[pref] = setting;
+	aucgbot.start(server, port, ident, pass, channels);
 
 TODO:
-	- Auto-add () to rnd when omitted.
-	- Fix "pow(pow(a,b),c) ** x"!
+	- [calcbot] Auto-add () to rnd when omitted.
+	- [calcbot] Fix "pow(pow(a,b),c) ** x"!
 	- Parse NAMES, MODEs e.g. +o.
