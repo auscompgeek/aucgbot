@@ -159,6 +159,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 		kb = at && !(fromUs || nick.match(this.prefs["nokick.nicks"]) || host.match(this.prefs["nokick.hosts"]) || host.match(this.prefs.suHosts) /*|| this.cmodes[dest][nick] != []*/) /*&& this.cmodes[dest][this.nick] == []*/,
 		meping = RegExp("^@?" + this.nick.replace(/\W/g, "\\$&") + "([:,!.] ?| |$)", "i"),
 		relay = 0, equals = 0, now = new Date().getTime(), s;
+
 	// fix for buffer playback on ZNC
 	if (nick == "***")
 	{	if (msg == "Buffer playback...")
@@ -167,11 +168,16 @@ function onMsg(dest, msg, nick, host, at, serv)
 			this.buffer = false;
 		return;
 	} else if (this.buffer) msg = msg.replace(/^\[[0-2]?\d:[0-5]\d(:[0-5]\d|)\] /, "");
+
 	// fix for message relay bots
 	if (this.prefs["relay.check"] && nick.match(this.prefs["relay.bots"]) && /^<.+> /.test(msg))
 		msg = msg.replace(/^<(.+?)> /, ""), relay = nick, nick = RegExp.$1, at = nick + ": ",
 		kb = 0, fromUs = nick == this.nick || fromUs;
+
+	// don't listen to bots
 	if ((/^bot|bot[\d_|]*$|Serv|Op$/i.test(nick) || /\/bot\//.test(host)) && !fromUs && !relay) return;
+
+	// flood protection
 	if (!this.buffer)
 	{	if (now - this.lastTime > this.prefs.flood.secs * 1000) this.lines = 0;
 		if (this.lines >= this.prefs.flood.lines && now - this.lastTime <= this.prefs.flood.secs * 1000)
@@ -194,11 +200,14 @@ function onMsg(dest, msg, nick, host, at, serv)
 		this.lastTime = now;
 		this.lines++;
 	}
+
 	msg = msg.replace(/\s+/g, " ");
+
 	for (i in this.modules)
 		if (typeof this.modules[i].onMsg == "function")
 			if (this.modules[i].onMsg(dest, msg, nick, host, at, serv, relay))
 				return;
+
 	if (msg[0] == "\1") // Possible CTCP.
 	{	if (/^\x01([^\1 ]+)(?: ([^\1]*)|)/.test(msg))
 			this.onCTCP(RegExp.$1.toLowerCase(), RegExp.$2, nick, dest, serv);
@@ -208,8 +217,10 @@ function onMsg(dest, msg, nick, host, at, serv)
 
 		if (cmd == "ping") this.send("PRIVMSG", dest, ":" + at + msg.replace("ping", "pong"));
 		if (cmd == "version") this.send("PRIVMSG", dest, ":" + at + this.version);
-		if (cmd == "rc" && host.match(this.prefs.suHosts)) this.remoteControl(RegExp.$1, RegExp.$2, dest, at, nick, serv);
-		if (/stat|uptime/.test(cmd)) this.send("PRIVMSG", dest, ":" + at + "I've been up " + this.up() + ".");
+		if (cmd == "rc" && host.match(this.prefs.suHosts))
+			this.remoteControl(msg.split(" ")[0], msg.replace(/^(\S+) /, ""), dest, at, nick, serv);
+		if (/stat|uptime/.test(cmd))
+			this.send("PRIVMSG", dest, ":" + at + "I've been up " + this.up() + ".");
 		if (/listmods|modlist/.test(cmd)) 
 		{	var modlist = [];
 			for (i in this.modules) modlist.push(i + " " + this.modules[i].version);
@@ -221,7 +232,8 @@ function onMsg(dest, msg, nick, host, at, serv)
 				if (this.modules[i]["cmd_" + cmd](dest, msg, nick, host, at, serv, relay))
 					return;
 	} else if (/^help!?$/i.test(msg))
-		this.send("PRIVMSG", dest, ":" + at + "Welcome! To get help, please state your problem. Being specific will get you help faster.");
+		this.send("PRIVMSG", dest, ":" + at +
+			"Welcome! To get help, please state your problem. Being specific will get you help faster.");
 }
 aucgbot.up = // Code stolen from Ogmios :)
 function uptime()
@@ -339,7 +351,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			var argary = /^(?:irc:\/\/|)(\w[\w.-]+\w)(?::([1-5]\d{0,4}|[6-9]\d{0,3}|6[0-5]{2}[0-3][0-5])|)(?:\/([^?]*)|)(?:\?pass=(.+)|)$/.exec(args);
 			if (!argary) // Invalid URL?!?!?
 			{	writeln("[ERROR] Invalid URL! ^^^^^");
-				this.prefs.abuse.log && this.log(serv, "Invalid URL", nick + (at ? " in " + dest : ""), args);
+				this.log(serv, "Invalid URL", nick + (at ? " in " + dest : ""), args);
 				break;
 			}
 			argary.shift();
@@ -364,7 +376,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 				chan = argary.shift();
 			if (argary[0] == this.nick)
 			{	this.send("PRIVMSG", dest, ":" + at + "Get me to kick myself, yeah, great idea...");
-				this.prefs.abuse.log && this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), "kick " + args);
+				this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), "kick " + args);
 				break;
 			}
 			if (/^[^#&+!]/.test(chan)) chan = "#" + chan;
@@ -393,8 +405,8 @@ function rcBot(cmd, args, dest, at, nick, serv)
 		case "js": // Dangerous!
 			if (/uneval.*\(.*(aucgbot|this).*\)/i.test(args))
 			{	writeln("[WARNING] Possible abuse! ^^^^^");
-				this.prefs.abuse.log && this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), cmd + (args ? " " + args : ""));
-				this.prefs.abuse.warn && this.send("NOTICE", nick, ":Please don't try to abuse my remote control.");
+				this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), cmd + (args ? " " + args : ""));
+				this.send("NOTICE", nick, ":Please don't try to abuse my remote control.");
 				break;
 			}
 			var res = eval(args);
@@ -423,8 +435,8 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			break;
 		default:
 			writeln("[ERROR] Possible abuse! ^^^^^");
-			this.prefs.abuse.log && this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), cmd + (args ? " " + args : ""));
-			this.prefs.abuse.warn && this.send("NOTICE", nick, ":Hmm? Didn't quite get that.");
+			this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), cmd + (args ? " " + args : ""));
+			this.send("NOTICE", nick, ":Hmm? Didn't quite get that.");
 	}
 }
 
