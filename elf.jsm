@@ -38,25 +38,25 @@
  * ***** END LICENSE BLOCK *****
  */
 
-module.version = "1.0 (2 Mar 2011)";
+module.version = "1.0.1 (28 Apr 2011)";
 module.prefix = "%";
 module.score = {}, module.coins = {}, module.materials = {}, module.reputation = {}, module.total = {};
 run("elfscores.js");
 module.parseln =
 function parseln(ln, serv)
-{	if (/^:(\S+)!\S+@\S+ JOIN :#elf\r/.test(ln) && RegExp.$1 != calcbot.nick)
+{	if (/^:(\S+)!\S+@\S+ JOIN :#elf\r/.test(ln) && RegExp.$1 != aucgbot.nick)
 	{	nick = RegExp.$1;
 		if (this.score[nick])
-			calcbot.send("PRIVMSG #elf :Welcome", nick + ". You have",
+			aucgbot.send("PRIVMSG #elf :Welcome", nick + ". You have",
 				this.score[nick], "points,", this.coins[nick], "coins and",
 				this.materials[nick], "materials.");
 		else
-		{	calcbot.send("PRIVMSG #elf :Hey. Looks like you are new!",
+		{	aucgbot.send("PRIVMSG #elf :Hey. Looks like you are new!",
 				"You have been given 5 free materials to get you started.");
 			this.coins[nick] = this.reputation[nick] = this.total[nick] = 0;
 			this.score[nick] = 1;
 			this.materials[nick] = 5;
-			calcbot.send("NOTICE", nick,
+			aucgbot.send("NOTICE", nick,
 				":[#elf] Hey! It looks like you are a new user. Type",
 				this.prefix + "rules for more info on the game.",
 				"Start by making some toys using", this.prefix + "make.");
@@ -71,7 +71,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 		switch (msg[0])
 		{	case "info":
 				nick = msg[1] || nick;
-				calcbot.send("PRIVMSG", dest, ":" + nick + ":",
+				aucgbot.send("PRIVMSG", dest, ":" + nick + ":",
 					this.score[nick], "points,", this.materials[nick], "materials,",
 					this.coins[nick], "coins,", "Reputation:", this.reputation[nick] +
 					", made", this.total[nick], "toys.");
@@ -83,43 +83,43 @@ function onMsg(dest, msg, nick, host, at, serv)
 						if (this.coins[nick] >= s)
 						{	this.coins[nick] -= s;
 							this.materials[nick]++;
-							calcbot.send("PRIVMSG #elf :" + nick, "has bought",
+							aucgbot.send("PRIVMSG #elf :" + nick, "has bought",
 								msg[2], "materials. This has cost", s, "in total.");
 							break;
 						}
 					case "voice":
 						if (this.coins[nick] >= 800)
 						{	this.coins[nick] -= 800;
-							//calcbot.send("CS VOP #elf ADD", nick);
-							calcbot.send("CS ACCESS #elf ADD", nick, "VOP");
-							calcbot.send("MODE #elf +v", nick);
+							//aucgbot.send("CS VOP #elf ADD", nick);
+							aucgbot.send("CS ACCESS #elf ADD", nick, "VOP");
+							aucgbot.send("MODE #elf +v", nick);
 							break;
 						}
 					case "hop":
 						if (this.coins[nick] >= 7500)
 						{	this.coins[nick] -= 7500;
-							//calcbot.send("CS HOP #elf ADD", nick);
-							calcbot.send("CS ACCESS #elf ADD", nick, "HOP");
-							calcbot.send("MODE #elf +vh", nick, nick);
+							//aucgbot.send("CS HOP #elf ADD", nick);
+							aucgbot.send("CS ACCESS #elf ADD", nick, "HOP");
+							aucgbot.send("MODE #elf +vh", nick, nick);
 							break;
 						}
 					case "op":
 						if (this.coins[nick] >= 20000)
 						{	this.coins[nick] -= 20000;
-							//calcbot.send("CS AOP #elf ADD", nick);
-							calcbot.send("CS ACCESS #elf ADD", nick, "AOP");
-							calcbot.send("MODE #elf +o", nick);
+							//aucgbot.send("CS AOP #elf ADD", nick);
+							aucgbot.send("CS ACCESS #elf ADD", nick, "AOP");
+							aucgbot.send("MODE #elf +o", nick);
 							break;
 						}
 					default:
-						calcbot.send("PRIVMSG", dest, ":material <amount>: costs twice the amount, so if you bought 4, you would pay 8 coins.");
-						calcbot.send("PRIVMSG", dest, ":voice: costs 800 coins. | hop: costs 7500 coins. | op: costs 20000 coins.");
-						calcbot.send("PRIVMSG", dest, ":" + nick, "currently has", this.coins[nick], "coins.");
+						aucgbot.send("PRIVMSG", dest, ":material <amount>: costs twice the amount, so if you bought 4, you would pay 8 coins.");
+						aucgbot.send("PRIVMSG", dest, ":voice: costs 800 coins. | hop: costs 7500 coins. | op: costs 20000 coins.");
+						aucgbot.send("PRIVMSG", dest, ":" + nick, "currently has", this.coins[nick], "coins.");
 				}
 				return true;
 			case "make":
 				if (this.materials[nick] < 1)
-					calcbot.send("NOTICE", nick, ":You don't have enough materials to make a toy.");
+					aucgbot.send("NOTICE", nick, ":You don't have enough materials to make a toy.");
 				else
 				{	this.materials[nick]--;
 					this.total[nick]++;
@@ -128,7 +128,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 							this.score[nick] += 100;
 							this.coins[nick] += 150;
 							this.reputation[nick] += 250;
-							calcbot.send("PRIVMSG #elf :" + nick, "makes a toy car.",
+							aucgbot.send("PRIVMSG #elf :" + nick, "makes a toy car.",
 								"The toy car is fine but is a little scratched.",
 								nick, "gets 100 points and 150 coins.");
 							break;
@@ -136,7 +136,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 							this.score[nick] += 500;
 							this.coins[nick] += 300;
 							this.reputation[nick] += 750;
-							calcbot.send("PRIVMSG #elf :" + nick, "makes a toy car.",
+							aucgbot.send("PRIVMSG #elf :" + nick, "makes a toy car.",
 								"The toy car is perfectly made and Santa is very happy.",
 								nick, "gets 500 points and 300 coins.");
 							break;
@@ -144,7 +144,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 							this.score[nick] += 50;
 							this.coins[nick] += 50;
 							this.reputation[nick] += 150;
-							calcbot.send("PRIVMSG #elf :" + nick, "makes a teddy bear.",
+							aucgbot.send("PRIVMSG #elf :" + nick, "makes a teddy bear.",
 								"The teddy bear is poorly made and is nearly falling apart.",
 								"Santa is not happy.", nick, "gets 50 points and 50 coins.");
 							break;
@@ -152,7 +152,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 							this.score[nick] += 250;
 							this.coins[nick] += 150;
 							this.reputation[nick] += 500;
-							calcbot.send("PRIVMSG #elf :" + nick, "makes a teddy bear.",
+							aucgbot.send("PRIVMSG #elf :" + nick, "makes a teddy bear.",
 								"The teddy bear is in good condition and is ready to sell.",
 								nick, "gets 250 points and 150 coins.");
 							break;
@@ -160,13 +160,13 @@ function onMsg(dest, msg, nick, host, at, serv)
 				}
 				return true;
 			case "rules":
-				calcbot.send("PRIVMSG", dest, ":buy: Buy items to use in the game. | make: Make a toy. | info: Show your current scores.");
+				aucgbot.send("PRIVMSG", dest, ":buy: Buy items to use in the game. | make: Make a toy. | info: Show your current scores.");
 				return true;
 			case "elfreset":
-				if (calcbot.prefs.suHosts.test(host))
+				if (aucgbot.prefs.suHosts.test(host))
 				{	this.score = {}, this.coins = {}, this.materials = {}, this.reputation = {}, this.total = {};
-					calcbot.log(serv, "ELF RESET", nick + (at ? " in " + dest : ""));
-					calcbot.send("PRIVMSG #elf :Variables reset!!!");
+					aucgbot.log(serv, "ELF RESET", nick + (at ? " in " + dest : ""));
+					aucgbot.send("PRIVMSG #elf :Variables reset!!!");
 				}
 				return true;
 			case "writescores":

@@ -12,7 +12,7 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is JS IRC Calculator Bot.
+ * The Original Code is aucg's JS IRC bot.
  *
  * The Initial Developer of the Original Code is
  * Netscape Communications Corporation.
@@ -38,9 +38,9 @@
  * ***** END LICENSE BLOCK *****
  */
  
-// Load this by sending the calcbot: =rctrl loadmod helloworld
+// Load this by sending the bot: rc loadmod helloworld
 
-module.version = "0.3 (21 Jan 2011)";
+module.version = "0.3.1 (28 Aug 2011)";
 /* Do NOT do this! Use onMsg() instead so that the flood protection is triggered.
 module.parseln =
 function parseln(ln, serv)
@@ -48,8 +48,8 @@ function parseln(ln, serv)
 	{	lnary.shift();
 		var at = "", dest = lnary[0];
 		if (/^[#&+!]/.test(lnary[3])) at = lnary[0] + ": ", dest = lnary[3];
-		if (lnary[4].match(calcbot.nick.replace(/\W/g, "\\$&") + ": hello"))
-		{	calcbot.send("PRIVMSG", dest, ":Hello world!");
+		if (lnary[4].match(aucgbot.nick.replace(/\W/g, "\\$&") + ": hello"))
+		{	aucgbot.send("PRIVMSG", dest, ":Hello world!");
 			return true; // Stop processing of message.
 		}
 	}
@@ -58,7 +58,7 @@ function parseln(ln, serv)
 module.onMsg =
 function onMsg(dest, msg, nick, host, at, serv)
 {	if (msg.match("hello bot"))
-	{	calcbot.send("PRIVMSG", dest, ":Hello, World!");
+	{	aucgbot.send("PRIVMSG", dest, ":Hello, World!");
 		return true; // Stop processing of message.
 	}
 }

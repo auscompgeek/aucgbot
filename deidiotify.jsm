@@ -12,7 +12,7 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is JS IRC Calculator Bot.
+ * The Original Code is aucg's JS IRC bot.
  *
  * The Initial Developer of the Original Code is
  * Netscape Communications Corporation.
@@ -38,32 +38,32 @@
  * ***** END LICENSE BLOCK *****
  */
  
-module.version = "0.3.2 (1 Mar 2011)";
+module.version = "0.3.3 (28 Aug 2011)";
 module.onMsg =
 function onMsg(dest, msg, nick, host, at, serv)
 {	var msg = msg.split(" ");
 	switch (msg[0])
 	{	case "ciao":
-			calcbot.send("NOTICE", nick, ":Welcome. Please note we do not support warez around here, as this is an free, open-source software network.");
+			aucgbot.send("NOTICE", nick, ":Welcome. Please note we do not support warez around here, as this is an free, open-source software network.");
 			return true;
 		case "!list":
-			calcbot.send("KICK", dest, nick, ":Didn't I say no warez?");
+			aucgbot.send("KICK", dest, nick, ":Didn't I say no warez?");
 			return true;
 		case "!kick":
 		case "!k":
-			if (!msg[1] || msg[1] == nick) calcbot.send("KICK", dest, nick, ":you asked for it");
+			if (!msg[1] || msg[1] == nick) aucgbot.send("KICK", dest, nick, ":you asked for it");
 			return true;
 		case "!ban":
 		case "!b":
-			if ((!msg[1] || msg[1] == nick) && !calcbot.prefs["nokick.nicks"].test(nick) && !calcbot.prefs["nokick.hosts"].test(host))
-				calcbot.send("MODE", dest, "+b", "*!*@" + host);
+			if ((!msg[1] || msg[1] == nick) && !aucgbot.prefs["nokick.nicks"].test(nick) && !aucgbot.prefs["nokick.hosts"].test(host))
+				aucgbot.send("MODE", dest, "+b", "*!*@" + host);
 			return true;
 		case "!kick-ban":
 		case "!kickban":
 		case "!kb":
-			if ((!msg[1] || msg[1] == nick) && !calcbot.prefs["nokick.nicks"].test(nick) && !calcbot.prefs["nokick.hosts"].test(host))
-			{	calcbot.send("KICK", dest, nick, ":you asked for it");
-				calcbot.send("MODE", dest, "+b", "*!*@" + host);
+			if ((!msg[1] || msg[1] == nick) && !aucgbot.prefs["nokick.nicks"].test(nick) && !aucgbot.prefs["nokick.hosts"].test(host))
+			{	aucgbot.send("KICK", dest, nick, ":you asked for it");
+				aucgbot.send("MODE", dest, "+b", "*!*@" + host);
 			}
 			return true;
 	}
