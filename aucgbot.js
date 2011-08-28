@@ -78,7 +78,6 @@ if (!aucgbot) var aucgbot =
 	modules: {},
 	lines: 0,
 	version: "2.0 (28 Aug 2011)",
-	list: "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, log, pow, sqrt, abs, ceil, max, min, floor, round, random, ranint, fact, mean, dice, f, c. Constants: e, pi, phi. Operators: %, ^, **. Other: decimal, source.",
 }, ans;
 
 aucgbot.start =
