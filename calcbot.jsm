@@ -59,18 +59,18 @@ module["cmd_="] = module.cmd_calc = module.cmd_math =
 function cmd_calc(dest, msg, nick, host, at, serv, relay)
 {	var msg = msg.toLowerCase();
 	if (msg.match(this.abuse))
-	{	this.prefs.abuse.warn && !relay && !fromUs && this.send("NOTICE", nick, ":Whoa! Careful dude!");
+	{	this.prefs.abuse.warn && !relay && !fromUs && aucgbot.send("NOTICE", nick, ":Whoa! Careful dude!");
 		writeln("[WARNING] Abuse detected! ^^^^^");
-		this.prefs.abuse.log && this.log(serv, "Abuse", nick + (at ? " in " + dest : ""), msg);
+		this.prefs.abuse.log && aucgbot.log(serv, "Abuse", nick + (at ? " in " + dest : ""), msg);
 		return;
 	}
-	if (/^(\d*)d(\d+)$/.test(msg)) return this.send("PRIVMSG", dest, this.cmdDice(RegExp.$2, RegExp.$1));
-	try { (s = this.parseMsg(msg)) != null && this.send("PRIVMSG", dest, ":" + at + s) }
+	if (/^(\d*)d(\d+)$/.test(msg)) return aucgbot.send("PRIVMSG", dest, this.cmdDice(RegExp.$2, RegExp.$1));
+	try { (s = this.parseMsg(msg)) != null && aucgbot.send("PRIVMSG", dest, ":" + at + s) }
 	catch (ex) {
 		writeln("[ERROR] ", ex);
-		this.prefs.error.log && this.log(serv, "ERROR", msg, nick + (at ? " in " + dest : ""), ex);
-		this.prefs.error.apologise && this.send("PRIVMSG", dest, ":" + at + this.prefs.error.apologymsg);
-		this.prefs.error.sendError && this.send("PRIVMSG", dest, ":" + at + ex);
+		this.prefs.error.log && aucgbot.log(serv, "ERROR", msg, nick + (at ? " in " + dest : ""), ex);
+		this.prefs.error.apologise && aucgbot.send("PRIVMSG", dest, ":" + at + this.prefs.error.apologymsg);
+		this.prefs.error.sendError && aucgbot.send("PRIVMSG", dest, ":" + at + ex);
 	}
 }
 
