@@ -63,7 +63,7 @@ if (!aucgbot) var aucgbot =
 		},
 		log: true, // toggle all logging
 		"relay.check": true, // toggle relay bot checking
-		"relay.bots": /^(lcp|bik_link|iRelayer|janus|Mingbeast|irfail)$/, // regex tested against nicks to check for relay bots
+		"relay.bots": /^(lcp|bik_link|iRelayer|janus|Mingbeast|irfail|rbot)$/, // regex tested against nicks to check for relay bots
 		"keyboard.sendInput": true, // doesn't work on Windows?
 		"keyboard.dieOnInput": false, // only if keyboard.sendInput is false
 		"kick.rejoin": false,

@@ -55,7 +55,7 @@ module.prefs =
 	actDice: false, // output <x>d<y> as /me rolls a d<y> x times: a, b, c, total: d
 }
 module.abuse = /load|java|ecma|op|doc|cli|(qui|exi|aler|prin|insul|impor)t|undef|raw|throw|window|nan|open|con|pro|patch|plug|play|infinity|my|for|(fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|this|js|sys|scr|(de|loca|unti|rctr|eva)l|[\["\]]|(?!what)'(?!s)/;
-module.list = "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, log, pow, sqrt, abs, ceil, max, min, floor, round, random, ranint, fact, mean, dice, f, c. Constants: e, pi, phi. Operators: %, ^, **. Other: decimal, source.";
+module.list = "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, log, pow, sqrt, abs, ceil, max, min, floor, round, random, ranint, fact, mean, dice, f, c. Constants: e, pi, phi. Operators: %, ^, **. Other: decimal.";
 
 module["cmd_="] = module.cmd_calc = module.cmd_math =
 function cmd_calc(dest, msg, nick, host, at, serv, relay)
