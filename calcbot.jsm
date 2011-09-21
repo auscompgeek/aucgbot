@@ -69,12 +69,12 @@ function cmd_calc(dest, msg, nick, host, at, serv, relay)
 		return;
 	}
 	if (/^(\d*)d(\d+)$/.test(msg)) return aucgbot.send("PRIVMSG", dest, this.cmdDice(RegExp.$2, RegExp.$1));
-	try { (s = this.parseMsg(msg)) != null && aucgbot.send("PRIVMSG", dest, ":" + at + s) }
+	try { (s = this.parseMsg(msg)) != null && aucgbot.msg(dest, at + s) }
 	catch (ex) {
 		writeln("[ERROR] ", ex);
 		this.prefs.error.log && aucgbot.log(serv, "ERROR", msg, nick + (at ? " in " + dest : ""), ex);
-		this.prefs.error.apologise && aucgbot.send("PRIVMSG", dest, ":" + at + this.prefs.error.apologymsg);
-		this.prefs.error.sendError && aucgbot.send("PRIVMSG", dest, ":" + at + ex);
+		this.prefs.error.apologise && aucgbot.msg(dest, at + this.prefs.error.apologymsg);
+		this.prefs.error.sendError && aucgbot.msg(dest, at + ex);
 	}
 }
 

@@ -77,7 +77,7 @@ if (!aucgbot) var aucgbot =
 	cmodes: {}, // XXX Parse MODE lines.
 	modules: {},
 	lines: 0,
-	version: "2.0 (28 Aug 2011)"
+	version: "2.1 (21 Sep 2011)"
 }, ans;
 
 aucgbot.start =
@@ -214,16 +214,16 @@ function onMsg(dest, msg, nick, host, at, serv)
 	{	msg = msg.replace(meping, "").replace(/^(\S+) ?/, "");
 		var cmd = RegExp.$1.toLowerCase();
 
-		if (cmd == "ping") this.send("PRIVMSG", dest, ":" + at + "pong", msg);
-		if (cmd == "version") this.send("PRIVMSG", dest, ":" + at + this.version);
+		if (cmd == "ping") this.msg(dest, at + "pong", msg);
+		if (cmd == "version") this.msg(dest, at + this.version);
 		if (cmd == "rc" && host.match(this.prefs.suHosts))
 			this.remoteControl(msg.split(" ")[0], msg.replace(/^(\S+) /, ""), dest, at, nick, serv);
 		if (/stat|uptime/.test(cmd))
-			this.send("PRIVMSG", dest, ":" + at + "I've been up " + this.up() + ".");
+			this.msg(dest, at + "I've been up " + this.up() + ".");
 		if (/listmods|modlist/.test(cmd)) 
 		{	var modlist = [];
 			for (i in this.modules) modlist.push(i + " " + this.modules[i].version);
-			this.send("PRIVMSG", dest, ":" + at + "Modules loaded: " + modlist.join(", "));
+			this.msg(dest, at + "Modules loaded: " + modlist.join(", "));
 		}
 
 		for (i in this.modules)
@@ -231,8 +231,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 				if (this.modules[i]["cmd_" + cmd](dest, msg, nick, host, at, serv, relay))
 					return;
 	} else if (/^help!?$/i.test(msg))
-		this.send("PRIVMSG", dest, ":" + at +
-			"Welcome! To get help, please state your problem. Being specific will get you help faster.");
+		this.msg(dest, at + "Welcome! To get help, please state your problem. Being specific will get you help faster.");
 }
 aucgbot.up = // Code stolen from Ogmios :)
 function uptime()
@@ -288,7 +287,7 @@ function onCTCP(type, msg, nick, dest, serv)
 			];
 			msg.match("(hit|kick|slap|eat|prod|stab|kill|whack|insult|teabag|(punch|bash|touch|pok)e)s " +
 				this.nick.replace(/\W/g, "\\$&") + "\\b", "i") &&
-				this.send("PRIVMSG", dest, ":" + res[ranint(0, res.length - 1)]);
+				this.msg(dest, ":" + res[ranint(0, res.length - 1)]);
 			break;
 		case "VERSION":
 			nctcp(nick, type, "aucg's JS IRC calc bot " + this.version +
@@ -368,30 +367,30 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			this.send("PART", chans.join(","), ":" + at + args.join(" "));
 			break;
 		case "kick":
-			var argary = args.split(" "),
+			var s = args.split(" "),
 				chan = argary.shift();
-			if (argary[0] == this.nick)
-			{	this.send("PRIVMSG", dest, ":" + at + "Get me to kick myself, yeah, great idea...");
+			if (s[0] == this.nick)
+			{	this.msg(dest, at + "Get me to kick myself, yeah, great idea...");
 				this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), "kick " + args);
 				break;
 			}
 			if (/^[^#&+!]/.test(chan)) chan = "#" + chan;
-			this.send("KICK", chan, argary.shift(), ":" + at + argary.join(" "));
+			this.send("KICK", chan, s.shift(), ":" + at + s.join(" "));
 			break;
 		case "msg":
 		case "privmsg":
 		case "message":
-			var argary = args.split(" ");
-			if (argary[0] == this.nick)
-			{	this.send("PRIVMSG", dest, ":" + at + "Get me to talk to myself, yeah, great idea...");
+			var s = args.split(" ");
+			if (s[0] == this.nick)
+			{	this.msg(dest, at + "Get me to talk to myself, yeah, great idea...");
 				this.prefs.abuse.log && this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), cmd + (args ? " " + args : ""));
 				break;
 			}
-			this.send("PRIVMSG", argary.shift(), ":" + argary.join(" "));
+			this.msg.apply(this, s);
 			break;
 		case "echo":
 		case "say":
-			this.send("PRIVMSG", dest, ":" + args);
+			this.msg(dest, args);
 			break;
 		case "quote":
 		case "raw":
@@ -407,13 +406,13 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			}
 			var res = eval(args);
 			if (typeof res == "function") res = "function";
-			res && this.send("PRIVMSG", dest, ":" + at + res);
+			res && this.msg(dest, at + res);
 			break;
-		case "pref":
+		/*case "pref":
 			var args = args.split(" ");
 			if (this.prefs[args[0]] == undefined)
 			{	this.send("NOTICE", nick)
-			}
+			}*/
 		case "log":
 			this.log(serv, "LOG", nick + (at ? " in " + dest : ""), args);
 			break;
@@ -422,13 +421,13 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			module = {};
 			try {
 				run(args + ".jsm");
-				module.version ? this.modules[args] = module : this.send("PRIVMSG", dest, ":" + at + "Not a module.");
+				module.version ? this.modules[args] = module : this.msg(dest, at + "Not a module.");
 			}
-			catch (ex) { this.send("PRIVMSG", dest, ":" + at + "Could not load", args + ":", ex) }
+			catch (ex) { this.msg(dest, at + "Could not load", args + ":", ex) }
 			break;
 		case "reload":
 			if (!run("aucgbot.js"))
-			{	this.send("PRIVMSG", dest, ":" + at + "I can't find myself!");
+			{	this.msg(dest, at + "I can't find myself!");
 				this.log(serv, nick + (at ? " in " + dest : ""), "Can't reload aucgbot!");
 			}
 			break;
@@ -445,6 +444,14 @@ function send()
 	if (s.length > 0)
 		this.serv.writeln(s.join(" ").replace(/\s+/, " ").replace(/^ | $/g, ""));
 	else writeln("[ERROR] Call to send() without arguments?");
+}
+aucgbot.msg =
+function msg()
+{	var s = Array.prototype.slice.call(arguments);
+	if (s.length < 2) throw "Not enough arguments passed to msg()";
+	s[1] = ":" + s[1];
+	s.unshift("PRIVMSG");
+	this.send.apply(this, s);
 }
 aucgbot.log =
 function log(serv)

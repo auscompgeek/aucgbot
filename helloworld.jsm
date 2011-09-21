@@ -49,7 +49,7 @@ function parseln(ln, serv)
 		var at = "", dest = lnary[0];
 		if (/^[#&+!]/.test(lnary[3])) at = lnary[0] + ": ", dest = lnary[3];
 		if (lnary[4].match(aucgbot.nick.replace(/\W/g, "\\$&") + ": hello"))
-		{	aucgbot.send("PRIVMSG", dest, ":Hello world!");
+		{	aucgbot.msg(dest, "Hello world!");
 			return true; // Stop processing of message.
 		}
 	}
@@ -58,7 +58,7 @@ function parseln(ln, serv)
 module.onMsg =
 function onMsg(dest, msg, nick, host, at, serv)
 {	if (msg.match("hello bot"))
-	{	aucgbot.send("PRIVMSG", dest, ":Hello, World!");
+	{	aucgbot.msg(dest, "Hello, World!");
 		return true; // Stop processing of message.
 	}
 }

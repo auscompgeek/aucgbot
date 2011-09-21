@@ -71,7 +71,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 		switch (msg[0])
 		{	case "info":
 				nick = msg[1] || nick;
-				aucgbot.send("PRIVMSG", dest, ":" + nick + ":",
+				aucgbot.msg(dest, nick + ":",
 					this.score[nick], "points,", this.materials[nick], "materials,",
 					this.coins[nick], "coins,", "Reputation:", this.reputation[nick] +
 					", made", this.total[nick], "toys.");
@@ -112,9 +112,9 @@ function onMsg(dest, msg, nick, host, at, serv)
 							break;
 						}
 					default:
-						aucgbot.send("PRIVMSG", dest, ":material <amount>: costs twice the amount, so if you bought 4, you would pay 8 coins.");
-						aucgbot.send("PRIVMSG", dest, ":voice: costs 800 coins. | hop: costs 7500 coins. | op: costs 20000 coins.");
-						aucgbot.send("PRIVMSG", dest, ":" + nick, "currently has", this.coins[nick], "coins.");
+						aucgbot.msg(dest, "material <amount>: costs twice the amount, so if you bought 4, you would pay 8 coins.");
+						aucgbot.msg(dest, "voice: costs 800 coins. | hop: costs 7500 coins. | op: costs 20000 coins.");
+						aucgbot.msg(dest, nick, "currently has", this.coins[nick], "coins.");
 				}
 				return true;
 			case "make":
@@ -160,7 +160,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 				}
 				return true;
 			case "rules":
-				aucgbot.send("PRIVMSG", dest, ":buy: Buy items to use in the game. | make: Make a toy. | info: Show your current scores.");
+				aucgbot.msg(dest, "buy: Buy items to use in the game. | make: Make a toy. | info: Show your current scores.");
 				return true;
 			case "elfreset":
 				if (aucgbot.prefs.suHosts.test(host))
