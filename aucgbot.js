@@ -420,8 +420,11 @@ function rcBot(cmd, args, dest, at, nick, serv)
 		case "modload":
 		case "loadmod":
 			module = {};
-			run(args + ".jsm");
-			module.version ? this.modules[args] = module : this.send("PRIVMSG", dest, ":" + at + "Not a module.");
+			try {
+				run(args + ".jsm");
+				module.version ? this.modules[args] = module : this.send("PRIVMSG", dest, ":" + at + "Not a module.");
+			}
+			catch (ex) { this.send("PRIVMSG", dest, ":" + at + "Could not load", args + ":", ex) }
 			break;
 		case "reload":
 			if (!run("aucgbot.js"))
@@ -439,7 +442,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 aucgbot.send =
 function send()
 {	var s = Array.prototype.slice.call(arguments);
-	if (s[0])
+	if (s.length > 0)
 		this.serv.writeln(s.join(" ").replace(/\s+/, " ").replace(/^ | $/g, ""));
 	else writeln("[ERROR] Call to send() without arguments?");
 }
@@ -449,7 +452,7 @@ function log(serv)
 	var s = [serv, this.lastTime], log;
 	for (var i = 1; i < arguments.length; i++)
 		s[i + 1] = arguments[i];
-	if (s[2])
+	if (s.length > 2)
 	{	log = new Stream("aucgbot.log", "a");
 		log.writeln(s.join(": ").replace(/\s+/, " ").replace(/^ | $/g, ""));
 		log.close();
