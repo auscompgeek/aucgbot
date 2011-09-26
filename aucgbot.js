@@ -330,7 +330,7 @@ function onCTCP(type, msg, nick, dest, serv)
 			writeln("[ERROR] Unknown CTCP! ^^^^^");
 			this.log(serv, "CTCP", nick + (nick == dest ? "" : " in " + dest), type, msg);
 	}
-	function nctcp(nick, type, msg) this.send("NOTICE", nick, ":\1" + type, msg + "\1");
+	function nctcp(nick, type, msg) aucgbot.send("NOTICE", nick, ":\1" + type, msg + "\1");
 }
 aucgbot.remoteControl =
 function rcBot(cmd, args, dest, at, nick, serv)
