@@ -125,7 +125,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 			aucgbot.msg(dest, "Total number of bad words said by", nick + ":", num);
 		} else
 		{	words = [];
-			for (word in this.count[nick]) words.push(word + ": " + this.count[nick].word);
+			for (word in this.count[nick]) words.push(word + ": " + this.count[nick][word]);
 			aucgbot.msg(dest, "Bad words said by", nick + ":", words.join(" - "));
 		}
 		return true;
