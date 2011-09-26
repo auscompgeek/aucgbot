@@ -38,9 +38,9 @@
  * ***** END LICENSE BLOCK *****
  */
 
-run("calc.js") || throw "Could not load calc functions from calc.js";
+if (!run("calc.js") throw "Could not load calc functions from calc.js";
 
-module.version = "2.0 (28 Aug 2011)";
+module.version = "2.1 (26 Sep 2011)";
 module.prefs =
 {	abuse:
 	{	log: true, // when triggered with =
