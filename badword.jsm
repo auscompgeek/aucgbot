@@ -119,7 +119,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 				aucgbot.msg(dest, nick, "said `" + word + "'", this.count[nick][word], "times!");
 		else if (!this.count[nick])
 			aucgbot.msg(dest, "No bad words have been said by", nick, "...yet...");
-		else if (word.toLowercase() == "total")
+		else if (word && word.toLowercase() == "total")
 		{	var num = 0;
 			for (word in this.count[nick]) num += this.count[nick][word];
 			aucgbot.msg(dest, "Total number of bad words said by", nick + ":", num);
