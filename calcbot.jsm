@@ -103,7 +103,7 @@ function parseMsg(msg)
 		if (ans == -Infinity)
 			return "That's a number that's too small for me.";
 	}
-	return expr + ": " + ans;
+	return msg + ": " + ans;
 }
 module.cmdDice =
 function cmdDice(sides, count) // Partially from cZ dice plugin.
