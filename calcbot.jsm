@@ -38,7 +38,7 @@
  * ***** END LICENSE BLOCK *****
  */
 
-if (!run("calc.js") throw "Could not load calc functions from calc.js";
+if (!run("calc.js")) throw "Could not load calc functions from calc.js";
 
 module.version = "2.1 (26 Sep 2011)";
 module.prefs =
