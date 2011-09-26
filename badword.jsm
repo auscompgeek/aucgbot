@@ -135,6 +135,6 @@ function onMsg(dest, msg, nick, host, at, serv)
 	for (word in this.badwords)
 		if (words = msg.match(this.badwords[word], "gi"))
 		{	if (!this.count[nick][word]) this.count[nick][word] = 0;
-			this.count[nick][word] += words.length - 2;
+			this.count[nick][word] += words.length;
 		}
 }
