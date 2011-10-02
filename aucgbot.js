@@ -467,8 +467,8 @@ function log(serv)
 }
 
 function ranint(min, max)
-{	min = (min != null) || 1;
-	max = (max != null) || 10;
+{	min = min != null ? min : 1;
+	max = max != null ? max : 10;
 	if (min >= max) return NaN;
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
