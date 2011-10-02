@@ -83,7 +83,7 @@ if (!aucgbot) var aucgbot =
 aucgbot.start =
 function startBot(serv, port, pass, chans)
 {	var channels = ["#bots"], i;
-	this.started = new Date().getTime();
+	this.started = Date.now();
 	serv = serv || "localhost"; port = parseInt(port) || 6667;
 	this.nick = this.nick || "aucgbot";
 	this.serv = new Stream("net://" + serv + ":" + port); // XXX Add multi-server support.
@@ -290,7 +290,7 @@ function onCTCP(type, msg, nick, dest, serv)
 				this.msg(dest, ":" + res[ranint(0, res.length - 1)]);
 			break;
 		case "VERSION":
-			nctcp(nick, type, "aucg's JS IRC calc bot " + this.version +
+			nctcp(nick, type, "aucg's JS IRC bot " + this.version +
 					" (JSDB " + system.release + ", JS " + (system.version / 100) + ")");
 			break;
 		case "TIME":
@@ -467,8 +467,8 @@ function log(serv)
 }
 
 function ranint(min, max)
-{	min = min != null || 1;
-	max = max != null || 10;
+{	min = (min != null) || 1;
+	max = (max != null) || 10;
 	if (min >= max) return NaN;
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
