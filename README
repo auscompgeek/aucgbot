@@ -11,7 +11,7 @@ Calculator features:
 	- Dice.
 	- Temperature conversion.
 
-Basic usage:
+Basic usage (this will connect the bot to 127.0.0.1):
 	aucgbot.start();
 
 Advanced usage:
@@ -20,6 +20,4 @@ Advanced usage:
 	aucgbot.start(server, port, ident, pass, channels);
 
 TODO:
-	- [calcbot] Auto-add () to rnd when omitted.
 	- [calcbot] Fix "pow(pow(a,b),c) ** x"!
-	- Parse NAMES, MODEs e.g. +o.

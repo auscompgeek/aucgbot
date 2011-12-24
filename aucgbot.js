@@ -21,7 +21,8 @@
  *
  * Contributor(s):
  *   David Vo, David.Vo2@gmail.com, original author
- *   Michael, oldiesmann@oldiesmann.us, bug finder!
+ *   Michael, oldiesmann@oldiesmann.us, bug finder
+ *   Ogmios, email pending, uptime code
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -62,6 +63,7 @@ if (!aucgbot) var aucgbot =
 			warn: false // warn user sending message in PM when flood starts
 		},
 		log: true, // toggle all logging
+		zncBufferHacks: false, // use ZNC buffer timestamps hack
 		"relay.check": true, // toggle relay bot checking
 		"relay.bots": /^(lcp|bik_link|iRelayer|janus|Mingbeast|irfail|rbot)$/, // regex tested against nicks to check for relay bots
 		"keyboard.sendInput": true, // doesn't work on Windows?
@@ -70,50 +72,85 @@ if (!aucgbot) var aucgbot =
 		"kick.log": true, // on bot kicked
 		// RegExps to not ban/kick nicks/hosts
 		"nokick.nicks": /Tanner|Mardeg|aj00200|ChrisMorgan|JohnTHaller|Bensawsome|juju|Shadow|TMZ|aus?c(ompgeek|g|ow)|Jan/,
-		"nokick.hosts": /bot|spam|staff|developer|math/,
+		"nokick.hosts": /bot|spam|staff|dev|math|js|[Jj]ava[Ss]cript/,
 		// regex for allowed hosts to use rc command
-		suHosts: /support\.team\.at\.shellium\.org|trek|aucg|^(FOSSnet|freenode)\/(staff|dev)|oper|netadmin|localhost|geek|[Gg]ryllida|bot(ter|)s|spam/
+		suHosts: /trek|aucg|^(freenode\/)?(staff|dev)|oper|netadmin|geek|gry|bot(ter|)s|spam|^(127\.\d+\.\d+\.\d+|localhost(\.localdomain)?)$/
 	},
-	cmodes: {}, // XXX Parse MODE lines.
+	//cmodes: {}, // XXX Parse MODE lines.
 	modules: {},
 	lines: 0,
-	version: "2.1 (21 Sep 2011)"
-}, ans;
+	version: "2.1.2 (4 Dec 2011)"
+};
 
+/**
+ * Start the bot. All arguments are optional.
+ *
+ * @param {string} serv The hostname to connect to
+ * @param {number} port The port to connect to
+ * @param {string} pass The server password to use
+ * @param chans An array or string describing the channels to join on connect
+ */
 aucgbot.start =
 function startBot(serv, port, pass, chans)
 {	var channels = ["#bots"], i;
 	this.started = Date.now();
-	serv = serv || "localhost"; port = parseInt(port) || 6667;
+	serv = serv || "127.0.0.1"; port = parseInt(port) || 6667;
 	this.nick = this.nick || "aucgbot";
 	this.serv = new Stream("net://" + serv + ":" + port); // XXX Add multi-server support.
-	pass && this.send("PASS", pass); pass = 0;
+	pass && this.send("PASS", pass); pass = port = null;
 	this.send("NICK", this.nick);
 	this.send("USER aucgbot 8 * :\x033\17auscompgeek's JS bot");
 	if (typeof chans == "array")
-		channels = chans, chans = 0;
+		channels = chans, chans = null;
 	else if (typeof chans == "string")
-		channels = chans.split(","), chans = 0;
+		channels = chans.split(","), chans = null;
 	else if (!chans)
 		writeln("[WARNING] No channels specified! Joining ", channels);
 	else
 		writeln("[WARNING] Can't join channels specified! Joining ", channels);
 	for (i = 0; i < channels.length; i++)
 		channels[i] = /^[#&+!]/.test(channels[i]) ? channels[i] : "#" + channels[i];
-	system.gc();
 	while ((ln = this.serv.readln()))
 	{	writeln(ln);
-		if (channels && /^:\S+ 004 ./.test(ln) && this.send("JOIN", channels.join(",")))
-			channels = 0;
-		else
-			this.parseln(ln, serv);
-		if (this.prefs["keyboard.sendInput"] && system.kbhit())
-			this.send(readln());
-		else if (this.prefs["keyboard.dieOnInput"] && system.kbhit())
-			this.send("QUIT :Keyboard input.");
+		if (/^:\S+ 004 ./.test(ln))
+		{	if (channels)
+			{	this.send("JOIN", channels.join(","));
+				channels = null;
+			}
+			break;
+		}
+	}
+	system.gc();
+	this.startLoop(serv);
+}
+/**
+ * Start the server read line loop.
+ *
+ * @param {string} serv Server hostname
+ */
+aucgbot.startLoop =
+function startLoop(serv)
+{	while (!this.serv.eof && (ln = this.serv.readln()))
+	{	writeln(ln);
+		this.parseln(ln, serv);
+		if (system.kbhit())
+		{	if (this.prefs["keyboard.sendInput"])
+				this.send(readln());
+			else if (this.prefs["keyboard.dieOnInput"])
+			{	this.send("QUIT :Keyboard input.");
+				sleep(500); // Give the server time to receive the QUIT message.
+				this.serv.close();
+			}
+		}
 	}
 }
 
+/**
+ * Parse a raw IRC line.
+ *
+ * @param {string} ln Raw IRC line
+ * @param {string} serv Server hostname
+ */
 aucgbot.parseln =
 function parseIRCln(ln, serv)
 {	for (i in this.modules)
@@ -143,9 +180,19 @@ function parseIRCln(ln, serv)
 	}
 }
 
+/**
+ * Parse a PRIVMSG.
+ *
+ * @param {string} dest Channel or nick to send messages back
+ * @param {string} msg The message
+ * @param {string} nick Nick that sent the PRIVMSG
+ * @param {string} host Hostname that sent the PRIVMSG
+ * @param {string} at Contains "nick: " if sent to a channel, else ""
+ * @param {string} serv Server hostname
+ */
 aucgbot.onMsg =
 function onMsg(dest, msg, nick, host, at, serv)
-{	/*** XXX Implement this fully. ***
+{	/* XXX Implement this fully. *
 	 * Don't try to kick/ban if:
 	 *	a) we're not in a channel,
 	 *	b) the message was from us
@@ -157,16 +204,18 @@ function onMsg(dest, msg, nick, host, at, serv)
 	var fromUs = host == this.host || nick == this.nick,
 		kb = at && !(fromUs || nick.match(this.prefs["nokick.nicks"]) || host.match(this.prefs["nokick.hosts"]) || host.match(this.prefs.suHosts) /*|| this.cmodes[dest][nick] != []*/) /*&& this.cmodes[dest][this.nick] == []*/,
 		meping = RegExp("^@?" + this.nick.replace(/\W/g, "\\$&") + "([:,!.] ?| |$)", "i"),
-		relay = 0, equals = 0, now = new Date().getTime(), s;
+		relay = "", now = Date.now();
 
 	// fix for buffer playback on ZNC
-	if (nick == "***")
-	{	if (msg == "Buffer playback...")
-			this.buffer = true;
-		else if (msg == "Playback complete")
-			this.buffer = false;
-		return;
-	} else if (this.buffer) msg = msg.replace(/^\[[0-2]?\d:[0-5]\d(:[0-5]\d|)\] /, "");
+	if (this.prefs.zncBufferHacks)
+	{	if (nick == "***")
+		{	if (msg == "Buffer playback...")
+				this.buffer = true;
+			else if (msg == "Playback complete")
+				this.buffer = false;
+			return;
+		} else if (this.buffer) msg = msg.replace(/^\[[0-2]?\d:[0-5]\d(:[0-5]\d|)\] /, "");
+	}
 
 	// fix for message relay bots
 	if (this.prefs["relay.check"] && nick.match(this.prefs["relay.bots"]) && /^<.+> /.test(msg))
@@ -233,7 +282,13 @@ function onMsg(dest, msg, nick, host, at, serv)
 	} else if (/^help!?$/i.test(msg))
 		this.msg(dest, at + "Welcome! To get help, please state your problem. Being specific will get you help faster.");
 }
-aucgbot.up = // Code stolen from Ogmios :)
+/**
+ * Get the uptime of the bot.
+ *
+ * @author Ogmios
+ * @return {string} Uptime in human readable format
+ */
+aucgbot.up =
 function uptime()
 {	var diff = Math.round((this.lastTime - this.started) / 1000),
 		s = diff % 60,
@@ -242,6 +297,15 @@ function uptime()
 		d = Math.floor(diff / 3600 / 24);
 	return (d ? d + "d " : "") + (h ? h + "h " : "") + (m ? m + "m " : "") + s + "s";
 }
+/**
+ * Parse a CTCP request.
+ *
+ * @param {string} type CTCP request type
+ * @param {string} msg Any arguments
+ * @param {string} nick Nick of the requestee
+ * @param {string} dest Channel to which the request was sent (`nick` if sent directly to us)
+ * @param {string} serv Server hostname
+ */
 aucgbot.onCTCP =
 function onCTCP(type, msg, nick, dest, serv)
 {	switch (type)
@@ -332,6 +396,16 @@ function onCTCP(type, msg, nick, dest, serv)
 	}
 	function nctcp(nick, type, msg) aucgbot.send("NOTICE", nick, ":\1" + type, msg + "\1");
 }
+/**
+ * Parses a control signal from a user with remote control privileges.
+ *
+ * @param {string} cmd Command
+ * @param {string} args Any arguments
+ * @param {string} dest Channel or nick to send messages back
+ * @param {string} at Contains "nick: " if sent to a channel, else ""
+ * @param {string} nick Nick that sent the signal
+ * @param {string} serv Server hostname
+ */
 aucgbot.remoteControl =
 function rcBot(cmd, args, dest, at, nick, serv)
 {	switch (cmd)
@@ -341,6 +415,8 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			break;
 		case "die":
 			this.send("QUIT :" + at + args);
+			sleep(500);
+			this.serv.close();
 			break;
 		case "connect": // Might cause a memory leak. Used to quit & connect elsewhere.
 			var argary = /^(?:irc:\/\/|)(\w[\w.-]+\w)(?::([1-5]\d{0,4}|[6-9]\d{0,3}|6[0-5]{2}[0-3][0-5])|)(?:\/([^?]*)|)(?:\?pass=(.+)|)$/.exec(args);
@@ -404,7 +480,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 				this.send("NOTICE", nick, ":Please don't try to abuse my remote control.");
 				break;
 			}
-			var res = eval(args);
+			try { var res = eval(args) } catch (ex) { res = "uncaught exception: " + ex }
 			if (typeof res == "function") res = "function";
 			res && this.msg(dest, at + res);
 			break;
@@ -419,11 +495,10 @@ function rcBot(cmd, args, dest, at, nick, serv)
 		case "modload":
 		case "loadmod":
 			module = {};
-			try {
-				run(args + ".jsm");
+			try
+			{	run(args + ".jsm");
 				module.version ? this.modules[args] = module : this.msg(dest, at + "Not a module.");
-			}
-			catch (ex) { this.msg(dest, at + "Could not load", args + ":", ex) }
+			} catch (ex) { this.msg(dest, at + "Could not load", args + ":", ex) }
 			break;
 		case "reload":
 			if (!run("aucgbot.js"))
@@ -441,17 +516,16 @@ function rcBot(cmd, args, dest, at, nick, serv)
 aucgbot.send =
 function send()
 {	var s = Array.prototype.slice.call(arguments);
-	if (s.length > 0)
-		this.serv.writeln(s.join(" ").replace(/\s+/, " ").replace(/^ | $/g, ""));
-	else writeln("[ERROR] Call to send() without arguments?");
+	if (!s.length) throw new TypeError("send requires more than " + arguments.length + " arguments");
+	return this.serv.writeln(s.join(" ").replace(/\s+/, " ").replace(/^ | $/g, ""));
 }
 aucgbot.msg =
 function msg()
 {	var s = Array.prototype.slice.call(arguments);
-	if (s.length < 2) throw "Not enough arguments passed to msg()";
+	if (s.length < 2) throw new TypeError("msg requires more than " + arguments.length + " arguments");
 	s[1] = ":" + s[1];
 	s.unshift("PRIVMSG");
-	this.send.apply(this, s);
+	return this.send.apply(this, s);
 }
 aucgbot.log =
 function log(serv)
@@ -459,13 +533,18 @@ function log(serv)
 	var s = [serv, this.lastTime], log;
 	for (var i = 1; i < arguments.length; i++)
 		s[i + 1] = arguments[i];
-	if (s.length > 2)
-	{	log = new Stream("aucgbot.log", "a");
-		log.writeln(s.join(": ").replace(/\s+/, " ").replace(/^ | $/g, ""));
-		log.close();
-	} else writeln("[ERROR] Call to log() without arguments?");
+	if (s.length < 2) throw new TypeError("log requires more than " + arguments.length + " arguments");
+	log = new Stream("aucgbot.log", "a");
+	log.writeln(s.join(": ").replace(/\s+/, " ").replace(/^ | $/g, ""));
+	log.close();
 }
 
+/**
+ * Utility function to generate a (psuedo-)random number.
+ *
+ * @param {number} min Minimum number
+ * @param {number} max Maximum number
+ */
 function ranint(min, max)
 {	min = min != null ? min : 1;
 	max = max != null ? max : 10;

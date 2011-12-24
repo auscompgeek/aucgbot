@@ -1,3 +1,5 @@
+var ans;
+
 function calc(expr)
 {	const pi = Math.PI, e = Math.E, // aliases
 	// function aliases
@@ -43,7 +45,7 @@ function fact(n)
 	else if (n < 0 || isNaN(n) || /\./.test(n))
 		e = NaN; // Positive integers only.
 	else
-		for (var i = 1; i <= n; i++)
+		for (var i = n; i > 1; i--)
 			e *= i;
 	return e;
 }

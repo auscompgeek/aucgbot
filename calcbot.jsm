@@ -21,7 +21,7 @@
  *
  * Contributor(s):
  *   David Vo, David.Vo2@gmail.com, original author
- *   Michael, oldiesmann@oldiesmann.us, bug finder!
+ *   Michael, oldiesmann@oldiesmann.us, bug finder
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -40,7 +40,7 @@
 
 if (!run("calc.js")) throw "Could not load calc functions from calc.js";
 
-module.version = "2.1 (26 Sep 2011)";
+module.version = "2.2 (3 Dec 2011)";
 module.prefs =
 {	abuse:
 	{	log: true, // when triggered with =
@@ -65,17 +65,26 @@ function cmd_calc(dest, msg, nick, host, at, serv, relay)
 	if (msg.match(this.abuse))
 	{	this.prefs.abuse.warn && !relay && !fromUs && aucgbot.send("NOTICE", nick, ":Whoa! Careful dude!");
 		writeln("[WARNING] Abuse detected! ^^^^^");
-		this.prefs.abuse.log && aucgbot.log(serv, "Abuse", nick + (at ? " in " + dest : ""), msg);
+		this.prefs.abuse.log && aucgbot.log(serv, "Calc abuse", nick + (at ? " in " + dest : ""), msg);
 		return;
 	}
 	if (/^(\d*)d(\d+)$/.test(msg)) return aucgbot.send("PRIVMSG", dest, this.cmdDice(RegExp.$2, RegExp.$1));
 	try { (s = this.parseMsg(msg)) != null && aucgbot.msg(dest, at + s) }
 	catch (ex) {
 		writeln("[ERROR] ", ex);
-		this.prefs.error.log && aucgbot.log(serv, "ERROR", msg, nick + (at ? " in " + dest : ""), ex);
+		this.prefs.error.log && aucgbot.log(serv, "CALC ERROR", msg, nick + (at ? " in " + dest : ""), ex);
 		this.prefs.error.apologise && aucgbot.msg(dest, at + this.prefs.error.apologymsg);
 		this.prefs.error.sendError && aucgbot.msg(dest, at + ex);
 	}
+}
+module.cmd_base =
+function cmd_base(dest, msg, nick, host, at, serv, relay)
+{	var args = msg.split(" ");
+	if (args.length < 2 || args.length > 3)
+		aucgbot.msg(dest, at + "Invalid usage. Usage: base <num> <fromBase> [<toBase>]");
+	else
+		aucgbot.msg(dest, at + parseInt(args[0], args[1]).toString(parseInt(args[2]) || 10));
+	return true;
 }
 
 module.parseMsg =
@@ -83,10 +92,11 @@ function parseMsg(msg)
 {	if (/help|list|^\?[^?]/.test(msg)) return this.help(msg);
 	if (this.prefs.easterEggs) // Time for some Easter Eggs! *dance*
 	{	if (/^6 ?\* ?9$/.test(msg)) return "42... Jokes, 54 ;)"; // 'The Hitchhiker's Guide to the Galaxy'!
-		if (msg == "9001") return "Over 9000! :O";
+		if (msg == "9001") return "IT'S OVER 9000!!!1";
+		/* SHellium is dead
 		if (/\/ ?0([^\d.!]|$)/.test(msg)) return "divide.by.zero.at.shellium.org";
-		if (msg == "404" || /not|found/.test(msg)) return "404.not.found.shellium.org";
-		if (/pie/.test(msg)) return "Mmmm, pie... 3.1415926535859...";
+		if (msg == "404" || /not|found/.test(msg)) return "404.not.found.shellium.org";*/
+		if (/pie/.test(msg)) return "Mmmm, pie... 3.1415926535898...";
 	}
 	if (/self|shut|stfu|d(anc|ie|iaf|es)|str|our|(nu|lo|rof|ki)l|nc|egg|rat|cook|m[ea]n|kick|ban|[bm]o[ow]|ham|beef|a\/?s\/?l|au|not|found|up|quiet|bot|pie/.test(msg)) return;
 	if (/[jkz]/.test(msg)) return "I don't support algebra. Sorry for any inconvienience.";
@@ -99,7 +109,7 @@ function parseMsg(msg)
 	{	if (isNaN(ans))
 			return "That isn't a real number.";
 		if (ans == Infinity)
-			return "That's a number that's too large for me.";
+			return this.prefs.easterEggs ? "IT'S OVER 9000!!!1" : "That's a number that's too large for me.";
 		if (ans == -Infinity)
 			return "That's a number that's too small for me.";
 	}
@@ -150,12 +160,12 @@ function help(e)
 		case "cosine":
 		case "cosin":
 		case "co": // Uh oh...
-			s = "cos(x): Get the cosine of x radians. See also: acos";
+			s = "cos(x): Get the cosine of x radians. See also: acos, sin";
 			break;
 		case "sine":
 		case "sin":
 		case "s":
-			s = "s(x): Get the sine of x radians. See also: asin";
+			s = "s(x): Get the sine of x radians. See also: asin, cos";
 			break;
 		case "tangent":
 		case "tan":
@@ -185,7 +195,7 @@ function help(e)
 			break;
 		case "absolut":
 		case "ab": // Ouch!
-			s = "abs(x): Get the absolute value of x. (I have absolutely no idea what this is.)";
+			s = "abs(x): Get the absolute value of x, i.e. sqrt(x*x)";
 			break;
 		case "ceil":
 			s = "ceil(x): Get the smallest integer >= x.";
@@ -197,7 +207,7 @@ function help(e)
 			s = "min(x,y): Get the lesser of x & y. See also: max";
 			break;
 		case "floor":
-			s = "floor(x): Get the integer part of a decimal. Commonly used with random. See also: rand, ranint, round";
+			s = "floor(x): Get the integer part of a decimal. Commonly used for random numbers. See also: rand, ranint, round";
 			break;
 		case "roundde": // round decimal
 		case "round":
@@ -210,16 +220,16 @@ function help(e)
 			s = "rnd(): Get a random decimal e.g. floor(rnd()*(max-min+1))+min. TODO: Automatically add () when omitted. See also: floor, round, ranint";
 			break;
 		case "randomi": // random integer
-		case "randomr": // randomRange
+		case "randomr": // randomRange is what this function is normally called
 		case "randint":
 		case "ranint":
-			s = "ranint([min,[max]]): Get a random integer between min & max, default = 0 & 1. See also: dice, rand, floor, round";
+			s = "ranint([min,[max]]): Get a random integer between min & max, default = 1 & 10. See also: dice, rand, floor, round";
 			break;
 		case "factori": // factorial
 		case "fact":
 		case "!":
 			s = "fact(x), x!: Get the factorial of the positive integer x. There's an upper limit of 170 due to " +
-				"technical problems. x can't be an expression with 'x!', but x can be in the format of fact(y).";
+				"technical restrictions. x can't be an expression with 'x!', but x can be in the format of fact(y).";
 			break;
 		case "recipro": // reciprocal
 		case "recip":

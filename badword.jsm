@@ -21,7 +21,6 @@
  *
  * Contributor(s):
  *   David Vo, David.Vo2@gmail.com, original author
- *   Michael, oldiesmann@oldiesmann.us, bug finder!
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -41,7 +40,7 @@
 // PLEASE NOTE: if you edit the badwords list using the rc js command, use
 // "rc js this.modules["badword"].parseList()" otherwise it will not work
 
-module.version = "4.0 (23 Sep 2011)";
+module.version = "4.2 (9 Dec 2011)";
 module.count = {}; module.sfwChans = [];
 
 module.parseList =
@@ -49,6 +48,20 @@ function parseList()
 {	var badwords = [];
 	for (word in this.badwords) badwords.push(this.badwords[word]);
 	this.badwordList = badwords.join("|");
+}
+module.loadCount =
+function loadCount()
+{	try
+	{	var file = new Stream("badword.json");
+		this.count = JSON.parse(file.readln());
+		file.close();
+	} catch (ex) {}
+}
+module.saveCount =
+function saveCount()
+{	var file = new Stream("badword.json", "w");
+	file.write(JSON.stringify(this.count));
+	file.close();
 }
 
 module.badwords = // "Word": "case-insensitive quoted regex",
@@ -66,7 +79,7 @@ module.badwords = // "Word": "case-insensitive quoted regex",
 	"Dick": "d[i*\\-!]ck",
 	"Fag": "fag",
 	"Fuck": "f[u*\\-](?:[c*\\-][k*\\-]|q)|f(?:cu|sc)king|wh?[au]t [dt][aeh]+ f|wtf|fml|cbf|omfg|stfu|gtfo|lmfao|fubar",
-	"Gay": "gay|queer",
+	"Gay": "gay",
 	"God": "g[o*\-]d|omf?g",
 	"Heck": "heck",
 	"Hell": "hell",
@@ -79,10 +92,11 @@ module.badwords = // "Word": "case-insensitive quoted regex",
 	"Porn": "p(?:r[o0]|or)n\b", // pornography is legit
 	"Prick": "pr[i*\\-!]ck",
 	"Pussy": "puss(?:y\\b|ies)",
+	"Queer": "queer",
 	"Retard": "retard",
 	"Screw you": "screw (?:yo)?u",
 	"Shit": "s[h*\\-#][i*\\-!][t*\\-]",
-	"Shut up": "shut up|stfu",
+	"Shut up": "shut(?: the \S+)? up|stfu",
 	"Slut": "sl[u*\\-]t",
 	"Spastic": "spastic",
 	"Stupid": "stupid",
@@ -95,13 +109,14 @@ module.badwords = // "Word": "case-insensitive quoted regex",
 	"iPhone": "iPhone"
 }
 module.parseList();
+module.loadCount();
 
 module.onMsg =
 function onMsg(dest, msg, nick, host, at, serv)
 {	var word, words, msgParts = msg.split(" ");
 	if (at) for (i in this.sfwChans)
-		if (this.sfwChans == dest)
-		{	dest = nick + ""; // simple dest = nick will probably assign the memory address
+		if (this.sfwChans[i] == dest)
+		{	dest = nick;
 			break;
 		}
 	if (/^!badwords?$/.test(msgParts[0]))
@@ -113,6 +128,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 			{	if (!this.count[nick]) this.count[nick] = {};
 				if (!this.count[nick][word]) this.count[nick][word] = 0;
 				this.count[nick][word] += parseInt(msgParts[3]);
+				this.saveCount();
 			} else if (!this.count[nick])
 				aucgbot.msg(dest, "No bad words have been said by", nick, "...yet...");
 			else
@@ -137,4 +153,5 @@ function onMsg(dest, msg, nick, host, at, serv)
 		{	if (!this.count[nick][word]) this.count[nick][word] = 0;
 			this.count[nick][word] += words.length;
 		}
+	this.saveCount();
 }

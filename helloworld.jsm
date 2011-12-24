@@ -21,7 +21,6 @@
  *
  * Contributor(s):
  *   David Vo, David.Vo2@gmail.com, original author
- *   Michael, oldiesmann@oldiesmann.us, bug finder!
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -40,8 +39,8 @@
  
 // Load this by sending the bot: rc loadmod helloworld
 
-module.version = "0.3.1 (28 Aug 2011)";
-/* Do NOT do this! Use onMsg() instead so that the flood protection is triggered.
+module.version = "0.3.2 (3 Dec 2011)";
+/* Do NOT do this! Use onMsg() or cmd_*() instead so that the flood protection is triggered.
 module.parseln =
 function parseln(ln, serv)
 {	if ((lnary = /^:(\S+)!(\S+)@(\S+) PRIVMSG (\S+) :(.*)/.exec(ln)))
@@ -55,10 +54,26 @@ function parseln(ln, serv)
 	}
 }
 */
+/**
+ * Parse a PRIVMSG.
+ *
+ * @param {string} dest Channel or nick to send messages back
+ * @param {string} msg The message
+ * @param {string} nick Nick that sent the PRIVMSG
+ * @param {string} host Hostname that sent the PRIVMSG
+ * @param {string} at Contains "nick: " if sent to a channel, else ""
+ * @param {string} serv Server hostname
+ * @param {string} relay If sent by a relay bot, the relay bot's nick, else "".
+ */
 module.onMsg =
-function onMsg(dest, msg, nick, host, at, serv)
+function onMsg(dest, msg, nick, host, at, serv, relay)
 {	if (msg.match("hello bot"))
 	{	aucgbot.msg(dest, "Hello, World!");
 		return true; // Stop processing of message.
 	}
+}
+module.cmd_hello =
+function cmd_hello(dest, msg, nick, host, at, serv, relay)
+{	aucgbot.msg(dest, at + "Hello, World!");
+	return true; // Say that we've reached a valid command and stop processing the message.
 }

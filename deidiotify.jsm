@@ -21,7 +21,6 @@
  *
  * Contributor(s):
  *   David Vo, David.Vo2@gmail.com, original author
- *   Michael, oldiesmann@oldiesmann.us, bug finder!
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or

@@ -37,26 +37,24 @@
  * ***** END LICENSE BLOCK *****
  */
 
-module.version = "0.2.1 (4 Dec 2011)";
-module.onMsg =
-function onMsg(dest, msg, nick, host, at, serv)
-{	if (/(ham|cheese)burger|beef/i.test(msg) && !/^au/.test(nick))
-		aucgbot.msg(dest, "\1ACTION eats", nick + "\1");
-	else if (/moo|cow/i.test(msg))
-	{	s =
-		[	"Mooooooooooo!", "MOO!", "Moo.", "Moo. Moo.", "Moo Moo Moo, Moo Moo.", "fish go m00!",
-			"\1ACTION nibbles on some grass\1",
-			"\1ACTION goes and gets a drink\1",
-			"\1ACTION looks in the " + dest + " fridge\1",
-			"\1ACTION quietly meditates on the purpose of " + dest + "\1",
-			"\1ACTION races across the channel\1",
-			"\1ACTION runs around in circles and falls over\1",
-			"\1ACTION wanders aimlessly\1",
-			"\1ACTION eyes " + nick + " menacingly\1",
-			"\1ACTION sniffs " + nick + "\1",
-			"\1ACTION thumps " + nick + "\1",
-			"\1ACTION solves partial differential equations\1"
-		];
-		aucgbot.msg(dest, s[ranint(0, s.length - 1)]);
+module.version = "0.2.2 (9 Dec 2011)";
+//module.prefs = { internal: true }
+
+module.cmd_js =
+function cmd_js(dest, msg, nick, host, at, serv, relay)
+{	var ret, pin = system.safeMode();
+	try
+	{	let aucgbot = undefined;
+		let system = undefined;
+		let pin = undefined;
+		ret = eval(msg);
+	} catch (ex) { aucgbot.msg(dest, at + "uncaught exception:", ex) }
+	system.safeMode(pin);
+	if (ret)
+	{	if (typeof ret == "function")
+			aucgbot.msg(dest, at + "(function)");
+		else
+			aucgbot.msg(dest, at + typeof ret, JSON.stringify(ret));
 	}
+	return true;
 }
