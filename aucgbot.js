@@ -1,43 +1,9 @@
-/* -*- Mode: JavaScript; tab-width: 4 -*- vim:tabstop=4:
- * ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is aucg's JS IRC bot.
- *
- * The Initial Developer of the Original Code is
- * Netscape Communications Corporation.
- * Portions created by the Initial Developer are Copyright (C) 1998
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *   David Vo, David.Vo2@gmail.com, original author
- *   Michael, oldiesmann@oldiesmann.us, bug finder
- *   Ogmios, email pending, uptime code
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either the GNU General Public License Version 2 or later (the "GPL"), or
- * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK *****
- * Designed to be run by JSDB <http://jsdb.org>.
+// -*- Mode: JavaScript; tab-width: 4 -*- vim:tabstop=4:
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
+/* Designed to be run by JSDB <http://jsdb.org>.
  * Features:
  *	- General flood protection.
  *	- Logging.
@@ -63,6 +29,7 @@ if (!aucgbot) var aucgbot =
 			warn: false // warn user sending message in PM when flood starts
 		},
 		log: true, // toggle all logging
+		prefix: "\\\\", // command prefix
 		zncBufferHacks: false, // use ZNC buffer timestamps hack
 		"relay.check": true, // toggle relay bot checking
 		"relay.bots": /^(lcp|bik_link|iRelayer|janus|Mingbeast|irfail|rbot)$/, // regex tested against nicks to check for relay bots
@@ -79,7 +46,7 @@ if (!aucgbot) var aucgbot =
 	//cmodes: {}, // XXX Parse MODE lines.
 	modules: {},
 	lines: 0,
-	version: "2.1.2 (4 Dec 2011)"
+	version: "2.2 (15 Jan 2012)"
 };
 
 /**
@@ -220,7 +187,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 	// fix for message relay bots
 	if (this.prefs["relay.check"] && nick.match(this.prefs["relay.bots"]) && /^<.+> /.test(msg))
 		msg = msg.replace(/^<(.+?)> /, ""), relay = nick, nick = RegExp.$1, at = nick + ": ",
-		kb = 0, fromUs = nick == this.nick || fromUs;
+		kb = true, fromUs = nick == this.nick || fromUs;
 
 	// don't listen to bots
 	if ((/^bot|bot[\d_|]*$|Serv|Op$/i.test(nick) || /\/bot\//.test(host)) && !fromUs && !relay) return;
@@ -261,26 +228,42 @@ function onMsg(dest, msg, nick, host, at, serv)
 			this.onCTCP(RegExp.$1.toUpperCase(), RegExp.$2, nick, dest, serv);
 	} else if (meping.test(msg) || !at)
 	{	msg = msg.replace(meping, "").replace(/^(\S+) ?/, "");
-		var cmd = RegExp.$1.toLowerCase();
-
-		if (cmd == "ping") this.msg(dest, at + "pong", msg);
-		if (cmd == "version") this.msg(dest, at + this.version);
-		if (cmd == "rc" && host.match(this.prefs.suHosts))
-			this.remoteControl(msg.split(" ")[0], msg.replace(/^(\S+) /, ""), dest, at, nick, serv);
-		if (/stat|uptime/.test(cmd))
-			this.msg(dest, at + "I've been up " + this.up() + ".");
-		if (/listmods|modlist/.test(cmd)) 
-		{	var modlist = [];
-			for (i in this.modules) modlist.push(i + " " + this.modules[i].version);
-			this.msg(dest, at + "Modules loaded: " + modlist.join(", "));
-		}
-
-		for (i in this.modules)
-			if (typeof this.modules[i]["cmd_" + cmd] == "function")
-				if (this.modules[i]["cmd_" + cmd](dest, msg, nick, host, at, serv, relay))
-					return;
+		this.parseCmd(dest, RegExp.$1.toLowerCase(), msg, nick, host, at, serv, relay);
+	} else if (this.prefs.prefix && msg.slice(0, this.prefs.prefix.length) == this.prefs.prefix)
+	{	msg = msg.slice(this.prefs.prefix.length).replace(/^(\S+) ?/, "");
+		this.parseCmd(dest, RegExp.$1.toLowerCase(), msg, nick, host, at, serv, relay);
 	} else if (/^help!?$/i.test(msg))
 		this.msg(dest, at + "Welcome! To get help, please state your problem. Being specific will get you help faster.");
+}
+/**
+ * Parse a command filtered by onMsg().
+ *
+ * @param {string} dest Channel or nick to send messages back
+ * @param {string} cmd Command name
+ * @param {string} args Any arguments
+ * @param {string} nick Nick that sent the PRIVMSG
+ * @param {string} host Hostname that sent the PRIVMSG
+ * @param {string} at Contains "nick: " if sent to a channel, else ""
+ * @param {string} serv Server hostname
+ */
+aucgbot.parseCmd =
+function parseCmd(dest, cmd, args, nick, host, at, serv, relay)
+{	if (cmd == "ping") this.msg(dest, at + "pong", args);
+	if (cmd == "version") this.msg(dest, at + this.version);
+	if (cmd == "rc" && host.match(this.prefs.suHosts))
+		this.remoteControl(args.split(" ")[0], args.replace(/^(\S+) /, ""), dest, at, nick, serv);
+	if (/stat|uptime/.test(cmd))
+		this.msg(dest, at + "I've been up " + this.up() + ".");
+	if (/listmods|modlist/.test(cmd)) 
+	{	var modlist = [];
+		for (var i in this.modules) modlist.push(i + " " + this.modules[i].version);
+		this.msg(dest, at + "Modules loaded: " + modlist.join(", "));
+	}
+
+	for (var i in this.modules)
+		if (typeof this.modules[i]["cmd_" + cmd] == "function")
+			if (this.modules[i]["cmd_" + cmd](dest, args, nick, host, at, serv, relay))
+				return;
 }
 /**
  * Get the uptime of the bot.
