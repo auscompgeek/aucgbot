@@ -46,7 +46,7 @@ if (!aucgbot) var aucgbot =
 	//cmodes: {}, // XXX Parse MODE lines.
 	modules: {},
 	lines: 0,
-	version: "2.2 (15 Jan 2012)"
+	version: "2.2.1 (16 Jan 2012)"
 };
 
 /**

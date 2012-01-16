@@ -6,7 +6,7 @@
 // PLEASE NOTE: if you edit the badwords list using the rc js command, use
 // "rc js this.modules["badword"].parseList()" otherwise it will not work
 
-module.version = "4.2 (9 Dec 2011)";
+module.version = "4.2.1 (16 Jan 2012)";
 module.count = {}; module.sfwChans = [];
 
 module.parseList =
@@ -89,7 +89,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 	{	nick = msgParts[1] || nick;
 		word = msgParts[2];
 		if (word && (this.badwords[word] || // is it a valid badword?
-		    this.badwords[(word = word[0].toUppercase() + word.substring(1))]))
+		    this.badwords[(word = word[0].toUpperCase() + word.substring(1))]))
 			if (msgParts[3])
 			{	if (!this.count[nick]) this.count[nick] = {};
 				if (!this.count[nick][word]) this.count[nick][word] = 0;
