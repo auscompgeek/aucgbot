@@ -79,7 +79,9 @@ function startBot(serv, port, pass, chans)
 		channels[i] = /^[#&+!]/.test(channels[i]) ? channels[i] : "#" + channels[i];
 	while ((ln = this.serv.readln()))
 	{	writeln(ln);
-		if (/^:\S+ 004 ./.test(ln))
+		if (/^PING (.+)/.test(ln))
+			this.send("PONG", RegExp.$1);
+		else if (/^:\S+ 004 ./.test(ln))
 		{	if (channels)
 			{	this.send("JOIN", channels.join(","));
 				channels = null;
