@@ -32,7 +32,7 @@ if (!aucgbot) var aucgbot =
 		prefix: "\\\\", // command prefix
 		zncBufferHacks: false, // use ZNC buffer timestamps hack
 		"relay.check": true, // toggle relay bot checking
-		"relay.bots": /^(lcp|bik_link|iRelayer|janus|Mingbeast|irfail|rbot)$/, // regex tested against nicks to check for relay bots
+		"relay.bots": /^(lcp|bik_link|iRelayer|janus|Mingbeast|irfail|rbot|Jellycraft)$/, // regex tested against nicks to check for relay bots
 		"keyboard.sendInput": true, // doesn't work on Windows?
 		"keyboard.dieOnInput": false, // only if keyboard.sendInput is false
 		"kick.rejoin": false,
@@ -46,7 +46,7 @@ if (!aucgbot) var aucgbot =
 	//cmodes: {}, // XXX Parse MODE lines.
 	modules: {},
 	lines: 0,
-	version: "2.2.1 (16 Jan 2012)"
+	version: "2.2.3 (8 Mar 2012)"
 };
 
 /**
@@ -81,6 +81,8 @@ function startBot(serv, port, pass, chans)
 	{	writeln(ln);
 		if (/^PING (.+)/.test(ln))
 			this.send("PONG", RegExp.$1);
+		else if (/^:\S+ 433 \* ./.test(ln))
+			this.send("NICK", this.nick += "_");
 		else if (/^:\S+ 004 ./.test(ln))
 		{	if (channels)
 			{	this.send("JOIN", channels.join(","));
@@ -143,9 +145,6 @@ function parseIRCln(ln, serv)
 	} else if (/^:([^!@ ]![^!@ ]@[^! ]) KICK (\S+) (\S+) :(.*)/.test(ln) && RegExp.$3 == this.nick)
 	{	this.prefs["kick.rejoin"] && this.send("JOIN", RegExp.$2);
 		this.prefs["kick.log"] && this.log(serv, "KICK", RegExp.$1, RegExp.$2, RegExp.$4);
-	} else if (/^:\S+ 433 \* ./.test(ln)) // Nick collision on connect.
-	{	this.nick += "_";
-		this.send("NICK", this.nick);
 	}
 }
 
@@ -188,8 +187,8 @@ function onMsg(dest, msg, nick, host, at, serv)
 
 	// fix for message relay bots
 	if (this.prefs["relay.check"] && nick.match(this.prefs["relay.bots"]) && /^<.+> /.test(msg))
-		msg = msg.replace(/^<(.+?)> /, ""), relay = nick, nick = RegExp.$1, at = nick + ": ",
-		kb = true, fromUs = nick == this.nick || fromUs;
+		msg = msg.replace(/^<(.+?)> /, ""), relay = nick, nick = RegExp.$1.replace(/^\[\w+\]|\/.+/g, ""),
+		at = nick + ": ", kb = false, fromUs = nick == this.nick || fromUs;
 
 	// don't listen to bots
 	if ((/^bot|bot[\d_|]*$|Serv|Op$/i.test(nick) || /\/bot\//.test(host)) && !fromUs && !relay) return;
@@ -336,7 +335,7 @@ function onCTCP(type, msg, nick, dest, serv)
 			];
 			msg.match("(hit|kick|slap|eat|prod|stab|kill|whack|insult|teabag|(punch|bash|touch|pok)e)s " +
 				this.nick.replace(/\W/g, "\\$&") + "\\b", "i") &&
-				this.msg(dest, ":" + res[ranint(0, res.length - 1)]);
+				this.msg(dest, res[ranint(0, res.length - 1)]);
 			break;
 		case "VERSION":
 			nctcp(nick, type, "aucg's JS IRC bot " + this.version +
