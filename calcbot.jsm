@@ -5,7 +5,7 @@
 
 if (!run("calc.js")) throw "Could not load calc functions from calc.js";
 
-module.version = "2.2 (3 Dec 2011)";
+module.version = "2.2.1 (8 Mar 2012)";
 module.prefs =
 {	abuse:
 	{	log: true, // when triggered with =
@@ -49,6 +49,34 @@ function cmd_base(dest, msg, nick, host, at, serv, relay)
 		aucgbot.msg(dest, at + "Invalid usage. Usage: base <num> <fromBase> [<toBase>]");
 	else
 		aucgbot.msg(dest, at + parseInt(args[0], args[1]).toString(parseInt(args[2]) || 10));
+	return true;
+}
+module.cmd_qe =
+function cmd_quadraticEquation(dest, msg, nick, host, at, serv, relay)
+{	var a, b, c, _2a, pron, resInSqrt, resSqrt, res = [];
+	const helpMsg = "qe: Evaluates the value of the pronumeral in a quadratic equation in general form i.e. ax**2 + bx + c = 0";
+	if (!/^([+-]?\d*) ?\* ?(\w) ?\*\* ?2 ?(?:([+-] ?\d*) ?\* ?\2)? ?([+-]\d+)? ?= ?([+-]\d+)$/.test(msg))
+	{	// not a quadratic equation, bail
+		aucgbot.msg(dest, at + helpMsg);
+		return true;
+	}
+	pron = RegExp.$2; a = RegExp.$1; b = RegExp.$3; c = RegExp.$4;
+	a = a ? parseFloat(a) : 1; _2a = 2 * a;
+	b = b ? parseFloat(b.replace(/\s+/, "")) : 1;
+	c = c ? parseFloat(c.replace(/\s+/, "")) : 0;
+	c -= parseFloat(RegExp.$5); // RHS
+	resInSqrt = b * b - 4 * a * c; // inside our sqrt sign
+	if (resInSqrt < 0)
+	{	// answer is a complex number, bail
+		// XXX eventually insert code to simplify surd
+		aucgbot.msg(dest, at + pron + " = (" + (-b) + "\u00B1\u221A" + resInSqrt + ") / " + _2a);
+		return true;
+	}
+	res.push("(" + (-b) + "\u00B1\u221A" + resInSqrt + ") / " + _2a);
+	resSqrt = Math.sqrt(resInSqrt);
+	res.push((-b + resSqrt) / _2a);
+	res.push((-b - resSqrt) / _2a);
+	aucgbot.msg(dest, at + pron + " = " + res.join(" or "));
 	return true;
 }
 
