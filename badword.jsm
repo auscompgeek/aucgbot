@@ -6,7 +6,7 @@
 // PLEASE NOTE: if you edit the badwords list using the rc js command, use
 // "rc js this.modules["badword"].parseList()" otherwise it will not work
 
-module.version = "4.2.1 (16 Jan 2012)";
+module.version = "4.2.3 (7 Mar 2012)";
 module.count = {}; module.sfwChans = [];
 
 module.parseList =
@@ -32,26 +32,30 @@ function saveCount()
 
 module.badwords = // "Word": "case-insensitive quoted regex",
 {	"Arse": "arse",
+	"Asian": "as(ia|ai)n",
 	"Ass": "\\ba[s$]{2}(holes?|es)?\\b|lmf?ao",
 	"Bastard": "bastard",
 	"Bitch": "b[i*\\-!]a?tch",
 	"Bloody": "bloody",
 	"Boob": "b[o0]{2}b",
 	"Cock": "cock",
+	"Coon": "coon",
 	"Crap": "crap",
 	"Cripple": "cripple",
-	"Cunt": "[ck]unt|\\bhk\\b",
+	"Cum": "cum",
+	"Cunt": "[ck][u*\\-]*nt|\\bhk\\b",
 	"Damn": "d[a*\\-@]y*(?:um|mn)|dammit",
 	"Dick": "d[i*\\-!]ck",
 	"Fag": "fag",
-	"Fuck": "f[u*\\-](?:[c*\\-][k*\\-]|q)|f(?:cu|sc)king|wh?[au]t [dt][aeh]+ f|wtf|fml|cbf|omfg|stfu|gtfo|lmfao|fubar",
-	"Gay": "gay",
+	"Fuck": "f[ua*\\-](?:[cr*\\-][k*\\-]|q)|fk|f(?:cu|sc)king|wh?[au]t [dt][aeh]+ f|wtf|fml|cbf|omfg|stfu|gtfo|lmfao|fubar",
+	"Gay": "g(a|he)y",
 	"God": "g[o*\-]d|omf?g",
-	"Heck": "heck",
+	"Heck": "\\bheck",
 	"Hell": "hell",
 	"Idiot": "idiot",
 	"Jerk": "jerk",
-	"LOL": "lol",
+	"Jew": "jew",
+	"LOL": "lol|lawl|lulz",
 	"Midget": "midget",
 	"Nigger": "nigger",
 	"Piss": "p[i*\\-!]ss",
@@ -66,7 +70,7 @@ module.badwords = // "Word": "case-insensitive quoted regex",
 	"Slut": "sl[u*\\-]t",
 	"Spastic": "spastic",
 	"Stupid": "stupid",
-	"Tit": "\btit", // quantitative is not a bad word
+	"Tit": "\\btit", // quantitative is not a bad word
 	"Turd": "turd",
 	"Twat": "twat",
 	"Wank": "wank",
@@ -79,14 +83,14 @@ module.loadCount();
 
 module.onMsg =
 function onMsg(dest, msg, nick, host, at, serv)
-{	var word, words, msgParts = msg.split(" ");
+{	var word, words, msgParts = msg.split(" "), nick = nick.toLowerCase();
 	if (at) for (i in this.sfwChans)
 		if (this.sfwChans[i] == dest)
 		{	dest = nick;
 			break;
 		}
 	if (/^!badwords?$/.test(msgParts[0]))
-	{	nick = msgParts[1] || nick;
+	{	nick = msgParts[1] ? msgParts[1].toLowerCase() : nick;
 		word = msgParts[2];
 		if (word && (this.badwords[word] || // is it a valid badword?
 		    this.badwords[(word = word[0].toUpperCase() + word.substring(1))]))
@@ -101,7 +105,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 				aucgbot.msg(dest, nick, "said `" + word + "'", this.count[nick][word], "times!");
 		else if (!this.count[nick])
 			aucgbot.msg(dest, "No bad words have been said by", nick, "...yet...");
-		else if (word && word.toLowercase() == "total")
+		else if (word && word.toLowerCase() == "total")
 		{	var num = 0;
 			for (word in this.count[nick]) num += this.count[nick][word];
 			aucgbot.msg(dest, "Total number of bad words said by", nick + ":", num);
