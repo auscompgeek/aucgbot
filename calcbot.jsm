@@ -5,7 +5,7 @@
 
 if (!run("calc.js")) throw "Could not load calc functions from calc.js";
 
-module.version = "2.2.1 (8 Mar 2012)";
+module.version = "2.2.2 (10 Mar 2012)";
 module.prefs =
 {	abuse:
 	{	log: true, // when triggered with =
@@ -28,7 +28,7 @@ module["cmd_="] = module.cmd_calc = module.cmd_math =
 function cmd_calc(dest, msg, nick, host, at, serv, relay)
 {	var msg = msg.toLowerCase();
 	if (msg.match(this.abuse))
-	{	this.prefs.abuse.warn && !relay && !fromUs && aucgbot.send("NOTICE", nick, ":Whoa! Careful dude!");
+	{	this.prefs.abuse.warn && !relay && aucgbot.send("NOTICE", nick, ":Whoa! Careful dude!");
 		writeln("[WARNING] Abuse detected! ^^^^^");
 		this.prefs.abuse.log && aucgbot.log(serv, "Calc abuse", nick + (at ? " in " + dest : ""), msg);
 		return;
@@ -55,7 +55,7 @@ module.cmd_qe =
 function cmd_quadraticEquation(dest, msg, nick, host, at, serv, relay)
 {	var a, b, c, _2a, pron, resInSqrt, resSqrt, res = [];
 	const helpMsg = "qe: Evaluates the value of the pronumeral in a quadratic equation in general form i.e. ax**2 + bx + c = 0";
-	if (!/^([+-]?\d*) ?\* ?(\w) ?\*\* ?2 ?(?:([+-] ?\d*) ?\* ?\2)? ?([+-]\d+)? ?= ?([+-]\d+)$/.test(msg))
+	if (!/^(?:([+-]?\d*) ?\*? ?)?(\w) ?(?:\*\*|\^) ?2 ?(?:([+-] ?\d*) ?\*? ?\2)? ?([+-] ?\d+)? ?= ?([+-]\d+)$/.test(msg))
 	{	// not a quadratic equation, bail
 		aucgbot.msg(dest, at + helpMsg);
 		return true;
