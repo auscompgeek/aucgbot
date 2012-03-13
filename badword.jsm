@@ -6,7 +6,7 @@
 // PLEASE NOTE: if you edit the badwords list using the rc js command, use
 // "rc js this.modules["badword"].parseList()" otherwise it will not work
 
-module.version = "4.2.4 (10 Mar 2012)";
+module.version = "4.2.5 (13 Mar 2012)";
 module.count = {}; module.sfwChans = [];
 
 module.parseList =
@@ -93,9 +93,8 @@ function onMsg(dest, msg, nick, host, at, serv)
 	{	nick = msgParts[1] ? msgParts[1].toLowerCase() : nick;
 		word = msgParts[2];
 		if (word && (this.badwords[word] || // is it a valid badword?
-		    this.badwords[(word = word[0].toUpperCase() + word.substring(1))]) ||
-		    host.match(aucgbot.prefs.suHosts)) // prevent access
-			if (msgParts[3])
+		   this.badwords[(word = word[0].toUpperCase() + word.substring(1))]))
+		{	if (msgParts[3] && host.match(aucgbot.prefs.suHosts))
 			{	if (!this.count[nick]) this.count[nick] = {};
 				if (!this.count[nick][word]) this.count[nick][word] = 0;
 				this.count[nick][word] += parseInt(msgParts[3]);
@@ -104,7 +103,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 				aucgbot.msg(dest, "No bad words have been said by", nick, "...yet...");
 			else
 				aucgbot.msg(dest, nick, "said `" + word + "'", this.count[nick][word], "times!");
-		else if (!this.count[nick])
+		} else if (!this.count[nick])
 			aucgbot.msg(dest, "No bad words have been said by", nick, "...yet...");
 		else if (word && word.toLowerCase() == "total")
 		{	var num = 0;
