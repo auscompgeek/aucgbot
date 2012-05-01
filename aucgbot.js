@@ -431,6 +431,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			}
 			argary.shift();
 			this.send("QUIT :I was asked to connect to another server by", nick + ".");
+            sleep(500);
 			this.start(argary[0], argary[1], "", argary[3], argary[2]);
 			break;
 		case "join":
@@ -441,8 +442,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			break;
 		case "leave":
 			var args = args.split(" "), chans = args.shift().split(",");
-			for (var i = 0; i < args.length; i++)
-				args[i] = /^[#&+!]/.test(args[i]) ? args[i] : "#" + args[i];
+			for (var i in chans) chans[i] = /^[#&+!]/.test(chans[i]) ? chans[i] : "#" + chans[i];
 			this.send("PART", chans.join(","), ":" + at + args.join(" "));
 			break;
 		case "kick":

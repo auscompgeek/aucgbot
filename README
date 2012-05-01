@@ -1,6 +1,6 @@
-This Source Code Form is subject to the terms of the Mozilla Public
-License, v. 2.0. If a copy of the MPL was not distributed with this file,
-You can obtain one at http://mozilla.org/MPL/2.0/.
+This software, except where noted otherwise, is licensed under the
+Mozilla Public License, v. 2.0. You can obtain a copy of the MPL at
+http://mozilla.org/MPL/2.0/.
 
 This is auscompgeek's JavaScript IRC bot.
 This bot is designed to be run with JSDB, found at <http://jsdb.org/>.
@@ -16,12 +16,10 @@ Calculator features:
 	- Temperature conversion.
 
 Basic usage (this will connect the bot to 127.0.0.1):
+	run("aucgbot.js");
 	aucgbot.start();
 
 Advanced usage:
 	aucgbot.nick = "nick";
 	aucgbot.prefs[pref] = setting;
 	aucgbot.start(server, port, ident, pass, channels);
-
-TODO:
-	- [calcbot] Fix "pow(pow(a,b),c) ** x"!

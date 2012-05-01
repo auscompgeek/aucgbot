@@ -3,13 +3,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-module.version = "0.2.1 (4 Dec 2011)";
+module.version = "0.2.3 (29 Apr 2012)";
 module.onMsg =
 function onMsg(dest, msg, nick, host, at, serv)
-{	if (/(ham|cheese)burger|beef/i.test(msg) && !/^au/.test(nick))
+{	if (/(ham|cheese) ?burger|beef/i.test(msg) && !/^au/.test(nick))
 		aucgbot.msg(dest, "\1ACTION eats", nick + "\1");
 	else if (/moo|cow/i.test(msg))
-	{	s =
+	{	var s =
 		[	"Mooooooooooo!", "MOO!", "Moo.", "Moo. Moo.", "Moo Moo Moo, Moo Moo.", "fish go m00!",
 			"\1ACTION nibbles on some grass\1",
 			"\1ACTION goes and gets a drink\1",
