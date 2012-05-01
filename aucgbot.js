@@ -431,7 +431,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			}
 			argary.shift();
 			this.send("QUIT :I was asked to connect to another server by", nick + ".");
-            sleep(500);
+			sleep(500);
 			this.start(argary[0], argary[1], "", argary[3], argary[2]);
 			break;
 		case "join":
@@ -519,13 +519,13 @@ function rcBot(cmd, args, dest, at, nick, serv)
 aucgbot.send =
 function send()
 {	var s = Array.prototype.slice.call(arguments);
-	if (!s.length) throw new TypeError("send requires more than " + arguments.length + " arguments");
+	if (!s.length) throw new TypeError("send requires more than " + s.length + " arguments");
 	return this.serv.writeln(s.join(" ").replace(/\s+/, " ").replace(/^ | $/g, ""));
 }
 aucgbot.msg =
 function msg()
 {	var s = Array.prototype.slice.call(arguments);
-	if (s.length < 2) throw new TypeError("msg requires more than " + arguments.length + " arguments");
+	if (s.length < 2) throw new TypeError("msg requires more than " + s.length + " arguments");
 	s[1] = ":" + s[1];
 	s.unshift("PRIVMSG");
 	return this.send.apply(this, s);
