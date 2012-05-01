@@ -126,8 +126,7 @@ function cmdDice(sides, count) // Partially from cZ dice plugin.
 module.help =
 function help(e)
 {	var s;
-	e = e.replace(/help|[? #]|math\.*|imum|ing|er/g, "").substring(0, 7).replace(/s+$/, "");
-	switch (e)
+	switch (e.replace(/help|[? #]|math\.*|imum|ing|er/g, "").substring(0, 7).replace(/s+$/, ""))
 	{	case "arccosi": // arc cosine
 		case "arcco": // Oops, where's our "s"?
 		case "aco": // Oh my...
@@ -245,9 +244,9 @@ function help(e)
 			s = "c(x), <x>c: Convert x degrees Celsius to degrees Fahrenheit. See also: f";
 			break;
 		case "e":
-			s = "If e's used in the middle of a number, i.e. <x>e<y>, it's used to denote scientific notation" +
-				" e.g. 2e100 = 2*10**100. NB: There's no spaces allowed in this case! " +
-				"In other cases, e's the mathematical constant e. See also: exp, log, pow";
+			s = "e: If used in the middle of a number, i.e. <x>e<y>, used to denote scientific notation" +
+				" e.g. 2e100 = 2*10**100. NB: No spaces allowed in this case! " +
+				"In other cases, the mathematical constant e. See also: exp, log, pow";
 			break;
 		case "pi":
 			s = "pi: The mathematical constant pi, 4*atan 1, approximately 22/7 or 3.14.";

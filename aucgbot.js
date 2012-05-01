@@ -10,6 +10,7 @@
  *	- Remote control.
  *
  * Basic usage:
+ *	run("aucgbot.js");
  *	aucgbot.start();
  *
  * Advanced usage:
@@ -23,6 +24,7 @@ if (!aucgbot) var aucgbot =
 	{	flood:
 		{	lines: 6,
 			secs: 3,
+			check: true,
 			log: true,
 			kick: true, // not if message was relayed
 			ban: false, // during flood
@@ -38,7 +40,7 @@ if (!aucgbot) var aucgbot =
 		"kick.rejoin": false,
 		"kick.log": true, // on bot kicked
 		// RegExps to not ban/kick nicks/hosts
-		"nokick.nicks": /Tanner|Mardeg|aj00200|ChrisMorgan|JohnTHaller|Bensawsome|juju|Shadow|TMZ|aus?c(ompgeek|g|ow)|Jan/,
+		"nokick.nicks": /Tanner|Mardeg|aj00200|ChrisMorgan|JohnTHaller|Bensawsome|juju|Shadow|TMZ|aus?c(ompgeek|g|ow)|Jan|Peng|TFEF|Nightmare/,
 		"nokick.hosts": /bot|spam|staff|dev|math|js|[Jj]ava[Ss]cript/,
 		// regex for allowed hosts to use rc command
 		suHosts: /trek|aucg|^(freenode\/)?(staff|dev)|oper|netadmin|geek|gry|bot(ter|)s|spam|^(127\.\d+\.\d+\.\d+|localhost(\.localdomain)?)$/
@@ -46,8 +48,9 @@ if (!aucgbot) var aucgbot =
 	//cmodes: {}, // XXX Parse MODE lines.
 	modules: {},
 	lines: 0,
-	version: "2.2.3 (8 Mar 2012)"
+	global: this
 };
+aucgbot.version = "2.3.1 (1 May 2012)";
 
 /**
  * Start the bot. All arguments are optional.
@@ -124,9 +127,9 @@ function startLoop(serv)
  */
 aucgbot.parseln =
 function parseIRCln(ln, serv)
-{	for (i in this.modules)
-		if (typeof this.modules[i].parseln == "function")
-			if (this.modules[i].parseln(ln, serv))
+{	for each (var module in this.modules)
+		if (typeof module.parseln == "function")
+			if (module.parseln(ln, serv))
 				return;
 	if (/^:(\S+)!\S+@(\S+) ./.test(ln) && RegExp.$1 == this.nick) this.host = RegExp.$2;
 	if ((lnary = /^:(\S+)!(\S+)@(\S+) PRIVMSG (\S+) :(.*)/.exec(ln)))
@@ -142,7 +145,7 @@ function parseIRCln(ln, serv)
 	{	if (RegExp.$1 == this.nick) this.nick = RegExp.$4;
 	} else if (/^:(\S+)(?:!(\S+)@(\S+)|) MODE (\S+)(?: (.+)|)/.test(ln))
 	{	// XXX Parse!
-	} else if (/^:([^!@ ]![^!@ ]@[^! ]) KICK (\S+) (\S+) :(.*)/.test(ln) && RegExp.$3 == this.nick)
+	} else if (/^:(\S+!\S+@\S+) KICK (\S+) (\S+) :(.*)/.test(ln) && RegExp.$3 == this.nick)
 	{	this.prefs["kick.rejoin"] && this.send("JOIN", RegExp.$2);
 		this.prefs["kick.log"] && this.log(serv, "KICK", RegExp.$1, RegExp.$2, RegExp.$4);
 	}
@@ -160,19 +163,7 @@ function parseIRCln(ln, serv)
  */
 aucgbot.onMsg =
 function onMsg(dest, msg, nick, host, at, serv)
-{	/* XXX Implement this fully. *
-	 * Don't try to kick/ban if:
-	 *	a) we're not in a channel,
-	 *	b) the message was from us
-	 *	c) the user matches one of the nokick/superuser prefs
-	 -	d) the user in question has any cmodes set
-	 -	e) we don't have any cmodes set on us or
-	 *	f) the message was sent by a relay bot.
-	 */
-	var fromUs = host == this.host || nick == this.nick,
-		kb = at && !(fromUs || nick.match(this.prefs["nokick.nicks"]) || host.match(this.prefs["nokick.hosts"]) || host.match(this.prefs.suHosts) /*|| this.cmodes[dest][nick] != []*/) /*&& this.cmodes[dest][this.nick] == []*/,
-		meping = RegExp("^@?" + this.nick.replace(/\W/g, "\\$&") + "([:,!.] ?| |$)", "i"),
-		relay = "", now = Date.now();
+{	var meping = RegExp("^@?" + this.nick.replace(/\W/g, "\\$&") + "([:,!.] ?| |$)", "i"), relay = "";
 
 	// fix for buffer playback on ZNC
 	if (this.prefs.zncBufferHacks)
@@ -187,41 +178,19 @@ function onMsg(dest, msg, nick, host, at, serv)
 
 	// fix for message relay bots
 	if (this.prefs["relay.check"] && nick.match(this.prefs["relay.bots"]) && /^<.+> /.test(msg))
-		msg = msg.replace(/^<(.+?)> /, ""), relay = nick, nick = RegExp.$1.replace(/^\[\w+\]|\/.+/g, ""),
-		at = nick + ": ", kb = false, fromUs = nick == this.nick || fromUs;
+		msg = msg.replace(/^<(.+?)> /, ""), relay = nick, nick = RegExp.$1.replace(/^\[\w+\]|\/.+/g, ""), at = nick + ": ";
 
 	// don't listen to bots
-	if ((/^bot|bot[\d_|]*$|Serv|Op$/i.test(nick) || /\/bot\//.test(host)) && !fromUs && !relay) return;
+	if ((/bot[\d_|]*$|Serv|^bot|Op$/i.test(nick) || /\/bot\//.test(host)) && !(nick == this.nick || host == this.host || relay)) return;
 
 	// flood protection
-	if (!this.buffer)
-	{	if (now - this.lastTime > this.prefs.flood.secs * 1000) this.lines = 0;
-		if (this.lines >= this.prefs.flood.lines && now - this.lastTime <= this.prefs.flood.secs * 1000)
-		{	this.lastTime = now;
-			if (this.flood)
-			{	if (kb)
-				{	this.prefs.flood.kick && this.send("KICK", dest, nick, ":No flooding!");
-					this.prefs.flood.ban && this.send("MODE", dest, "+b *!*@" + host);
-				}
-			} else
-			{	this.flood = true;
-				writeln("[WARNING] Flood detected!");
-				kb && this.prefs.flood.kick ? this.send("KICK", dest, nick, ":No flooding!") :
-				this.prefs.flood.warn && !relay && this.send("NOTICE", nick, ":Please don't flood.");
-			}
-			this.prefs.flood.log && this.log(serv, "Flood", nick + (at ? " in " + dest : ""), msg);
-			return;
-		}
-		this.flood = false;
-		this.lastTime = now;
-		this.lines++;
-	}
+	if (this.prefs.flood.check && this.checkFlood(dest, msg, nick, host, serv, relay)) return;
 
 	msg = msg.replace(/\s+/g, " ");
 
-	for (i in this.modules)
-		if (typeof this.modules[i].onMsg == "function")
-			if (this.modules[i].onMsg(dest, msg, nick, host, at, serv, relay))
+	for each (var module in this.modules)
+		if (typeof module.onMsg == "function")
+			if (module.onMsg(dest, msg, nick, host, at, serv, relay))
 				return;
 
 	if (msg[0] == "\1") // Possible CTCP.
@@ -237,6 +206,52 @@ function onMsg(dest, msg, nick, host, at, serv)
 		this.msg(dest, at + "Welcome! To get help, please state your problem. Being specific will get you help faster.");
 }
 /**
+ * Ensure that a message isn't part of a flood.
+ *
+ * @param {string} dest Channel or nick to send messages back
+ * @param {string} msg The message
+ * @param {string} nick Nick that sent the PRIVMSG
+ * @param {string} host Hostname that sent the PRIVMSG
+ * @param {string} serv Server hostname
+ * @param {string} relay Relay bot nick or ""
+ * @return {boolean} True if message is part of a flood
+ */
+aucgbot.checkFlood =
+function checkFlood(dest, msg, nick, host, serv, relay)
+{	/* XXX Implement this fully. *
+	 * Don't try to kick/ban if:
+	 *	a) we're not in a channel,
+	 *	b) the message was from us
+	 *	c) the user matches one of the nokick/superuser prefs
+	 -	d) the user in question has any cmodes set
+	 -	e) we don't have any cmodes set on us or
+	 *	f) the message was sent by a relay bot.
+	 */
+	if (!this.buffer)
+	{	if (Date.now() - this.lastTime > this.prefs.flood.secs * 1000) this.lines = 0;
+		if (this.lines >= this.prefs.flood.lines && Date.now() - this.lastTime <= this.prefs.flood.secs * 1000)
+		{	var kb = !(relay || dest == nick || nick == this.nick || host == this.host || nick.match(this.prefs["nokick.nicks"]) || host.match(this.prefs["nokick.hosts"]) || host.match(this.prefs.suHosts) /*|| this.cmodes[dest][nick].length*/) /*&& this.cmodes[dest][this.nick].length*/;
+			this.lastTime = Date.now();
+			if (this.flood)
+			{	if (kb)
+				{	this.prefs.flood.kick && this.send("KICK", dest, nick, ":No flooding!");
+					this.prefs.flood.ban && this.send("MODE", dest, "+b *!*@" + host);
+				}
+			} else
+			{	this.flood = true;
+				writeln("[WARNING] Flood detected!");
+				kb && this.prefs.flood.kick ? this.send("KICK", dest, nick, ":No flooding!") :
+				this.prefs.flood.warn && !relay && this.send("NOTICE", nick, ":Please don't flood.");
+			}
+			this.prefs.flood.log && this.log(serv, "Flood", nick + (dest == nick ? "" : " in " + dest), msg);
+			return true;
+		}
+		this.flood = false;
+		this.lastTime = Date.now();
+		this.lines++;
+	}
+}
+/**
  * Parse a command filtered by onMsg().
  *
  * @param {string} dest Channel or nick to send messages back
@@ -246,6 +261,7 @@ function onMsg(dest, msg, nick, host, at, serv)
  * @param {string} host Hostname that sent the PRIVMSG
  * @param {string} at Contains "nick: " if sent to a channel, else ""
  * @param {string} serv Server hostname
+ * @param {string} relay Relay bot nick or ""
  */
 aucgbot.parseCmd =
 function parseCmd(dest, cmd, args, nick, host, at, serv, relay)
@@ -261,9 +277,9 @@ function parseCmd(dest, cmd, args, nick, host, at, serv, relay)
 		this.msg(dest, at + "Modules loaded: " + modlist.join(", "));
 	}
 
-	for (var i in this.modules)
-		if (typeof this.modules[i]["cmd_" + cmd] == "function")
-			if (this.modules[i]["cmd_" + cmd](dest, args, nick, host, at, serv, relay))
+	for each (var module in this.modules)
+		if (typeof module["cmd_" + cmd] == "function")
+			if (module["cmd_" + cmd].apply(module, arguments))
 				return;
 }
 /**
@@ -292,7 +308,11 @@ function uptime()
  */
 aucgbot.onCTCP =
 function onCTCP(type, msg, nick, dest, serv)
-{	switch (type)
+{	for each (var module in this.modules)
+		if (typeof module.onCTCP == "function")
+			if (module.onCTCP.apply(module, arguments))
+				return;
+	switch (type)
 	{	case "ACTION":
 			var res =
 			[	"\1ACTION slaps " + nick + " around a bit with a large trout\1",
@@ -346,7 +366,7 @@ function onCTCP(type, msg, nick, dest, serv)
 			break;
 		case "SOURCE":
 		case "URL":
-			nctcp(nick, type, "http://eu.gshellz.org/~aucg/aucgbot.js on http://jsdb.org");
+			nctcp(nick, type, "https://github.com/auscompgeek/aucgbot on http://jsdb.org");
 			break;
 		case "PING":
 			nctcp(nick, type, msg);
@@ -364,7 +384,7 @@ function onCTCP(type, msg, nick, dest, serv)
 			break;
 		case "A/S/L":
 		case "ASL":
-			nctcp(nick, type, "2m/bot/behind you");
+			nctcp(nick, type, "2/bot/behind you");
 			break;
 		case "AVATAR":
 		case "ICON":
@@ -402,7 +422,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			sleep(500);
 			this.serv.close();
 			break;
-		case "connect": // Might cause a memory leak. Used to quit & connect elsewhere.
+		case "connect": // May cause a memory leak. Used to quit & connect elsewhere.
 			var argary = /^(?:irc:\/\/|)(\w[\w.-]+\w)(?::([1-5]\d{0,4}|[6-9]\d{0,3}|6[0-5]{2}[0-3][0-5])|)(?:\/([^?]*)|)(?:\?pass=(.+)|)$/.exec(args);
 			if (!argary) // Invalid URL?!?!?
 			{	writeln("[ERROR] Invalid URL! ^^^^^");
@@ -420,15 +440,13 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			this.send("JOIN", args.join(","));
 			break;
 		case "leave":
-			var args = args.split(" "),
-				chans = args.shift().split(",");
+			var args = args.split(" "), chans = args.shift().split(",");
 			for (var i = 0; i < args.length; i++)
 				args[i] = /^[#&+!]/.test(args[i]) ? args[i] : "#" + args[i];
 			this.send("PART", chans.join(","), ":" + at + args.join(" "));
 			break;
 		case "kick":
-			var s = args.split(" "),
-				chan = argary.shift();
+			var s = args.split(" "), chan = s.shift();
 			if (s[0] == this.nick)
 			{	this.msg(dest, at + "Get me to kick myself, yeah, great idea...");
 				this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), "kick " + args);
@@ -458,13 +476,13 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			break;
 		case "eval":
 		case "js": // Dangerous!
-			if (/uneval.*\(.*(aucgbot|this).*\)/i.test(args))
+			if (/(JSON\.stringify|uneval).*(aucgbot|this|global)/i.test(args))
 			{	writeln("[WARNING] Possible abuse! ^^^^^");
 				this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), cmd + (args ? " " + args : ""));
 				this.send("NOTICE", nick, ":Please don't try to abuse my remote control.");
 				break;
 			}
-			try { var res = eval(args) } catch (ex) { res = "uncaught exception: " + ex }
+			try { var res = eval(args) } catch (ex) { res = "exception: " + ex }
 			if (typeof res == "function") res = "function";
 			res && this.msg(dest, at + res);
 			break;
@@ -483,6 +501,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			{	run(args + ".jsm");
 				module.version ? this.modules[args] = module : this.msg(dest, at + "Not a module.");
 			} catch (ex) { this.msg(dest, at + "Could not load", args + ":", ex) }
+			delete this.global.module;
 			break;
 		case "reload":
 			if (!run("aucgbot.js"))
@@ -536,4 +555,4 @@ function ranint(min, max)
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-writeln("Type aucgbot.start(serv,port,pass,chans) to start the bot.");
+writeln("aucgbot loaded.");

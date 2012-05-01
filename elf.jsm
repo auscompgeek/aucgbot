@@ -3,32 +3,37 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-module.version = "1.1 (5 Dec 2011)";
+module.version = "1.1.2 (1 May 2012)";
 module.prefix = "$";
 
+module.initScores =
 function initScores()
 {	module.scores = { score: {}, coins: {}, materials: {}, reputation: {}, total: {} };
 	println("[ELF] Initialised scores database.");
 }
-initScores();
+module.initScores();
+
+module.loadScores =
 function loadScores()
 {	try
 	{	var file = new Stream("elfscores.json");
-		module.scores = JSON.parse(file.readln());
+		this.scores = JSON.parse(file.readln());
 		file.close();
 	} catch (ex) {}
 }
-loadScores();
+module.loadScores();
+
+module.saveScores =
 function saveScores()
 {	var file = new Stream("elfscores.json", "w");
-	file.write(JSON.stringify(module.scores));
+	file.write(JSON.stringify(this.scores));
 	file.close();
 }
 
 module.parseln =
 function parseln(ln, serv)
 {	if (/^:(\S+)!\S+@\S+ JOIN :#elf\r/.test(ln) && RegExp.$1 != aucgbot.nick)
-	{	nick = RegExp.$1;
+	{	var nick = RegExp.$1;
 		if (this.scores.score[nick])
 			aucgbot.msg("#elf", "Welcome back", nick + ". You have",
 				this.scores.score[nick], "points,", this.scores.coins[nick], "coins and",
@@ -49,56 +54,56 @@ function parseln(ln, serv)
 module.onMsg =
 function onMsg(dest, msg, nick, host, at, serv, relay)
 {	if (msg.substr(0, this.prefix.length) == this.prefix) // Starts with prefix.
-	{	msg = msg.substr(this.prefix.length).toLowerCase().split(" ");
+	{	var msg = msg.substr(this.prefix.length).toLowerCase().split(" ");
 		switch (msg[0])
 		{	case "info":
 				nick = msg[1] || nick;
 				aucgbot.msg(dest, nick + ":",
 					this.scores.score[nick], "points,", this.scores.materials[nick], "materials,",
-					this.scores.coins[nick], "coins,", "Reputation:", this.scores.reputation[nick] +
-					", made", this.scores.total[nick], "toys.");
+					this.scores.coins[nick], "coins,", this.scores.reputation[nick], "reputation, made",
+					this.scores.total[nick], "toys.");
 				return true;
 			case "buy":
 				switch (msg[1])
 				{	case "material":
-						s = (msg[2] || 1) * 2;
-						if (this.scores.coins[nick] >= s)
-						{	this.scores.coins[nick] -= s;
-							this.scores.materials[nick]++;
-							aucgbot.msg("#elf", nick, "has bought", msg[2],
-								"materials. This has cost", s, "in total.");
-							break;
+						var n = parseInt(msg[2]) || 1, cost = n * 2;
+						if (this.scores.coins[nick] >= cost)
+						{	this.scores.coins[nick] -= cost;
+							this.scores.materials[nick] += n;
+							aucgbot.msg("#elf", nick, "has bought", n,
+								"materials. This has cost", cost, "in total.");
 						}
+						break;
 					case "voice":
 						if (this.scores.coins[nick] >= 800)
 						{	this.scores.coins[nick] -= 800;
 							//aucgbot.send("CS VOP #elf ADD", nick);
 							aucgbot.send("CS ACCESS #elf ADD", nick, "VOP");
 							aucgbot.send("MODE #elf +v", nick);
-							break;
 						}
+						break;
 					case "hop":
 						if (this.scores.coins[nick] >= 7500)
 						{	this.scores.coins[nick] -= 7500;
 							//aucgbot.send("CS HOP #elf ADD", nick);
 							aucgbot.send("CS ACCESS #elf ADD", nick, "HOP");
 							aucgbot.send("MODE #elf +vh", nick, nick);
-							break;
 						}
+						break;
 					case "op":
 						if (this.scores.coins[nick] >= 20000)
 						{	this.scores.coins[nick] -= 20000;
 							//aucgbot.send("CS AOP #elf ADD", nick);
 							aucgbot.send("CS ACCESS #elf ADD", nick, "AOP");
 							aucgbot.send("MODE #elf +ohv", nick, nick, nick);
-							break;
 						}
+						break;
 					default:
-						aucgbot.msg(dest, "material <amount>: costs twice the amount, so if you bought 4, you would pay 8 coins.");
-						aucgbot.msg(dest, "voice: costs 800 coins. | hop: costs 7500 coins. | op: costs 20000 coins.");
+						aucgbot.msg(dest, "material [amount]: costs twice the amount, so if you bought 4, you would pay 8 coins.");
+						aucgbot.msg(dest, "voice: costs 800 coins. - hop: costs 7500 coins. - op: costs 20000 coins.");
 						aucgbot.msg(dest, nick, "currently has", this.scores.coins[nick], "coins.");
 				}
-				saveScores();
+				this.saveScores();
 				return true;
 			case "make":
 				if (this.scores.materials[nick] < 1)
@@ -143,21 +148,21 @@ function onMsg(dest, msg, nick, host, at, serv, relay)
 				}
 				return true;
 			case "rules":
-				aucgbot.msg(dest, "buy: Buy items to use in the game. | make: Make a toy. | info: Show your current scores.");
+				aucgbot.msg(dest, "buy: Buy items to use in the game. - make: Make a toy. - info: Show your current scores.");
 				return true;
 			case "elfreset":
-				if (aucgbot.prefs.suHosts.test(host))
-				{	initScores();
+				if (host.match(aucgbot.prefs.suHosts))
+				{	this.initScores();
 					aucgbot.log(serv, "ELF RESET", nick + (at ? " in " + dest : ""));
 					aucgbot.msg("#elf", "Variables reset!!!");
 				}
 				return true;
 			case "reloadscores":
-				loadScores();
+				this.loadScores();
 				aucgbot.msg("#elf", "Scores reloaded.");
 				return true;
 			case "writescores":
-				saveScores();
+				this.saveScores();
 				return true;
 		}
 	}

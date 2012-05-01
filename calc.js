@@ -5,8 +5,7 @@
 var ans;
 
 function calc(expr)
-{	const pi = Math.PI, e = Math.E, // aliases
-	// function aliases
+{	const pi = Math.PI, e = Math.E, phi = (1 + sqrt(5)) / 2, //c = 299798...
 		// trigonometric
 		acos = Math.acos,
 		asin = Math.asin,
@@ -28,9 +27,7 @@ function calc(expr)
 		floor = Math.floor,
 		round = Math.round,
 		rnd = rand = Math.random,
-			// give these aliases, even though we don't need to
-			randomrange = randint = ranint,
-			phi = (1 + sqrt(5)) / 2;
+		randomrange = randint = ranint;
 	expr = expr.replace(/(answer to |meaning of |)(|(|the )(|ultimate )question of )life,* the universe,* (and|&) every ?thing/g, "42")
 	           .replace(/math\.*|#|\?+$|what('| i)s|calc(ulat(e|or)|)|imum|olute|ing|er|the|of/g, "").replace(/(a|)(?:rc|)(cos|sin|tan)\w+/g, "$1$2").replace(/(square ?|)root|\xE2\x88\x9A/g, "sqrt")
 	           .replace(/ave\w+|mean/, "ave").replace(/(recip|fact|rand?int|ra?nd|d|sqrt|s)[^ ()]*\b/, "$1").replace(/(\d+(?:\.\d+|!*)|\.\d+) ?([fc])/g, "$2($1)").replace(/(\d+|)d(\d+)/g, "d($2,$1)")
