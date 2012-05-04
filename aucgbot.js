@@ -33,6 +33,7 @@ if (!aucgbot) var aucgbot =
 		log: true, // toggle all logging
 		prefix: "\\\\", // command prefix
 		zncBufferHacks: false, // use ZNC buffer timestamps hack
+		autoAcceptInvite: true, // automatically join on invite
 		"relay.check": true, // toggle relay bot checking
 		"relay.bots": /^(lcp|bik_link|iRelayer|janus|Mingbeast|irfail|rbot|Jellycraft)$/, // regex tested against nicks to check for relay bots
 		"keyboard.sendInput": true, // doesn't work on Windows?
@@ -50,7 +51,7 @@ if (!aucgbot) var aucgbot =
 	lines: 0,
 	global: this
 };
-aucgbot.version = "2.3.1 (1 May 2012)";
+aucgbot.version = "2.3.2 (4 May 2012)";
 
 /**
  * Start the bot. All arguments are optional.
@@ -140,8 +141,8 @@ function parseIRCln(ln, serv)
 	} else if (/^PING (.+)/.test(ln))
 		this.send("PONG", RegExp.$1);
 	else if (/^:(\S+)!(\S+)@(\S+) INVITE (\S+) :(\S+)/.test(ln))
-		this.send("JOIN", RegExp.$5);
-	else if (/^:(\S+)!(\S+)@(\S+) NICK :(\S+)/.test(ln))
+	{	if (this.prefs.autoAcceptInvite) this.send("JOIN", RegExp.$5);
+	} else if (/^:(\S+)!(\S+)@(\S+) NICK :(\S+)/.test(ln))
 	{	if (RegExp.$1 == this.nick) this.nick = RegExp.$4;
 	} else if (/^:(\S+)(?:!(\S+)@(\S+)|) MODE (\S+)(?: (.+)|)/.test(ln))
 	{	// XXX Parse!
@@ -189,9 +190,8 @@ function onMsg(dest, msg, nick, host, at, serv)
 	msg = msg.replace(/\s+/g, " ");
 
 	for each (var module in this.modules)
-		if (typeof module.onMsg == "function")
-			if (module.onMsg(dest, msg, nick, host, at, serv, relay))
-				return;
+		if (typeof module.onMsg == "function" && module.onMsg(dest, msg, nick, host, at, serv, relay))
+			return;
 
 	if (msg[0] == "\1") // Possible CTCP.
 	{	if (/^\x01([^\1 ]+)(?: ([^\1]*)|)/.test(msg))
@@ -278,9 +278,8 @@ function parseCmd(dest, cmd, args, nick, host, at, serv, relay)
 	}
 
 	for each (var module in this.modules)
-		if (typeof module["cmd_" + cmd] == "function")
-			if (module["cmd_" + cmd].apply(module, arguments))
-				return;
+		if (typeof module["cmd_" + cmd] == "function" && module["cmd_" + cmd].apply(module, arguments))
+			return;
 }
 /**
  * Get the uptime of the bot.
@@ -309,9 +308,8 @@ function uptime()
 aucgbot.onCTCP =
 function onCTCP(type, msg, nick, dest, serv)
 {	for each (var module in this.modules)
-		if (typeof module.onCTCP == "function")
-			if (module.onCTCP.apply(module, arguments))
-				return;
+		if (typeof module.onCTCP == "function" && module.onCTCP.apply(module, arguments))
+			return;
 	switch (type)
 	{	case "ACTION":
 			var res =
@@ -476,7 +474,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			break;
 		case "eval":
 		case "js": // Dangerous!
-			if (/(JSON\.stringify|uneval).*(aucgbot|this|global)/i.test(args))
+			if (/(stringify|uneval).*(aucgbot|this|global)/i.test(args))
 			{	writeln("[WARNING] Possible abuse! ^^^^^");
 				this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), cmd + (args ? " " + args : ""));
 				this.send("NOTICE", nick, ":Please don't try to abuse my remote control.");
