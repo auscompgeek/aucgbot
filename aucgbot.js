@@ -79,7 +79,7 @@ function startBot(serv, port, pass, chans)
 		writeln("[WARNING] No channels specified! Joining ", channels);
 	else
 		writeln("[WARNING] Can't join channels specified! Joining ", channels);
-	for (i = 0; i < channels.length; i++)
+	for (var i in channels)
 		channels[i] = /^[#&+!]/.test(channels[i]) ? channels[i] : "#" + channels[i];
 	while ((ln = this.serv.readln()))
 	{	writeln(ln);
@@ -290,10 +290,8 @@ function parseCmd(dest, cmd, args, nick, host, at, serv, relay)
 aucgbot.up =
 function uptime()
 {	var diff = Math.round((this.lastTime - this.started) / 1000),
-		s = diff % 60,
-		m = (diff % 3600 - s) / 60,
-		h = Math.floor(diff / 3600) % 24,
-		d = Math.floor(diff / 3600 / 24);
+		s = diff % 60, m = (diff % 3600 - s) / 60,
+		h = Math.floor(diff / 3600) % 24, d = Math.floor(diff / 86400);
 	return (d ? d + "d " : "") + (h ? h + "h " : "") + (m ? m + "m " : "") + s + "s";
 }
 /**
@@ -434,8 +432,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			break;
 		case "join":
 			args = args.split(",");
-			for (var i = 0; i < args.length; i++)
-				args[i] = /^[#&+!]/.test(args[i]) ? args[i] : "#" + args[i];
+			for (var i in args) args[i] = /^[#&+!]/.test(args[i]) ? args[i] : "#" + args[i];
 			this.send("JOIN", args.join(","));
 			break;
 		case "leave":
@@ -459,7 +456,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			var s = args.split(" ");
 			if (s[0] == this.nick)
 			{	this.msg(dest, at + "Get me to talk to myself, yeah, great idea...");
-				this.prefs.abuse.log && this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), cmd + (args ? " " + args : ""));
+				this.prefs.abuse.log && this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), cmd + " " + args);
 				break;
 			}
 			this.msg.apply(this, s);

@@ -161,7 +161,7 @@ function help(e)
 			break;
 		case "tangent":
 		case "tan":
-			s = "tan(x): Get the tangent of x radians. See also: atan, atan2";
+			s = "tan(x): Get the tangent of x radians, sin(x)/cos(x). See also: atan, atan2";
 			break;
 		case "exp":
 			s = "exp(x): Get e**x. See also: pow.";
@@ -249,7 +249,7 @@ function help(e)
 				"In other cases, the mathematical constant e. See also: exp, log, pow";
 			break;
 		case "pi":
-			s = "pi: The mathematical constant pi, 4*atan 1, approximately 22/7 or 3.14.";
+			s = "pi: The mathematical constant pi, 4*atan 1, 180 degrees, approximately 22/7 or 3.14.";
 			break;
 		case "phi":
 			s = "phi: The mathematical constant phi, (1+sqrt 5)/2.";

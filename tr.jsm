@@ -2,6 +2,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
+// Module: Transform text.
 
 module.version = 1.2;
 module.alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -32,7 +33,7 @@ function cmd_rev(dest, msg, nick, host, at, serv, relay)
 }
 
 // based on http://www.svendtofte.com/code/usefull_prototypes/
-// and I guess stolen from https://developer.mozilla.org/en/A_re-introduction_to_JavaScript
+// and I guess from https://developer.mozilla.org/en/A_re-introduction_to_JavaScript
 String.prototype.reverse =
 function reverse()
 {	var s = "";
@@ -43,7 +44,7 @@ function reverse()
 module.reverseABC = module.alphabet.reverse();
 
 function tr(str, fromTable, toTable)
-{	for (var s = "", i = 0, j, k; i < str.length; i++)
+{	for (var s = "", i = 0, j = 0, k = ""; i < str.length; i++)
 	{	if ((j = fromTable.indexOf(str[i])) == -1)
 			k = str[i];
 		else if (!(k = toTable[j]))
