@@ -4,8 +4,9 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 // Module: Transform text.
 
-module.version = 1.2;
+module.version = 1.3;
 module.alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+module.alphaLC = "abcdefghijklmnopqrstuvwxyz";
 
 module.cmd_tr =
 function cmd_tr(dest, msg, nick, host, at, serv, relay)
@@ -18,12 +19,15 @@ function cmd_tr(dest, msg, nick, host, at, serv, relay)
 }
 module.cmd_rot13 =
 function cmd_rot13(dest, msg, nick, host, at, serv, relay)
-{	aucgbot.msg(dest, at + tr(msg, this.alphabet + this.alphabet.toLowerCase(), "NOPQRSTUVWXYZABCDEFGHIJKLMnopqrstuvwxyzabcdefghijklm"));
+{	aucgbot.msg(dest, at + tr(msg, this.alphabet + this.alphaLC, "NOPQRSTUVWXYZABCDEFGHIJKLMnopqrstuvwxyzabcdefghijklm"));
 	return true;
 }
+module.cmd_rot47 =
+function cmd_rot47(dest, msg, nick, host, at, serv, relay)
+{	aucgbot.msg(dest, at + tr(msg, "!\"#$%&\'()*+,-./0123456789:;<=>?@" + this.alphabet + "[\\]^_`" + this.alphaLC + "{|}~", "PQRSTUVWXYZ[\\]^_`" + this.alphaLC + "{|}~!\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNO"));
 module.cmd_revtr =
 function cmd_revtr(dest, msg, nick, host, at, serv, relay)
-{	aucgbot.msg(dest, at + tr(msg, this.alphabet + this.alphabet.toLowerCase(), this.reverseABC + this.reverseABC.toLowerCase()));
+{	aucgbot.msg(dest, at + tr(msg, this.alphabet + this.alphaLC, this.reverseABC + this.reverseABC.toLowerCase()));
 	return true;
 }
 module.cmd_rev =
@@ -32,8 +36,8 @@ function cmd_rev(dest, msg, nick, host, at, serv, relay)
 	return true;
 }
 
-// based on http://www.svendtofte.com/code/usefull_prototypes/
-// and I guess from https://developer.mozilla.org/en/A_re-introduction_to_JavaScript
+// from http://www.svendtofte.com/code/usefull_prototypes/
+// and https://developer.mozilla.org/en/A_re-introduction_to_JavaScript
 String.prototype.reverse =
 function reverse()
 {	var s = "";
@@ -44,7 +48,8 @@ function reverse()
 module.reverseABC = module.alphabet.reverse();
 
 function tr(str, fromTable, toTable)
-{	for (var s = "", i = 0, j = 0, k = ""; i < str.length; i++)
+{	var s = "";
+	for (var i = 0, j = 0, k = ""; i < str.length; i++)
 	{	if ((j = fromTable.indexOf(str[i])) == -1)
 			k = str[i];
 		else if (!(k = toTable[j]))
