@@ -4,7 +4,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 // Module: Transform text.
 
-module.version = 1.3;
+module.version = 1.4;
 module.alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 module.alphaLC = "abcdefghijklmnopqrstuvwxyz";
 
@@ -25,6 +25,8 @@ function cmd_rot13(dest, msg, nick, host, at, serv, relay)
 module.cmd_rot47 =
 function cmd_rot47(dest, msg, nick, host, at, serv, relay)
 {	aucgbot.msg(dest, at + tr(msg, "!\"#$%&\'()*+,-./0123456789:;<=>?@" + this.alphabet + "[\\]^_`" + this.alphaLC + "{|}~", "PQRSTUVWXYZ[\\]^_`" + this.alphaLC + "{|}~!\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNO"));
+	return true;
+}
 module.cmd_revtr =
 function cmd_revtr(dest, msg, nick, host, at, serv, relay)
 {	aucgbot.msg(dest, at + tr(msg, this.alphabet + this.alphaLC, this.reverseABC + this.reverseABC.toLowerCase()));
@@ -33,6 +35,36 @@ function cmd_revtr(dest, msg, nick, host, at, serv, relay)
 module.cmd_rev =
 function cmd_rev(dest, msg, nick, host, at, serv, relay)
 {	aucgbot.msg(dest, at + msg.reverse());
+	return true;
+}
+module.cmd_b64encode =
+function cmd_b64encode(dest, msg, nick, host, at, serv, relay)
+{	aucgbot.msg(dest, at + encodeB64(msg));
+	return true;
+}
+module.cmd_b64decode =
+function cmd_b64decode(dest, msg, nick, host, at, serv, relay)
+{	aucgbot.msg(dest, at + decodeB64(msg));
+	return true;
+}
+module.cmd_htmlencode =
+function cmd_htmlencode(dest, msg, nick, host, at, serv, relay)
+{	aucgbot.msg(dest, at + encodeHTML(msg));
+	return true;
+}
+module.cmd_htmldecode =
+function cmd_htmldecode(dest, msg, nick, host, at, serv, relay)
+{	aucgbot.msg(dest, at + decodeHTML(msg));
+	return true;
+}
+module.cmd_urlencode =
+function cmd_urlencode(dest, msg, nick, host, at, serv, relay)
+{	aucgbot.msg(dest, at + encodeURL(msg));
+	return true;
+}
+module.cmd_urldecode =
+function cmd_urldecode(dest, msg, nick, host, at, serv, relay)
+{	aucgbot.msg(dest, at + decodeURL(msg));
 	return true;
 }
 
