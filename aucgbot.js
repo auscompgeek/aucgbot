@@ -93,7 +93,7 @@ function connectBot(serv, port, nick, user, pass, chans)
 	{	writeln(ln);
 		if (/^PING (.+)/.test(ln))
 			this.send(serv, "PONG", RegExp.$1);
-		else if (/^:\S+ 433 \* ./.test(ln))
+		else if (/^:\S+ 433 ./.test(ln))
 			this.send(serv, "NICK", serv.nick += "_");
 		else if (/^:\S+ 004 ./.test(ln))
 		{	if (channels)
