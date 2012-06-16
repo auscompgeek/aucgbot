@@ -3,11 +3,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-module.version = "0.2.3 (29 Apr 2012)";
+module.version = "0.3 (16 Jun 2012)";
 module.onMsg =
 function onMsg(dest, msg, nick, host, at, serv)
 {	if (/(ham|cheese) ?burger|beef/i.test(msg) && !/^au/.test(nick))
-		aucgbot.msg(dest, "\1ACTION eats", nick + "\1");
+		aucgbot.msg(serv, dest, "\1ACTION eats", nick + "\1");
 	else if (/moo|cow/i.test(msg))
 	{	var s =
 		[	"Mooooooooooo!", "MOO!", "Moo.", "Moo. Moo.", "Moo Moo Moo, Moo Moo.", "fish go m00!",
@@ -23,6 +23,6 @@ function onMsg(dest, msg, nick, host, at, serv)
 			"\1ACTION thumps " + nick + "\1",
 			"\1ACTION solves partial differential equations\1"
 		];
-		aucgbot.msg(dest, s[ranint(0, s.length - 1)]);
+		aucgbot.msg(serv, dest, s[ranint(0, s.length - 1)]);
 	}
 }

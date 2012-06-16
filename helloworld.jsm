@@ -5,7 +5,7 @@
  
 // Load this by sending the bot: rc loadmod helloworld
 
-module.version = "0.3.2 (3 Dec 2011)";
+module.version = "0.4 (16 Jun 2012)";
 /* Do NOT do this! Use onMsg() or cmd_*() instead so that the flood protection is triggered.
 module.parseln =
 function parseln(ln, serv)
@@ -14,7 +14,7 @@ function parseln(ln, serv)
 		var at = "", dest = lnary[0];
 		if (/^[#&+!]/.test(lnary[3])) at = lnary[0] + ": ", dest = lnary[3];
 		if (lnary[4].match(aucgbot.nick.replace(/\W/g, "\\$&") + ": hello"))
-		{	aucgbot.msg(dest, "Hello world!");
+		{	aucgbot.msg(serv, dest, "Hello world!");
 			return true; // Stop processing of message.
 		}
 	}
@@ -34,12 +34,12 @@ function parseln(ln, serv)
 module.onMsg =
 function onMsg(dest, msg, nick, host, at, serv, relay)
 {	if (msg.match("hello bot"))
-	{	aucgbot.msg(dest, "Hello, World!");
+	{	aucgbot.msg(serv, dest, "Hello, World!");
 		return true; // Stop processing of message.
 	}
 }
 module.cmd_hello =
 function cmd_hello(dest, msg, nick, host, at, serv, relay)
-{	aucgbot.msg(dest, at + "Hello, World!");
+{	aucgbot.msg(serv, dest, at + "Hello, World!");
 	return true; // Say that we've reached a valid command and stop processing the message.
 }
