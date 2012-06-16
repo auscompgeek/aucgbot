@@ -89,7 +89,7 @@ function connectBot(serv, port, nick, user, pass, chans)
 		writeln("[WARNING] Can't join channels specified! Joining ", channels);
 	for (let i in channels)
 		channels[i] = /^[#&+!]/.test(channels[i]) ? channels[i] : "#" + channels[i];
-	while ((ln = serv.readln("\r\n")))
+	while ((ln = serv.readln()))
 	{	writeln(ln);
 		if (/^PING (.+)/.test(ln))
 			this.send(serv, "PONG", RegExp.$1);

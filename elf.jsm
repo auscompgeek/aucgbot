@@ -32,7 +32,7 @@ function saveScores()
 
 module.parseln =
 function parseln(ln, serv)
-{	if (/^:(\S+)!\S+@\S+ JOIN :?#elf$/.test(ln) && RegExp.$1 != aucgbot.nick)
+{	if (/^:(\S+)!\S+@\S+ JOIN :?#elf\r/.test(ln) && RegExp.$1 != aucgbot.nick)
 	{	var nick = RegExp.$1;
 		if (this.scores.score[nick])
 			aucgbot.msg(serv, "#elf", "Welcome back", nick + ". You have",
