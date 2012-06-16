@@ -6,7 +6,7 @@
 // PLEASE NOTE: if you edit the badwords list using the rc js command, use
 // "rc js this.modules["badword"].parseList()" otherwise it will not work
 
-module.version = "4.2.5 (13 Mar 2012)";
+module.version = "4.3 (16 Apr 2012)";
 module.count = {}; module.sfwChans = [];
 
 module.parseList =
@@ -100,19 +100,19 @@ function onMsg(dest, msg, nick, host, at, serv)
 				this.count[nick][word] += parseInt(msgParts[3]);
 				this.saveCount();
 			} else if (!this.count[nick])
-				aucgbot.msg(dest, "No bad words have been said by", nick, "...yet...");
+				aucgbot.msg(serv, dest, "No bad words have been said by", nick, "...yet...");
 			else
-				aucgbot.msg(dest, nick, "said `" + word + "'", this.count[nick][word], "times!");
+				aucgbot.msg(serv, dest, nick, "said `" + word + "'", this.count[nick][word], "times!");
 		} else if (!this.count[nick])
 			aucgbot.msg(dest, "No bad words have been said by", nick, "...yet...");
 		else if (word && word.toLowerCase() == "total")
 		{	var num = 0;
 			for (word in this.count[nick]) num += this.count[nick][word];
-			aucgbot.msg(dest, "Total number of bad words said by", nick + ":", num);
+			aucgbot.msg(serv, dest, "Total number of bad words said by", nick + ":", num);
 		} else
 		{	words = [];
 			for (word in this.count[nick]) words.push(word + ": " + this.count[nick][word]);
-			aucgbot.msg(dest, "Bad words said by", nick + ":", words.join(" - "));
+			aucgbot.msg(serv, dest, "Bad words said by", nick + ":", words.join(" - "));
 		}
 		return true;
 	}

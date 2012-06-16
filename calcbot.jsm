@@ -5,7 +5,7 @@
 
 if (!run("calc.js")) throw "Could not load calc functions from calc.js";
 
-module.version = "2.2.2 (10 Mar 2012)";
+module.version = "2.3 (16 Jun 2012)";
 module.prefs =
 {	abuse:
 	{	log: true, // when triggered with =
@@ -21,7 +21,7 @@ module.prefs =
 	userfriendly: false,
 	actDice: false, // output <x>d<y> as /me rolls a d<y> x times: a, b, c, total: d
 }
-module.abuse = /load|java|ecma|op|doc|cli|(qui|exi|aler|prin|insul|impor)t|undef|raw|throw|window|nan|open|con|pro|patch|plug|play|infinity|my|for|(fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|this|js|sys|scr|(de|loca|unti|rctr|eva)l|[\["\]]|(?!what)'(?!s)/;
+module.abuse = /load|java|ecma|op|doc|cli|(qui|exi|aler|prin|insul|impor)t|undef|raw|throw|win|nan|open|con|pro|patch|plug|play|infinity|my|for|(fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|this|js|sys|scr|(de|loca|unti|rctr|eva)l|[\["\]]|(?!what)'(?!s)/;
 module.list = "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, log, pow, sqrt, abs, ceil, max, min, floor, round, random, ranint, fact, mean, dice, f, c. Constants: e, pi, phi. Operators: %, ^, **. Other: decimal.";
 
 module["cmd_="] = module.cmd_calc = module.cmd_math =
@@ -33,22 +33,22 @@ function cmd_calc(dest, msg, nick, host, at, serv, relay)
 		this.prefs.abuse.log && aucgbot.log(serv, "Calc abuse", nick + (at ? " in " + dest : ""), msg);
 		return;
 	}
-	if (/^(\d*)d(\d+)$/.test(msg)) return aucgbot.send("PRIVMSG", dest, this.cmdDice(RegExp.$2, RegExp.$1));
-	try { (s = this.parseMsg(msg)) != null && aucgbot.msg(dest, at + s) }
+	if (/^(\d*)d(\d+)$/.test(msg)) return aucgbot.send(serv, "PRIVMSG", dest, this.cmdDice(RegExp.$2, RegExp.$1));
+	try { (s = this.parseMsg(msg)) != null && aucgbot.msg(serv, dest, at + s) }
 	catch (ex) {
 		writeln("[ERROR] ", ex);
 		this.prefs.error.log && aucgbot.log(serv, "CALC ERROR", msg, nick + (at ? " in " + dest : ""), ex);
-		this.prefs.error.apologise && aucgbot.msg(dest, at + this.prefs.error.apologymsg);
-		this.prefs.error.sendError && aucgbot.msg(dest, at + ex);
+		this.prefs.error.apologise && aucgbot.msg(serv, dest, at + this.prefs.error.apologymsg);
+		this.prefs.error.sendError && aucgbot.msg(serv, dest, at + ex);
 	}
 }
 module.cmd_base =
 function cmd_base(dest, msg, nick, host, at, serv, relay)
 {	var args = msg.split(" ");
 	if (args.length < 2 || args.length > 3)
-		aucgbot.msg(dest, at + "Invalid usage. Usage: base <num> <fromBase> [<toBase>]");
+		aucgbot.msg(serv, dest, at + "Invalid usage. Usage: base <num> <fromBase> [<toBase>]");
 	else
-		aucgbot.msg(dest, at + parseInt(args[0], args[1]).toString(parseInt(args[2]) || 10));
+		aucgbot.msg(serv, dest, at + parseInt(args[0], args[1]).toString(parseInt(args[2]) || 10));
 	return true;
 }
 module.cmd_qe =
@@ -57,7 +57,7 @@ function cmd_quadraticEquation(dest, msg, nick, host, at, serv, relay)
 	const helpMsg = "qe: Evaluates the value of the pronumeral in a quadratic equation in general form i.e. ax**2 + bx + c = 0";
 	if (!/^(?:([+-]?\d*) ?\*? ?)?(\w) ?(?:\*\*|\^) ?2 ?(?:([+-] ?\d*) ?\*? ?\2)? ?([+-] ?\d+)? ?= ?([+-]\d+)$/.test(msg))
 	{	// not a quadratic equation, bail
-		aucgbot.msg(dest, at + helpMsg);
+		aucgbot.msg(serv, dest, at + helpMsg);
 		return true;
 	}
 	pron = RegExp.$2; a = RegExp.$1; b = RegExp.$3; c = RegExp.$4;
@@ -76,7 +76,7 @@ function cmd_quadraticEquation(dest, msg, nick, host, at, serv, relay)
 	resSqrt = Math.sqrt(resInSqrt);
 	res.push((-b + resSqrt) / _2a);
 	res.push((-b - resSqrt) / _2a);
-	aucgbot.msg(dest, at + pron + " = " + res.join(" or "));
+	aucgbot.msg(serv, dest, at + pron + " = " + res.join(" or "));
 	return true;
 }
 
