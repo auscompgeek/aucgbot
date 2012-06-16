@@ -90,7 +90,7 @@ function connectBot(serv, port, nick, user, pass, chans)
 	for (let i in channels)
 		channels[i] = /^[#&+!]/.test(channels[i]) ? channels[i] : "#" + channels[i];
 	while ((ln = serv.readln()))
-	{	writeln(ln);
+	{	writeln(serv.hostName + ": " + ln);
 		if (/^PING (.+)/.test(ln))
 			this.send(serv, "PONG", RegExp.$1);
 		else if (/^:\S+ 433 ./.test(ln))
@@ -115,7 +115,7 @@ function startLoop()
 		for each (let serv in readyServs)
 		{	if (serv.canRead)
 			{	let ln = serv.readln();
-				writeln(serv.hostAddress + ": " + ln);
+				writeln(serv.hostName + ": " + ln);
 				this.parseln(ln, serv);
 				if (system.kbhit())
 				{	if (this.prefs["keyboard.sendInput"])
@@ -527,23 +527,23 @@ function rcBot(cmd, args, dest, at, nick, serv)
 aucgbot.send =
 function send()
 {	var s = Array.prototype.slice.call(arguments);
-	if (!s.length) throw new TypeError("aucgbot.send() requires more than 0 arguments");
+	if (s.length < 2) throw new TypeError("aucgbot.send() requires at least 2 arguments");
 	return s.shift().writeln(s.join(" ").replace(/\s+/, " ").replace(/^ | $/g, ""));
 }
 aucgbot.msg =
 function msg()
 {	var s = Array.prototype.slice.call(arguments), serv = s.shift();
-	if (s.length < 2) throw new TypeError("aucgbot.msg() requires more than 3 arguments");
+	if (s.length < 2) throw new TypeError("aucgbot.msg() requires at least 4 arguments");
 	s[1] = ":" + s[1]; s.unshift("PRIVMSG"); s.unshift(serv);
 	return this.send.apply(this, s);
 }
 aucgbot.log =
 function log(serv)
 {	if (!this.prefs.log) return;
-	var s = [serv.hostAddress, Date.now()], log;
+	var s = [serv.hostName, Date.now()], log;
 	for (var i = 1; i < arguments.length; i++)
 		s[i + 1] = arguments[i];
-	if (s.length < 2) throw new TypeError("aucgbot.log() requires more than 2 arguments");
+	if (s.length < 2) throw new TypeError("aucgbot.log() requires at least 3 arguments");
 	log = new Stream("aucgbot.log", "a");
 	log.writeln(s.join(": ").replace(/\s+/, " ").replace(/^ | $/g, ""));
 	log.close();
