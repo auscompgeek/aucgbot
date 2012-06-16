@@ -293,7 +293,7 @@ function parseCmd(dest, cmd, args, nick, host, at, serv, relay)
 	}
 
 	for each (var module in this.modules)
-		if (typeof module["cmd_" + cmd] == "function" && module["cmd_" + cmd].apply(module, arguments))
+		if (typeof module["cmd_" + cmd] == "function" && module["cmd_" + cmd](dest, args, nick, host, at, serv, relay))
 			return;
 }
 /**
@@ -531,6 +531,7 @@ aucgbot.send =
 function send()
 {	var s = Array.prototype.slice.call(arguments);
 	if (s.length < 2) throw new TypeError("aucgbot.send() requires at least 2 arguments");
+	if (!(s[0] instanceof Stream)) throw new TypeError("1st argument to aucgbot.send() must be a Stream");
 	return s.shift().writeln(s.join(" ").replace(/\s+/, " ").replace(/^ | $/g, ""));
 }
 aucgbot.msg =
