@@ -51,7 +51,7 @@ if (!aucgbot) var aucgbot =
 	servs: [],
 	global: this
 };
-aucgbot.version = "3.0a1 (4 May 2012)";
+aucgbot.version = "3.0a1 (15 Jun 2012)";
 
 aucgbot.start =
 function startBot()
@@ -75,10 +75,9 @@ aucgbot.connect =
 function connectBot(serv, port, nick, user, pass, chans)
 {	var channels = ["#bots"], i, addr = (serv || "127.0.0.1") + ":" + (parseInt(port) || 6667);
 	var serv = new Stream("net://" + addr, "rwt");
-	serv.nick = nick || "aucgbot"; serv.flood_lines = 0; serv.flood_lastTime = Date.now();
-	this.servs.push(serv);
 	pass && this.send(serv, "PASS", pass); pass = null;
-	this.send(serv, "NICK", this.nick);
+	this.servs.push(serv); serv.nick = nick || "aucgbot"; serv.flood_lines = 0;
+	this.send(serv, "NICK", serv.nick);
 	this.send(serv, "USER " + (user || "aucgbot") + " 8 * :\x033\17auscompgeek's JS bot");
 	if (typeof chans == "array")
 		channels = chans, chans = null;
@@ -129,6 +128,11 @@ function startLoop()
 				}
 			}
 		}
+		for (let i in this.servs)
+			if (this.servs[i].eof)
+			{	delete this.servs[i]; // XXX must be more robust
+				system.gc();
+			}
 	}
 }
 
@@ -176,7 +180,7 @@ function parseIRCln(ln, serv)
  */
 aucgbot.onMsg =
 function onMsg(dest, msg, nick, host, at, serv)
-{	var meping = RegExp("^@?" + this.nick.replace(/\W/g, "\\$&") + "([:,!.] ?| |$)", "i"), relay = "";
+{	var meping = RegExp("^@?" + serv.nick.replace(/\W/g, "\\$&") + "([:,!.] ?| |$)", "i"), relay = "";
 
 	// fix for buffer playback on ZNC
 	if (this.prefs.zncBufferHacks)
@@ -194,7 +198,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 		msg = msg.replace(/^<(.+?)> /, ""), relay = nick, nick = RegExp.$1.replace(/^\[\w+\]|\/.+/g, ""), at = nick + ": ";
 
 	// don't listen to bots
-	if ((/bot[\d_|]*$|Serv|^bot|Op$/i.test(nick) || /\/bot\//.test(host)) && !(nick == this.nick || host == this.host || relay)) return;
+	if ((/bot[\d_|]*$|Serv|^bot|Op$/i.test(nick) || /\/bot\//.test(host)) && !(nick == serv.nick || host == this.host || relay)) return;
 
 	// flood protection
 	if (this.prefs.flood.check && this.checkFlood(dest, msg, nick, host, serv, relay)) return;
@@ -240,8 +244,8 @@ function checkFlood(dest, msg, nick, host, serv, relay)
 	 *	f) the message was sent by a relay bot.
 	 */
 	if (serv.zncBuffer) return false;
-	if (Date.now() - this.lastTime > this.prefs.flood.secs * 1000) this.lines = 0;
-	if (this.lines >= this.prefs.flood.lines && Date.now() - serv.flood_lastTime <= this.prefs.flood.secs * 1000)
+	if (Date.now() - serv.flood_lastTime > this.prefs.flood.secs * 1000) serv.flood_lines = 0;
+	if (serv.flood_lines >= this.prefs.flood.lines && Date.now() - serv.flood_lastTime <= this.prefs.flood.secs * 1000)
 	{	var kb = !(relay || dest == nick || nick == serv.nick || host == this.host || nick.match(this.prefs["nokick.nicks"]) || host.match(this.prefs["nokick.hosts"]) || host.match(this.prefs.suHosts) /*|| serv.cmodes[dest][nick].length*/) /*&& serv.cmodes[dest][this.nick].length*/;
 		serv.flood_lastTime = Date.now();
 		if (serv.flood_in)
@@ -419,7 +423,8 @@ function onCTCP(type, msg, nick, dest, serv)
  */
 aucgbot.remoteControl =
 function rcBot(cmd, args, dest, at, nick, serv)
-{	switch (cmd)
+{	this.log(serv, "RC", nick + (at ? " in " + dest : ""), cmd + (args ? " " + args : ""));
+	switch (cmd)
 	{	case "self-destruct": // Hehe, I had to put this in :D
 		case "explode":
 			this.send(serv, "QUIT :" + at, "10... 9... 8... 7... 6... 5... 4... 3... 2... 1... 0... *boom*", args);
@@ -500,7 +505,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			break;
 		case "modload":
 		case "loadmod":
-			module = {}; // will leak to global scope
+			module = {}; // must leak to global scope to reach module itself
 			try
 			{	run(args + ".jsm");
 				module.version ? this.modules[args] = module : this.msg(serv, dest, at + "Not a module.");
@@ -514,8 +519,7 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			}
 			break;
 		default:
-			writeln("[ERROR] Possible abuse! ^^^^^");
-			this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), cmd + (args ? " " + args : ""));
+			writeln("[ERROR] Possible abuse attempt! ^^^^^");
 			this.send(serv, "NOTICE", nick, ":Hmm? Didn't quite get that.");
 	}
 }
@@ -530,14 +534,13 @@ aucgbot.msg =
 function msg()
 {	var s = Array.prototype.slice.call(arguments), serv = s.shift();
 	if (s.length < 2) throw new TypeError("aucgbot.msg() requires more than 3 arguments");
-	s[1] = ":" + s[1];
-	s.unshift("PRIVMSG"); s.unshift(serv);
+	s[1] = ":" + s[1]; s.unshift("PRIVMSG"); s.unshift(serv);
 	return this.send.apply(this, s);
 }
 aucgbot.log =
 function log(serv)
 {	if (!this.prefs.log) return;
-	var s = [serv.hostAddress, this.lastTime], log;
+	var s = [serv.hostAddress, Date.now()], log;
 	for (var i = 1; i < arguments.length; i++)
 		s[i + 1] = arguments[i];
 	if (s.length < 2) throw new TypeError("aucgbot.log() requires more than 2 arguments");
