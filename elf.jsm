@@ -107,7 +107,7 @@ function onMsg(dest, msg, nick, host, at, serv, relay)
 				return true;
 			case "make":
 				if (this.scores.materials[nick] < 1)
-					aucgbot.send("NOTICE", nick, ":You don't have enough materials to make a toy.");
+					aucgbot.send(serv, "NOTICE", nick, ":You don't have enough materials to make a toy.");
 				else
 				{	this.scores.materials[nick]--;
 					this.scores.total[nick]++;
