@@ -5,7 +5,7 @@
 var ans;
 
 function calc(expr)
-{	const pi = Math.PI, e = Math.E, phi = (1 + sqrt(5)) / 2, //c = 299798...
+{	const pi = Math.PI, e = Math.E, phi = (1 + Math.sqrt(5)) / 2, //c = 299798...
 		// trigonometric
 		acos = Math.acos,
 		asin = Math.asin,
