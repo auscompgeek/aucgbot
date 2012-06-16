@@ -428,6 +428,8 @@ function rcBot(cmd, args, dest, at, nick, serv)
 	{	case "self-destruct": // Hehe, I had to put this in :D
 		case "explode":
 			this.send(serv, "QUIT :" + at, "10... 9... 8... 7... 6... 5... 4... 3... 2... 1... 0... *boom*", args);
+			sleep(500);
+			serv.close();
 			break;
 		case "die":
 			this.send(serv, "QUIT :" + at + args);
@@ -473,11 +475,12 @@ function rcBot(cmd, args, dest, at, nick, serv)
 				this.prefs.abuse.log && this.log(serv, "RC abuse", nick + (at ? " in " + dest : ""), cmd + " " + args);
 				break;
 			}
+			s.unshift(serv);
 			this.msg.apply(this, s);
 			break;
 		case "echo":
 		case "say":
-			this.msg(dest, args);
+			this.msg(serv, dest, args);
 			break;
 		case "quote":
 		case "raw":
@@ -531,10 +534,10 @@ function send()
 	return s.shift().writeln(s.join(" ").replace(/\s+/, " ").replace(/^ | $/g, ""));
 }
 aucgbot.msg =
-function msg()
-{	var s = Array.prototype.slice.call(arguments), serv = s.shift();
-	if (s.length < 2) throw new TypeError("aucgbot.msg() requires at least 4 arguments");
-	s[1] = ":" + s[1]; s.unshift("PRIVMSG"); s.unshift(serv);
+function msg(serv) // dest, msg...
+{	var s = Array.prototype.slice.call(arguments);
+	if (s.length < 3) throw new TypeError("aucgbot.msg() requires at least 3 arguments");
+	s.shift(); s[1] = ":" + s[1]; s.unshift("PRIVMSG"); s.unshift(serv);
 	return this.send.apply(this, s);
 }
 aucgbot.log =
