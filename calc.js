@@ -69,7 +69,7 @@ function f(temp) (temp - 32) / 1.8;
 function c(temp) temp * 1.8 + 32;
 function recip(n) 1 / n;
 function cbrt(n) Math.pow(n, 1/3);
-function root(z, n) n < 1 ? null : Math.pow(z, 1/n);
+function root(z, n) n < 1 ? NaN : Math.pow(z, 1/n);
 
 // trigonometry
 function sec(n) 1 / Math.cos(n);

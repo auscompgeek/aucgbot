@@ -29,7 +29,7 @@ function cmd_rot47(dest, msg, nick, host, at, serv, relay)
 }
 module.cmd_revtr =
 function cmd_revtr(dest, msg, nick, host, at, serv, relay)
-{	aucgbot.msg(serv, dest, at + tr(msg, this.alphabet + this.alphaLC, this.reverseABC + this.reverseABC.toLowerCase()));
+{	aucgbot.msg(serv, dest, at + tr(msg, this.alphabet + this.alphaLC, this.alphaRev + this.alphaRev.toLowerCase()));
 	return true;
 }
 module.cmd_rev =
@@ -73,15 +73,15 @@ function cmd_urldecode(dest, msg, nick, host, at, serv, relay)
 String.prototype.reverse =
 function reverse()
 {	var s = "";
-	for (var i = this.length - 1; i >= 0; i--)
+	for (let i = this.length - 1; i >= 0; i--)
 	    s += this[i];
 	return s;
 }
-module.reverseABC = module.alphabet.reverse();
+module.alphaRev = module.alphabet.reverse();
 
 function tr(str, fromTable, toTable)
 {	var s = "";
-	for (var i = 0, j = 0, k = ""; i < str.length; i++)
+	for (let i = 0, j = 0, k = ""; i < str.length; i++)
 	{	if ((j = fromTable.indexOf(str[i])) == -1)
 			k = str[i];
 		else if (!(k = toTable[j]))

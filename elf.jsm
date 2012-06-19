@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-module.version = "1.2 (16 Jun 2012)";
+module.version = "1.2.1 (19 Jun 2012)";
 module.prefix = "$";
 
 module.initScores =
@@ -32,7 +32,7 @@ function saveScores()
 
 module.parseln =
 function parseln(ln, serv)
-{	if (/^:(\S+)!\S+@\S+ JOIN :?#elf\r/.test(ln) && RegExp.$1 != aucgbot.nick)
+{	if (/^:(\S+)!\S+@\S+ JOIN :?#elf\r/.test(ln) && RegExp.$1 != serv.nick)
 	{	var nick = RegExp.$1;
 		if (this.scores.score[nick])
 			aucgbot.msg(serv, "#elf", "Welcome back", nick + ". You have",
@@ -53,8 +53,8 @@ function parseln(ln, serv)
 }
 module.onMsg =
 function onMsg(dest, msg, nick, host, at, serv, relay)
-{	if (msg.substr(0, this.prefix.length) == this.prefix) // Starts with prefix.
-	{	var msg = msg.substr(this.prefix.length).toLowerCase().split(" ");
+{	if (msg.slice(0, this.prefix.length) == this.prefix) // Starts with prefix.
+	{	var msg = msg.slice(this.prefix.length).toLowerCase().split(" ");
 		switch (msg[0])
 		{	case "info":
 				nick = msg[1] || nick;

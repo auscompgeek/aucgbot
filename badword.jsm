@@ -49,7 +49,7 @@ module.badwords = // "Word": "case-insensitive quoted regex",
 	"Fag": "fag",
 	"Fuck": "f[ua*\\-](?:[cr*\\-][k*\\-]|q)|fk|f(?:cu|sc)king|wh?[au]t [dt][aeh]+ f|wtf|fml|cbf|omfg|stfu|gtfo|lmfao|fubar",
 	"Gay": "g(a|he)y",
-	"God": "g[o*\-]d|omf?g",
+	"God": "g[o*\\-]d|omf?g",
 	"Heck": "\\bheck",
 	"Hell": "hell",
 	"Idiot": "idiot",
@@ -84,7 +84,7 @@ module.loadCount();
 module.onMsg =
 function onMsg(dest, msg, nick, host, at, serv)
 {	var word, words, msgParts = msg.split(" "), nick = nick.toLowerCase();
-	if (at) for (i in this.sfwChans)
+	if (at) for (let i = 0; i < this.sfwChans.length; i++)
 		if (this.sfwChans[i] == dest)
 		{	dest = nick;
 			break;
@@ -93,7 +93,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 	{	nick = msgParts[1] ? msgParts[1].toLowerCase() : nick;
 		word = msgParts[2];
 		if (word && (this.badwords[word] || // is it a valid badword?
-		   this.badwords[(word = word[0].toUpperCase() + word.substring(1))]))
+		   this.badwords[(word = word[0].toUpperCase() + word.slice(1))]))
 		{	if (msgParts[3] && host.match(aucgbot.prefs.suHosts))
 			{	if (!this.count[nick]) this.count[nick] = {};
 				if (!this.count[nick][word]) this.count[nick][word] = 0;
@@ -107,18 +107,20 @@ function onMsg(dest, msg, nick, host, at, serv)
 			aucgbot.msg(dest, "No bad words have been said by", nick, "...yet...");
 		else if (word && word.toLowerCase() == "total")
 		{	var num = 0;
-			for (word in this.count[nick]) num += this.count[nick][word];
+			for (let word in this.count[nick])
+				num += this.count[nick][word];
 			aucgbot.msg(serv, dest, "Total number of bad words said by", nick + ":", num);
 		} else
 		{	words = [];
-			for (word in this.count[nick]) words.push(word + ": " + this.count[nick][word]);
+			for (let word in this.count[nick])
+				words.push(word + ": " + this.count[nick][word]);
 			aucgbot.msg(serv, dest, "Bad words said by", nick + ":", words.join(" - "));
 		}
 		return true;
 	}
 	if (!msg.match(this.badwordList, "i")) return;
 	if (!this.count[nick]) this.count[nick] = {};
-	for (word in this.badwords)
+	for (let word in this.badwords)
 		if (words = msg.match(this.badwords[word], "gi"))
 		{	if (!this.count[nick][word]) this.count[nick][word] = 0;
 			this.count[nick][word] += words.length;
