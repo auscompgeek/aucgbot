@@ -196,7 +196,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 
 	// don't listen to bots
 	if ((/bot[\d_|]*$|Serv|^bot|Op$/i.test(nick) && !(nick == serv.nick)) ||
-	    (/\/bot\//.test(host) && !(nick == serv.nick || relay))
+	    (/\/bot\//.test(host) && !(nick == serv.nick || relay)))
 		return;
 
 	// flood protection
