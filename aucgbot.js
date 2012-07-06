@@ -2,7 +2,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
- 
+
 /* Designed to be run by JSDB <http://jsdb.org>.
  * Features:
  *	- General flood protection.
@@ -51,33 +51,31 @@ aucgbot.version = "3.0 (27 Jun 2012)";
 
 aucgbot.start =
 function startBot()
-{	var args = Array.prototype.slice.call(arguments);
-	while (args.length)
+{	for (let args = Array.prototype.slice.call(arguments); args.length; )
 		this.connect.apply(this, args.shift());
-	args = null;
 	this.started = Date.now();
 	this.startLoop();
 }
 /**
  * Connect the bot. All arguments are optional.
  *
- * @param {String} serv The hostname to connect to
- * @param {Number} port The port to connect to
- * @param {String} nick Nick to use
- * @param {String} user Ident to use
- * @param {String} pass The server password to use
- * @param {Array} chans An array or string describing the channels to join on connect
+ * @param {String} serv: The hostname to connect to (default: 127.0.0.1)
+ * @param {Number} port: The port to connect to (default: 6667)
+ * @param {String} nick: Nick to use (default: aucgbot)
+ * @param {String} user: Ident to use (default: aucgbot)
+ * @param {String} pass: The server password to use, if any
+ * @param {Array} chans: Array or string describing channels to join on connect (default: #bots)
  */
 aucgbot.connect =
 function connectBot(serv, port, nick, user, pass, chans)
-{	var channels = ["#bots"], i, addr = (serv || "127.0.0.1") + ":" + (parseInt(port) || 6667),
+{	var channels = ["#bots"], addr = (serv || "127.0.0.1") + ":" + (parseInt(port) || 6667),
 	    serv = new Stream("net://" + addr, "rwt"), ln;
 	pass && this.send(serv, "PASS", pass); pass = null;
-	this.servs.push(serv); serv.nick = nick || "aucgbot"; serv.flood_lines = 0;
+	serv.nick = nick || "aucgbot"; serv.flood_lines = 0;
 	this.send(serv, "NICK", serv.nick);
 	this.send(serv, "USER " + (user || "aucgbot") + " 8 * :\x033\17auscompgeek's JS bot");
 	if (chans)
-	{	if (typeof chans == "array")
+	{	if (chans instanceof Array)
 			channels = chans, chans = null;
 		else if (typeof chans == "string")
 			channels = chans.split(","), chans = null;
@@ -93,7 +91,7 @@ function connectBot(serv, port, nick, user, pass, chans)
 			this.send(serv, "PONG", RegExp.$1);
 		else if (/^:\S+ 433 ./.test(ln))
 			this.send(serv, "NICK", serv.nick += "_");
-		else if (/^:\S+ 004 ./.test(ln))
+		else if (/^:\S+ 003 ./.test(ln))
 		{	if (channels)
 			{	this.send(serv, "JOIN", channels.join(","));
 				channels = null;
@@ -101,7 +99,7 @@ function connectBot(serv, port, nick, user, pass, chans)
 			break;
 		}
 	}
-	system.gc();
+	this.servs.push(serv); system.gc();
 }
 /**
  * Start the server read line loop.
@@ -109,8 +107,8 @@ function connectBot(serv, port, nick, user, pass, chans)
 aucgbot.startLoop =
 function startLoop()
 {	while (this.servs)
-	{	let servs = system.wait(this.servs);
-		for each (let serv in servs)
+	{	system.wait(this.servs, 60000);
+		for each (let serv in this.servs)
 		{	if (!serv.canRead) continue;
 			this.parseln(serv.readln(), serv);
 			if (system.kbhit())
@@ -123,10 +121,13 @@ function startLoop()
 				}
 			}
 		}
-		for (let i = 0; i < this.servs.length; i++)
+		for (let i = this.servs.length - 1; i >= 0; i--)
 			if (this.servs[i].eof)
 			{	this.servs[i].close();
-				delete this.servs[i]; // XXX must be more robust
+				if (i == this.servs.length - 1)
+					this.servs.length--
+				else
+					delete this.servs[i]; // XXX must be more robust
 				system.gc();
 			}
 	}
@@ -135,12 +136,13 @@ function startLoop()
 /**
  * Parse a raw IRC line.
  *
- * @param {String} ln Raw IRC line
- * @param {Stream} serv Server connection
+ * @param {String} ln: Raw IRC line
+ * @param {Stream} serv: Server connection
  */
 aucgbot.parseln =
 function parseIRCln(ln, serv)
 {	if (!ln) return; // for weird servers
+	try { ln = decodeUTF8(ln) } catch (ex) {}
 	writeln(serv.hostName, ": ", ln);
 	for each (let module in this.modules)
 		if (typeof module.parseln == "function" && module.parseln(ln, serv))
@@ -168,12 +170,12 @@ function parseIRCln(ln, serv)
 /**
  * Parse a PRIVMSG.
  *
- * @param {string} dest Channel or nick to send messages back
- * @param {string} msg The message
- * @param {string} nick Nick that sent the PRIVMSG
- * @param {string} host Hostname that sent the PRIVMSG
- * @param {string} at Contains "nick: " if sent to a channel, else ""
- * @param {string} serv Server hostname
+ * @param {String} dest: Channel or nick to send messages back
+ * @param {String} msg: The message
+ * @param {String} nick: Nick that sent the PRIVMSG
+ * @param {String} host: Hostname that sent the PRIVMSG
+ * @param {String} at: Contains "nick: " if sent to a channel, else ""
+ * @param {Stream} serv: Server connection
  */
 aucgbot.onMsg =
 function onMsg(dest, msg, nick, host, at, serv)
@@ -196,7 +198,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 
 	// don't listen to bots
 	if ((/bot[\d_|]*$|Serv|^bot|Op$/i.test(nick) && !(nick == serv.nick)) ||
-	    (/\/bot\//.test(host) && !(nick == serv.nick || relay)))
+	    (host.indexOf("/bot/") != -1 && !(nick == serv.nick || relay)))
 		return;
 
 	// flood protection
@@ -211,11 +213,11 @@ function onMsg(dest, msg, nick, host, at, serv)
 	if (msg[0] == "\1") // Possible CTCP.
 	{	if (/^\x01([^\1 ]+)(?: ([^\1]*)|)/.test(msg))
 			this.onCTCP(RegExp.$1.toUpperCase(), RegExp.$2, nick, dest, serv);
-	} else if (meping.test(msg) || !at)
-	{	msg = msg.replace(meping, "").replace(/^(\S+) ?/, "");
-		this.parseCmd(dest, RegExp.$1.toLowerCase(), msg, nick, host, at, serv, relay);
 	} else if (this.prefs.prefix && msg.slice(0, this.prefs.prefix.length) == this.prefs.prefix)
 	{	msg = msg.slice(this.prefs.prefix.length).replace(/^(\S+) ?/, "");
+		this.parseCmd(dest, RegExp.$1.toLowerCase(), msg, nick, host, at, serv, relay);
+	} else if (meping.test(msg) || !at)
+	{	msg = msg.replace(meping, "").replace(/^(\S+) ?/, "");
 		this.parseCmd(dest, RegExp.$1.toLowerCase(), msg, nick, host, at, serv, relay);
 	} else if (/^help!?$/i.test(msg))
 		this.msg(serv, dest, at + "Welcome! To get help, please state your problem. Being specific will get you help faster.");
@@ -223,13 +225,13 @@ function onMsg(dest, msg, nick, host, at, serv)
 /**
  * Ensure that a message isn't part of a flood.
  *
- * @param {string} dest Channel or nick to send messages back
- * @param {string} msg The message
- * @param {string} nick Nick that sent the PRIVMSG
- * @param {string} host Hostname that sent the PRIVMSG
- * @param {Stream} serv Server connection
- * @param {string} relay Relay bot nick or ""
- * @return {boolean} True if message is part of a flood
+ * @param {String} dest: Channel or nick to send messages back
+ * @param {String} msg: The message
+ * @param {String} nick: Nick that sent the PRIVMSG
+ * @param {String} host: Hostname that sent the PRIVMSG
+ * @param {Stream} serv: Server connection
+ * @param {String} relay: Relay bot nick or ""
+ * @return {Boolean}: True if message is part of a flood
  */
 aucgbot.checkFlood =
 function checkFlood(dest, msg, nick, host, serv, relay)
@@ -268,14 +270,14 @@ function checkFlood(dest, msg, nick, host, serv, relay)
 /**
  * Parse a command filtered by onMsg().
  *
- * @param {string} dest Channel or nick to send messages back
- * @param {string} cmd Command name
- * @param {string} args Any arguments
- * @param {string} nick Nick that sent the PRIVMSG
- * @param {string} host Hostname that sent the PRIVMSG
- * @param {string} at Contains "nick: " if sent to a channel, else ""
- * @param {string} serv Server hostname
- * @param {string} relay Relay bot nick or ""
+ * @param {String} dest: Channel or nick to send messages back
+ * @param {String} cmd: Command name
+ * @param {String} args: Any arguments
+ * @param {String} nick: Nick that sent the PRIVMSG
+ * @param {String} host: Hostname that sent the PRIVMSG
+ * @param {String} at: Contains "nick: " if sent to a channel, else ""
+ * @param {Stream} serv: Server connection
+ * @param {String} relay: Relay bot nick or ""
  */
 aucgbot.parseCmd =
 function parseCmd(dest, cmd, args, nick, host, at, serv, relay)
@@ -299,7 +301,7 @@ function parseCmd(dest, cmd, args, nick, host, at, serv, relay)
  * Get the uptime of the bot.
  *
  * @author Ogmios
- * @return {string} Uptime in human readable format
+ * @return {String}: Uptime in human readable format
  */
 aucgbot.up =
 function uptime()
@@ -311,11 +313,11 @@ function uptime()
 /**
  * Parse a CTCP request.
  *
- * @param {string} type CTCP request type
- * @param {string} msg Any arguments
- * @param {string} nick Nick of the requestee
- * @param {string} dest Channel to which the request was sent (`nick` if sent in PM)
- * @param {Stream} serv Server connection
+ * @param {String} type: CTCP request type
+ * @param {String} msg: Any arguments
+ * @param {String} nick: Nick of the requestee
+ * @param {String} dest: Channel to which the request was sent (`nick` if sent in PM)
+ * @param {Stream} serv: Server connection
  */
 aucgbot.onCTCP =
 function onCTCP(type, msg, nick, dest, serv)
@@ -413,12 +415,12 @@ function onCTCP(type, msg, nick, dest, serv)
 /**
  * Parses a control signal from a user with remote control privileges.
  *
- * @param {string} cmd Command
- * @param {string} args Any arguments
- * @param {string} dest Channel or nick to send messages back
- * @param {string} at Contains "nick: " if sent to a channel, else ""
- * @param {string} nick Nick that sent the signal
- * @param {Stream} serv Server connection
+ * @param {String} cmd: Command
+ * @param {String} args: Any arguments
+ * @param {String} dest: Channel or nick to send messages back
+ * @param {String} at: Contains "nick: " if sent to a channel, else ""
+ * @param {String} nick: Nick that sent the signal
+ * @param {Stream} serv: Server connection
  */
 aucgbot.remoteControl =
 function rcBot(cmd, args, dest, at, nick, serv)
@@ -455,24 +457,24 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			this.send(serv, "PART", chans.join(","), ":" + at + args.join(" "));
 			break;
 		case "kick":
-			var s = args.split(" "), chan = s.shift();
-			if (s[0] == serv.nick)
+			var args = args.split(" "), chan = args.shift();
+			if (args[0] == serv.nick)
 			{	this.msg(serv, dest, at + "Get me to kick myself, yeah, great idea...");
 				break;
 			}
 			if (/^[^#&+!]/.test(chan)) chan = "#" + chan;
-			this.send(serv, "KICK", chan, s.shift(), ":" + at + s.join(" "));
+			this.send(serv, "KICK", chan, args.shift(), ":" + at + args.join(" "));
 			break;
 		case "msg":
 		case "privmsg":
 		case "message":
-			var s = args.split(" ");
-			if (s[0] == serv.nick)
+			var args = args.split(" ");
+			if (args[0] == serv.nick)
 			{	this.msg(dest, at + "Get me to talk to myself, yeah, great idea...");
 				break;
 			}
-			s.unshift(serv);
-			this.msg.apply(this, s);
+			args.unshift(serv);
+			this.msg.apply(this, args);
 			break;
 		case "echo":
 		case "say":
@@ -503,8 +505,10 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			break;
 		case "modload":
 		case "loadmod":
-			try { this.loadModule(args) }
-			catch (ex) { this.msg(serv, dest, at + ex) }
+			try
+			{	for (let args = args.split(" "); args.length; )
+					this.loadModule(args.shift());
+			} catch (ex) { this.msg(serv, dest, at + ex) }
 			break;
 		case "reload":
 			if (!run("aucgbot.js"))
@@ -517,35 +521,40 @@ function rcBot(cmd, args, dest, at, nick, serv)
 			this.send(serv, "NOTICE", nick, ":Hmm? Didn't quite get that.");
 	}
 }
+/**
+ * Load a module.
+ *
+ * @param {String} m: Module name (filename without .jsm extension)
+ * @throws TypeError: Throws a TypeError when the module cannot be loaded.
+ */
 aucgbot.loadModule =
 function loadModule(m)
 {	module = {}; // must leak to global scope to reach module itself
-	run(m + ".jsm");
-	if (module.version)
+	if (run(m + ".jsm") && module.version)
 		this.modules[m] = module;
 	else
-		throw m + " is not a module.";
+		throw new TypeError(m + " is not a module.");
 	delete this.global.module;
 }
 
 aucgbot.send =
 function send() // serv, data...
 {	var s = Array.prototype.slice.call(arguments);
-	if (s.length < 2) throw new TypeError("aucgbot.send() requires at least 2 arguments");
+	if (s.length < 2) throw new TypeError("aucgbot.send requires at least 2 arguments");
 	if (!(s[0] instanceof Stream)) throw new TypeError("1st argument to aucgbot.send() must be a Stream");
 	return s.shift().writeln(s.join(" ").replace(/\s+/, " ").replace(/^ | $/g, ""));
 }
 aucgbot.msg =
 function msg(serv) // dest, msg...
 {	var s = Array.prototype.slice.call(arguments);
-	if (s.length < 3) throw new TypeError("aucgbot.msg() requires at least 3 arguments");
+	if (s.length < 3) throw new TypeError("aucgbot.msg requires at least 3 arguments");
 	s.shift(); s[1] = ":" + s[1]; s.unshift("PRIVMSG"); s.unshift(serv);
 	return this.send.apply(this, s);
 }
 aucgbot.log =
 function log(serv)
 {	if (!this.prefs.log) return;
-	if (arguments.length < 2) throw new TypeError("aucgbot.log() requires at least 2 arguments");
+	if (arguments.length < 2) throw new TypeError("aucgbot.log requires at least 2 arguments");
 	var s = [serv.hostName, Date.now()], log;
 	for (let i = 1; i < arguments.length; i++)
 		s[i+1] = arguments[i];
@@ -558,8 +567,8 @@ function log(serv)
  * Utility function to generate a (psuedo-)random number.
  *
  * @deprecated 3.0
- * @param {number} min Minimum number
- * @param {number} max Maximum number
+ * @param {Number} min: Minimum number
+ * @param {Number} max: Maximum number
  */
 if (typeof ranint != "function")
 function ranint(min, max)
@@ -570,6 +579,9 @@ function ranint(min, max)
 }
 /**
  * Get a random element of an array. http://svendtofte.com/code/usefull_prototypes
+ *
+ * @usage array.random()
+ * @return {any}: Random element of array.
  */
 if (typeof Array.prototype.random != "function")
 Array.prototype.random =

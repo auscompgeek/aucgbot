@@ -5,7 +5,7 @@
 
 if (!run("calc.js")) throw "Could not load calc functions from calc.js";
 
-module.version = "2.3 (16 Jun 2012)";
+module.version = "2.3.1 (6 Jul 2012)";
 module.prefs =
 {	abuse:
 	{	log: true, // when triggered with =
@@ -21,7 +21,7 @@ module.prefs =
 	userfriendly: false,
 	actDice: false, // output <x>d<y> as /me rolls a d<y> x times: a, b, c, total: d
 }
-module.abuse = /load|java|ecma|op|doc|cli|(qui|exi|aler|prin|insul|impor)t|undef|raw|throw|win|nan|open|con|pro|patch|plug|play|infinity|my|for|(fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|this|js|sys|scr|(de|loca|unti|rctr|eva)l|[\["\]]|(?!what)'(?!s)/;
+module.abuse = /load|java|ecma|op|doc|cli|(qui|exi|aler|prin|insul|impor)t|undef|raw|throw|win|nan|open|con|pro|patch|plug|play|infinity|my|for|(fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|this|js|sys|scr|(de|loca|unti|rctr|eva)l|[\[{"}\]]|(?!what)'(?!s)/;
 module.list = "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, log, pow, sqrt, abs, ceil, max, min, floor, round, random, ranint, fact, mean, dice, f, c. Constants: e, pi, phi. Operators: %, ^, **. Other: decimal.";
 
 module["cmd_="] = module.cmd_calc = module.cmd_math =
@@ -53,26 +53,25 @@ function cmd_base(dest, msg, nick, host, at, serv, relay)
 }
 module.cmd_qe =
 function cmd_quadraticEquation(dest, msg, nick, host, at, serv, relay)
-{	var a, b, c, _2a, pron, resInSqrt, resSqrt, res = [];
+{	var a, b, c, _2a, pron, rhs, resInSqrt, resSqrt, res = [];
 	const helpMsg = "qe: Evaluates the value of the pronumeral in a quadratic equation in general form i.e. ax**2 + bx + c = 0";
-	if (!/^(?:([+-]?\d*) ?\*? ?)?(\w) ?(?:\*\*|\^) ?2 ?(?:([+-] ?\d*) ?\*? ?\2)? ?([+-] ?\d+)? ?= ?([+-]\d+)$/.test(msg))
+	if (!/^(?:([+-]?\d*) ?\*? ?)?(\w) ?(?:\*\*|\^) ?2 ?(?:([+-] ?\d*) ?\*? ?\2)? ?([+-] ?\d+)? ?= ?([+-]?\d+)$/.test(msg))
 	{	// not a quadratic equation, bail
 		aucgbot.msg(serv, dest, at + helpMsg);
 		return true;
 	}
-	pron = RegExp.$2; a = RegExp.$1; b = RegExp.$3; c = RegExp.$4;
+	pron = RegExp.$2, a = RegExp.$1, b = RegExp.$3, c = RegExp.$4, rhs = parseFloat(RegExp.$5);
 	a = a ? parseFloat(a) : 1; _2a = 2 * a;
 	b = b ? parseFloat(b.replace(/\s+/, "")) : 1;
-	c = c ? parseFloat(c.replace(/\s+/, "")) : 0;
-	c -= parseFloat(RegExp.$5); // RHS
+	c = (c ? parseFloat(c.replace(/\s+/, "")) : 0) - rhs;
 	resInSqrt = b * b - 4 * a * c; // inside our sqrt sign
 	if (resInSqrt < 0)
 	{	// answer is a complex number, bail
 		// XXX eventually insert code to simplify surd
-		aucgbot.msg(dest, at + pron + " = (" + (-b) + "\u00B1\u221A" + resInSqrt + ") / " + _2a);
+		aucgbot.msg(serv, dest, at + pron + " = (" + (-b) + encodeUTF8(" \u00B1 \u221A") + resInSqrt + ") / " + _2a);
 		return true;
 	}
-	res.push("(" + (-b) + "\u00B1\u221A" + resInSqrt + ") / " + _2a);
+	res.push("(" + (-b) + encodeUTF8(" \u00B1 \u221A") + resInSqrt + ") / " + _2a);
 	resSqrt = Math.sqrt(resInSqrt);
 	res.push((-b + resSqrt) / _2a);
 	res.push((-b - resSqrt) / _2a);

@@ -6,7 +6,7 @@
 // PLEASE NOTE: if you edit the badwords list using the rc js command, use
 // "rc js this.modules["badword"].parseList()" otherwise it will not work
 
-module.version = "4.3 (16 Apr 2012)";
+module.version = "4.3.1 (6 Jul 2012)";
 module.count = {}; module.sfwChans = [];
 
 module.parseList =
@@ -104,7 +104,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 			else
 				aucgbot.msg(serv, dest, nick, "said `" + word + "'", this.count[nick][word], "times!");
 		} else if (!this.count[nick])
-			aucgbot.msg(dest, "No bad words have been said by", nick, "...yet...");
+			aucgbot.msg(serv, dest, "No bad words have been said by", nick, "...yet...");
 		else if (word && word.toLowerCase() == "total")
 		{	var num = 0;
 			for (let word in this.count[nick])

@@ -23,13 +23,13 @@ function parseln(ln, serv)
 /**
  * Parse a PRIVMSG.
  *
- * @param {string} dest Channel or nick to send messages back
- * @param {string} msg The message
- * @param {string} nick Nick that sent the PRIVMSG
- * @param {string} host Hostname that sent the PRIVMSG
- * @param {string} at Contains "nick: " if sent to a channel, else ""
- * @param {string} serv Server hostname
- * @param {string} relay If sent by a relay bot, the relay bot's nick, else "".
+ * @param {String} dest: Channel or nick to send messages back
+ * @param {String} msg: The message
+ * @param {String} nick: Nick that sent the PRIVMSG
+ * @param {String} host: Hostname that sent the PRIVMSG
+ * @param {String} at: Contains "nick: " if sent to a channel, else ""
+ * @param {Stream} serv: Server connection
+ * @param {String} relay: If sent by a relay bot, the relay bot's nick, else "".
  */
 module.onMsg =
 function onMsg(dest, msg, nick, host, at, serv, relay)

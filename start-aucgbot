@@ -16,7 +16,7 @@ for (let i = 0, s = true; s; i++)
 	}
 
 	print("\nAdd another server? ");
-	s = system.stdin.read(1).toLowerCase() == "y";
+	s = system.stdin.readln()[0].toLowerCase() == "y";
 }
 system.cwd = system.script.replace(/[^\\\/]+?$/, "");
 run("aucgbot.js");
