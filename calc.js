@@ -29,9 +29,11 @@ function calc(expr)
 		rnd = rand = Math.random,
 		randomrange = randint = ranint;
 	expr = expr.replace(/(answer to |meaning of |)(|(|the )(|ultimate )question of )life,* the universe,* (and|&) every ?thing/g, "42")
-	           .replace(/math\.*|#|\?+$|what('| i)s|calc(ulat(e|or)|)|imum|olute|ing|er|the|of/g, "").replace(/(a|)(?:rc|rea|)(cos|sin|tan)\w+?(h|)/g, "$1$2$3").replace(/(square ?|)root|\xE2\x88\x9A/g, "sqrt")
-	           .replace(/ave\w+|mean/, "ave").replace(/(recip|fact|rand?int|ra?nd|d|sqrt|(?:co|)sec|(?:csc|cot|tan)h?|s|h)[^ ()]*\b/, "$1").replace(/(\d+(?:\.\d+|!*)|\.\d+) ?([fc])/g, "$2($1)").replace(/(\d+|)d(\d+)/g, "d($2,$1)")
-	           .replace(/(s|sqrt|round|floor|ceil|log|exp|recip) *(\d+(?:\.\d+|!*)|\.\d+)/g, "$1($2)").replace(/tan +(\d+(?:\.\d+|!*)|\.\d+)/, "tan($1)")
+	           .replace(/math\.*|#|\?+$|what('| i)s|calc(ulat(e|or)|)|imum|olute|ing|er|the|of/g, "").replace(/(a|)(?:rc|rea|)(cos|sin|tan)\w+?(h|)/g, "$1$2$3")
+	           .replace(/(square ?|)root|\u221A/g, "sqrt").replace("\u03C0", "pi").replace("\u03C6", "phi").replace("\u00B9"/*<sup>1</sup>*/, "").replace("\u00B2", "**2").replace("\u00B3", "**3")
+	           .replace("\u00D7", "*").replace("\u00F7"/*sign*/, "/").replace("\u2215"/*slash*/, "/").replace("\u2044"/*fraction*/, "/").replace("\u2260", "!=").replace("\u2264", "<=").replace("\u2265", ">=")
+	           .replace(/(recip|fact|rand?int|ra?nd|d|sqrt|(?:co|)sec|(?:csc|cot|tan)h?|s|h)[^ ()]*\b/, "$1").replace(/(\d+(?:\.\d+|!*)|\.\d+) ?([fc])/g, "$2($1)").replace(/(\d+|)d(\d+)/g, "d($2,$1)")
+	           .replace(/ave\w+|mean/, "ave").replace(/(sqrt|s|round|floor|ceil|log|exp|recip) *(\d+(?:\.\d+|!*)|\.\d+)/g, "$1($2)").replace(/tan +(\d+(?:\.\d+|!*)|\.\d+)/, "tan($1)")
 	           .replace(/(\d+(?:\.\d+(?:e[-+]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e) ?\*\* ?([-+]?\d+(?:\.\d+(?:e[-+]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e)/g, "pow($1,$2)").replace(/(\d+)!/g, "fact($1)")
 	           .replace(/\b(\d+(?:\.\d+|)|\.\d+) ?([(a-df-wyz])/g,"$1*$2").replace(/\b(ph?i|e) ?([^-+*\/&|^<>%),?: ])/g,"$1*$2").replace(/(\(.+?\)) ?([^-+*\/&|^<>%!),?: ])/g,"$1*$2");
 	while (/pow\(.+,.+\) ?\*\* ?[-+]?(\d+(\.\d|!?)|\.\d)/.test(expr) || /fact\(.+\)!/.test(expr)) // XXX "pow(pow(a,b),c) ** x" becomes "pow(pow(a,pow(b),c),x)"!
@@ -43,7 +45,7 @@ function fact(n)
 	n = Number(n);
 	if (n > 170) // We can't calculate factorials past this, we get Infinity.
 		e = Infinity;
-	else if (n < 0 || isNaN(n) || /\./.test(n))
+	else if (n < 0 || isNaN(n) || n != Math.floor(n))
 		e = NaN; // Positive integers only.
 	else
 		for (var i = n; i > 1; i--)
@@ -83,9 +85,9 @@ function tanh(n) sinh(n) / cosh(n);
 function coth(n) cosh(n) / sinh(n);
 function sech(n) 1 / cosh(n);
 function csch(n) 1 / sinh(n);
-function acosh(n) log(n + Math.sqrt(n*n-1));
-function asinh(n) log(n + Math.sqrt(n*n+1));
-function atanh(n) 1/2 * log((1+n) / (1-n));
+function acosh(n) Math.log(n + Math.sqrt(n*n-1));
+function asinh(n) Math.log(n + Math.sqrt(n*n+1));
+function atanh(n) 1/2 * Math.log((1+n) / (1-n));
 function asech(n) 1 / acosh(n);
 function acsch(n) 1 / asinh(n);
-function acoth(n) 1/2 * log((1+n) / (n-1));
+function acoth(n) 1/2 * Math.log((1+n) / (n-1));
