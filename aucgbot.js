@@ -50,7 +50,7 @@ var aucgbot = {
 	servs: [],
 	global: this
 };
-aucgbot.version = "3.0.1 (12 Aug 2012)";
+aucgbot.version = "3.1 (12 Aug 2012)";
 
 /**
  * Start the bot. Each argument is to be passed as arguments to {@link aucgbot#connect}.
@@ -61,26 +61,26 @@ function startBot() {
 		this.connect.apply(this, args.shift());
 	this.started = Date.now();
 	this.startLoop();
-}
+};
 /**
  * Connect the bot. All arguments are optional.
  *
  * @param {string} [serv] The hostname to connect to (default: 127.0.0.1)
  * @param {number} [port] The port to connect to (default: 6667)
  * @param {string} [nick] Nick to use (default: aucgbot)
- * @param {string} [user] Ident to use (default: aucgbot)
+ * @param {string} [ident] Ident to use (default: aucgbot)
  * @param {string} [pass] The server password to use, if any
  * @param {(string|array)} [chans] Channels to join on connect (default: #bots)
  * @see aucgbot#start
  */
 aucgbot.connect =
-function connectBot(serv, port, nick, user, pass, chans) {
+function connectBot(serv, port, nick, ident, pass, chans) {
 	var channels = ["#bots"], addr = (serv || "127.0.0.1") + ":" + (parseInt(port) || 6667),
 	    serv = new Stream("net://" + addr, "rwt"), ln;
 	pass && this.send(serv, "PASS", pass); pass = null;
 	serv.nick = nick || "aucgbot"; serv.flood_lines = 0;
 	this.send(serv, "NICK", serv.nick);
-	this.send(serv, "USER " + (user || "aucgbot") + " 8 * :\x033\17auscompgeek's JS bot");
+	this.send(serv, "USER " + (ident || "aucgbot") + " 8 * :\x033\17auscompgeek's JS bot");
 	if (chans) {
 		if (chans instanceof Array)
 			channels = chans, chans = null;
@@ -107,7 +107,7 @@ function connectBot(serv, port, nick, user, pass, chans) {
 		}
 	}
 	this.servs.push(serv); system.gc();
-}
+};
 /**
  * Start the server read line loop.
  *
@@ -130,7 +130,7 @@ function startLoop() {
 				}
 			}
 		}
-		for (let i = this.servs.length - 1; i >= 0; i--)
+		for (let i = this.servs.length - 1; i >= 0; i--) {
 			if (this.servs[i].eof) {
 				this.servs[i].close();
 				if (i == this.servs.length - 1)
@@ -139,8 +139,9 @@ function startLoop() {
 					delete this.servs[i]; // XXX must be more robust
 				system.gc();
 			}
+		}
 	}
-}
+};
 
 /**
  * Parse a raw IRC line.
@@ -153,18 +154,19 @@ function parseIRCln(ln, serv) {
 	if (!ln) return; // for weird servers
 	try { ln = decodeUTF8(ln); } catch (ex) {}
 	writeln(serv.hostName, ": ", ln);
-	for each (let module in this.modules)
+	for each (let module in this.modules) {
 		if (typeof module.parseln == "function" && module.parseln(ln, serv))
 			return;
+	}
 	if (/^:(\S+)!\S+@(\S+) ./.test(ln) && RegExp.$1 == serv.nick) this.host = RegExp.$2;
 	if ((lnary = /^:(\S+)!(\S+)@(\S+) PRIVMSG (\S+) :(.*)/.exec(ln))) {
 		lnary.shift();
 		var at = "", dest = lnary[0];
-		if (/^[#&+!]/.test(lnary[3])) at = lnary[0] + ": ", dest = lnary[3];
-		this.onMsg(dest, lnary[4], lnary[0], lnary[2], at, serv);
-	} else if (/^PING (.+)/.test(ln))
+		if (/^[#&+!]/.test(lnary[3])) dest = lnary[3];
+		this.onMsg(dest, lnary[4], lnary[0], lnary[1], lnary[2], serv);
+	} else if (/^PING (.+)/.test(ln)) {
 		this.send(serv, "PONG", RegExp.$1);
-	else if (/^:(\S+)!(\S+)@(\S+) INVITE (\S+) :(\S+)/.test(ln)) {
+	} else if (/^:(\S+)!(\S+)@(\S+) INVITE (\S+) :(\S+)/.test(ln)) {
 		this.prefs.autoAcceptInvite && this.send(serv, "JOIN", RegExp.$5);
 	} else if (/^:(\S+)!(\S+)@(\S+) NICK :(\S+)/.test(ln)) {
 		if (RegExp.$1 == serv.nick) serv.nick = RegExp.$4;
@@ -187,7 +189,7 @@ function parseIRCln(ln, serv) {
  * @param {Stream} serv Server connection
  */
 aucgbot.onMsg =
-function onMsg(dest, msg, nick, host, at, serv)
+function onMsg(dest, msg, nick, ident, host, serv)
 {	var meping = RegExp("^@?" + serv.nick.replace(/\W/g, "\\$&") + "([:,!.] ?| |$)", "i"), relay = "";
 
 	// fix for buffer playback on ZNC
@@ -216,7 +218,7 @@ function onMsg(dest, msg, nick, host, at, serv)
 	msg = msg.replace(/\s+/g, " ");
 
 	for each (let module in this.modules)
-		if (typeof module.onMsg == "function" && module.onMsg(dest, msg, nick, host, at, serv, relay))
+		if (typeof module.onMsg == "function" && module.onMsg(dest, msg, nick, host, serv, relay))
 			return;
 
 	if (msg[0] == "\1") { // Possible CTCP.
@@ -224,13 +226,12 @@ function onMsg(dest, msg, nick, host, at, serv)
 			this.onCTCP(RegExp.$1.toUpperCase(), RegExp.$2, nick, dest, serv);
 	} else if (this.prefs.prefix && msg.slice(0, this.prefs.prefix.length) == this.prefs.prefix) {
 		msg = msg.slice(this.prefs.prefix.length).replace(/^(\S+) ?/, "");
-		this.parseCmd(dest, RegExp.$1.toLowerCase(), msg, nick, host, at, serv, relay);
-	} else if (meping.test(msg) || !at) {
+		this.parseCmd(dest, RegExp.$1.toLowerCase(), msg, nick, host, serv, relay);
+	} else if (meping.test(msg) || dest != nick) {
 		msg = msg.replace(meping, "").replace(/^(\S+) ?/, "");
-		this.parseCmd(dest, RegExp.$1.toLowerCase(), msg, nick, host, at, serv, relay);
-	} else if (/^help!?$/i.test(msg))
-		this.msg(serv, dest, at + "Welcome! To get help, please state your problem. Being specific will get you help faster.");
-}
+		this.parseCmd(dest, RegExp.$1.toLowerCase(), msg, nick, host, serv, relay);
+	}
+};
 /**
  * Ensure that a message isn't part of a flood.
  *
@@ -275,7 +276,8 @@ function checkFlood(dest, msg, nick, host, serv, relay)
 	serv.flood_in = false;
 	serv.flood_lastTime = Date.now();
 	serv.flood_lines++;
-}
+	return false;
+};
 /**
  * Parse a command filtered by onMsg().
  *
@@ -284,14 +286,13 @@ function checkFlood(dest, msg, nick, host, serv, relay)
  * @param {string} args Any arguments
  * @param {string} nick Nick that sent the PRIVMSG
  * @param {string} host Hostname that sent the PRIVMSG
- * @param {string} at Contains "nick: " if sent to a channel, else ""
  * @param {Stream} serv Server connection
  * @param {string} relay Relay bot nick or ""
  */
 aucgbot.parseCmd =
-function parseCmd(dest, cmd, args, nick, host, at, serv, relay) {
-	if (cmd == "ping") this.msg(serv, dest, at + "pong", args);
-	if (cmd == "version") this.msg(serv, dest, at + this.version);
+function parseCmd(dest, cmd, args, nick, ident, host, serv, relay) {
+	if (cmd == "ping") this.reply(serv, dest, nick, "pong", args);
+	if (cmd == "version") this.reply(serv, dest, nick, this.version);
 	if (cmd == "rc" && host.match(this.prefs.suHosts))
 		this.remoteControl(args.split(" ")[0], args.replace(/^(\S+) /, ""), dest, at, nick, serv);
 	if (/stat|uptime/.test(cmd))
@@ -302,10 +303,11 @@ function parseCmd(dest, cmd, args, nick, host, at, serv, relay) {
 		this.msg(serv, dest, at + "Modules loaded: " + modlist.join(", "));
 	}
 
-	for each (let module in this.modules)
-		if (typeof module["cmd_" + cmd] == "function" && module["cmd_" + cmd](dest, args, nick, host, at, serv, relay))
+	for each (let module in this.modules) {
+		if (typeof module["cmd_" + cmd] == "function" && module["cmd_" + cmd](dest, args, nick, ident, host, serv, relay))
 			return;
-}
+	}
+};
 /**
  * Get the uptime of the bot.
  *
@@ -318,7 +320,7 @@ function uptime() {
 		s = diff % 60, m = (diff % 3600 - s) / 60,
 		h = Math.floor(diff / 3600) % 24, d = Math.floor(diff / 86400);
 	return (d ? d + "d " : "") + (h ? h + "h " : "") + (m ? m + "m " : "") + s + "s";
-}
+};
 /**
  * Parse a CTCP request.
  *
@@ -378,7 +380,7 @@ function onCTCP(type, msg, nick, dest, serv) {
 		this.log(serv, "CTCP", nick + (nick == dest ? "" : " in " + dest), type, msg);
 	}
 	function nctcp(nick, type, msg) aucgbot.send(serv, "NOTICE", nick, ":\1" + type, msg + "\1");
-}
+};
 /**
  * Parses a control signal from a user with remote control privileges.
  *
@@ -390,8 +392,8 @@ function onCTCP(type, msg, nick, dest, serv) {
  * @param {Stream} serv Server connection
  */
 aucgbot.remoteControl =
-function rcBot(cmd, args, dest, at, nick, serv) {
-	cmd != "log" && this.log(serv, "RC", nick + (at ? " in " + dest : ""), cmd + (args ? " " + args : ""));
+function rcBot(cmd, args, dest, nick, serv) {
+	cmd != "log" && this.log(serv, "RC", nick + (dest != nick ? " in " + dest : ""), cmd, args);
 	switch (cmd) {
 	case "self-destruct": // Hehe, I had to put this in :D
 	case "explode":
@@ -426,7 +428,7 @@ function rcBot(cmd, args, dest, at, nick, serv) {
 	case "kick":
 		var args = args.split(" "), chan = args.shift();
 		if (args[0] == serv.nick) {
-			this.msg(serv, dest, at + "Get me to kick myself, yeah, great idea...");
+			this.reply(serv, dest, nick, "Get me to kick myself, yeah, great idea...");
 			break;
 		}
 		if (/^[^#&+!]/.test(chan)) chan = "#" + chan;
@@ -437,7 +439,7 @@ function rcBot(cmd, args, dest, at, nick, serv) {
 	case "message":
 		var args = args.split(" ");
 		if (args[0] == serv.nick) {
-			this.msg(dest, at + "Get me to talk to myself, yeah, great idea...");
+			this.reply(serv, dest, nick, "Get me to talk to myself, yeah, great idea...");
 			break;
 		}
 		args.unshift(serv);
@@ -460,7 +462,7 @@ function rcBot(cmd, args, dest, at, nick, serv) {
 		}
 		try { var res = eval(args); } catch (ex) { res = "exception: " + ex; }
 		if (typeof res == "function") res = "function";
-		res && this.msg(serv, dest, at + res);
+		res && this.reply(serv, dest, nick, res);
 		break;
 	/*case "pref":
 		var args = args.split(" ");
@@ -475,11 +477,11 @@ function rcBot(cmd, args, dest, at, nick, serv) {
 		try {
 			for (let args = args.split(" "); args.length; )
 				this.loadModule(args.shift());
-		} catch (ex) { this.msg(serv, dest, at + ex); }
+		} catch (ex) { this.reply(serv, dest, nick, ex); }
 		break;
 	case "reload":
 		if (!run("aucgbot.js")) {
-			this.msg(serv, dest, at + "I can't find myself!");
+			this.reply(serv, dest, nick, "I can't find myself!");
 			this.log(serv, nick + (at ? " in " + dest : ""), "Can't reload aucgbot!");
 		}
 		break;
@@ -487,7 +489,7 @@ function rcBot(cmd, args, dest, at, nick, serv) {
 		writeln("[ERROR] Possible abuse attempt! ^^^^^");
 		this.send(serv, "NOTICE", nick, ":Hmm? Didn't quite get that.");
 	}
-}
+};
 /**
  * Load a module.
  *
@@ -495,14 +497,14 @@ function rcBot(cmd, args, dest, at, nick, serv) {
  * @throws TypeError Throws a TypeError when the module cannot be loaded.
  */
 aucgbot.loadModule =
-function loadModule(m)
-{	module = {}; // must leak to global scope to reach module itself
+function loadModule(m) {
+	module = {}; // must leak to global scope to reach module itself
 	if (run(m + ".jsm") && module.version)
 		this.modules[m] = module;
 	else
 		throw new TypeError(m + " is not a module.");
 	delete this.global.module;
-}
+};
 
 /**
  * Send data to a server connection.
@@ -511,12 +513,12 @@ function loadModule(m)
  * @return {number} Number of bytes sent
  */
 aucgbot.send =
-function send()
-{	var s = Array.prototype.slice.call(arguments);
+function send() {
+	var s = Array.prototype.slice.call(arguments);
 	if (s.length < 2) throw new TypeError("aucgbot.send requires at least 2 arguments");
 	if (!(s[0] instanceof Stream)) throw new TypeError("1st argument to aucgbot.send() must be a Stream");
 	return s.shift().writeln(s.join(" ").replace(/\s+/, " ").replace(/^ | $/g, ""));
-}
+};
 /**
  * Send a PRIVMSG to a specified destination.
  *
@@ -525,20 +527,36 @@ function send()
  * @return {number} Number of bytes sent
  */
 aucgbot.msg =
-function msg(serv)
-{	var s = Array.prototype.slice.call(arguments);
-	if (s.length < 3) throw new TypeError("aucgbot.msg requires at least 3 arguments");
-	s.shift(); s[1] = ":" + s[1]; s.unshift("PRIVMSG"); s.unshift(serv);
+function msg(serv) {
+	var s = Array.prototype.slice.call(arguments, 1);
+	if (s.length < 2) throw new TypeError("aucgbot.msg requires at least 3 arguments");
+	s[1] = ":" + s[1]; s.unshift("PRIVMSG"); s.unshift(serv);
 	return this.send.apply(this, s);
-}
+};
+/**
+ * Reply to a user request.
+ *
+ * @usage aucgbot.reply(serv, dest, nick, msg...)
+ * @link aucgbot#send
+ * @link aucgbot#msg
+ * @return {number} Number of bytes sent
+ */
+aucgbot.reply =
+function reply(serv, dest, nick) {
+	var msg = String.trim(Array.prototype.slice.call(arguments, 3).join(" ")).replace(/\s+/g, "");
+	if (!msg) throw new TypeError("aucgbot.reply requires at least 4 arguments");
+	if (!(serv instanceof Stream)) throw new TypeError("1st argument to aucgbot.reply() must be a Stream");
+	if (dest != nick) msg = nick + ": " + msg;
+	return serv.writeln("PRIVMSG " + dest + " :" + msg);
+};
 /**
  * Write text to the log file.
  *
  * @usage aucgbot.log(serv, data...)
  */
 aucgbot.log =
-function log(serv)
-{	if (!this.prefs.log) return;
+function log(serv) {
+	if (!this.prefs.log) return;
 	if (arguments.length < 2) throw new TypeError("aucgbot.log requires at least 2 arguments");
 	var s = [serv.hostName, Date.now()], log;
 	for (let i = 1; i < arguments.length; i++)
@@ -546,7 +564,7 @@ function log(serv)
 	log = new Stream("aucgbot.log", "a");
 	log.writeln(s.join(": ").replace(/\s+/, " ").replace(/^ | $/g, ""));
 	log.close();
-}
+};
 
 /**
  * Utility function to generate a (psuedo-)random integer.
@@ -554,7 +572,7 @@ function log(serv)
  * @param {number} [min] Minimum number
  * @param {number} [max] Maximum number
  */
-if (typeof ranint != "function)
+if (typeof ranint != "function")
 function ranint(min, max) {
 	min = min != null ? min : 1;
 	max = max != null ? max : 10;
@@ -571,4 +589,4 @@ if (typeof Array.prototype.random != "function")
 Array.prototype.random =
 function randomElement() this[Math.floor((Math.random()*this.length))];
 
-writeln("aucgbot loaded.");
+println("aucgbot loaded.");

@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-module.version = "0.5 (12 Aug 2012)";
+module.version = "0.5.1 (12 Aug 2012)";
 module.res = [
 	"Mooooooooooo!", "MOO!", "Moo.", "Moo. Moo.", "Moo Moo Moo, Moo Moo.", "fish go m00!",
 	"\1ACTION nibbles on some grass\1",
@@ -53,7 +53,7 @@ function onCTCP(type, msg, nick, dest, serv) {
 			aucgbot.msg(serv, dest, res.random().replace("$dest", dest, "g").replace("$nick", nick, "g"));
 }
 module.onMsg =
-function onMsg(dest, msg, nick, host, at, serv) {
+function onMsg(dest, msg, nick, ident, host, serv, relay) {
 	if (/(ham|cheese) ?burger|beef/i.test(msg) && !/^au/.test(nick))
 		aucgbot.msg(serv, dest, "\1ACTION eats", nick + "\1");
 	else if (/moo|cow/i.test(msg)) {

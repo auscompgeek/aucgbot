@@ -5,16 +5,16 @@
  
 // Load this by sending the bot: rc loadmod helloworld
 
-module.version = "0.4 (16 Jun 2012)";
-/* Do NOT do this! Use onMsg() or cmd_*() instead so that the flood protection is triggered.
-module.parseln =
-function parseln(ln, serv)
-{	if ((lnary = /^:(\S+)!(\S+)@(\S+) PRIVMSG (\S+) :(.*)/.exec(ln)))
-	{	lnary.shift();
+module.version = "0.4.1 (12 Aug 2012)";
+// Do NOT do this! Use onMsg() or cmd_*() instead so that the flood protection is triggered.
+/*module.parseln =
+function parseln(ln, serv) {
+	if ((lnary = /^:(\S+)!(\S+)@(\S+) PRIVMSG (\S+) :(.*)/.exec(ln))) {
+		lnary.shift();
 		var at = "", dest = lnary[0];
 		if (/^[#&+!]/.test(lnary[3])) at = lnary[0] + ": ", dest = lnary[3];
-		if (lnary[4].match(aucgbot.nick.replace(/\W/g, "\\$&") + ": hello"))
-		{	aucgbot.msg(serv, dest, "Hello world!");
+		if (lnary[4].match(aucgbot.nick.replace(/\W/g, "\\$&") + ": hello")) {
+			aucgbot.msg(serv, dest, "Hello world!");
 			return true; // Stop processing of message.
 		}
 	}
@@ -32,14 +32,14 @@ function parseln(ln, serv)
  * @param {String} relay: If sent by a relay bot, the relay bot's nick, else "".
  */
 module.onMsg =
-function onMsg(dest, msg, nick, host, at, serv, relay)
-{	if (msg.match("hello bot"))
-	{	aucgbot.msg(serv, dest, "Hello, World!");
+function onMsg(dest, msg, nick, ident, host, serv, relay) {
+	if (msg.match("hello bot")) {
+		aucgbot.msg(serv, dest, "Hello World!");
 		return true; // Stop processing of message.
 	}
 }
 module.cmd_hello =
-function cmd_hello(dest, msg, nick, host, at, serv, relay)
-{	aucgbot.msg(serv, dest, at + "Hello, World!");
+function cmd_hello(dest, msg, nick, ident, host, serv, relay) {
+	aucgbot.reply(serv, dest, nick, "Hello World!");
 	return true; // Say that we've reached a valid command and stop processing the message.
 }

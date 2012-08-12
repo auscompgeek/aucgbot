@@ -1,17 +1,15 @@
 #!/usr/bin/env jsdb
-var servers = [];
-for (let i = 0, s = true; s; i++)
-{	servers.push([]);
+// -*- Mode: JavaScript; tab-width: 4 -*- vim:tabstop=4 syntax=javascript:
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-	for (let j = 0, prompts =
-		[	"Hostname",
-			"Port",
-			"Nickname",
-			"Ident",
-			"Pass",
-			"Channels"
-		]; j < prompts.length; j++)
-	{	print(prompts[j], ": ");
+var servers = [];
+for (let i = 0, s = true; s; i++) {
+	servers.push([]);
+
+	for (let j = 0, prompts = ["Hostname", "Port", "Nickname", "Ident", "Pass", "Channels"]; j < prompts.length; j++) {
+		print(prompts[j], ": ");
 		servers[i].push(readln());
 	}
 
@@ -20,8 +18,8 @@ for (let i = 0, s = true; s; i++)
 }
 system.cwd = system.script.replace(/[^\\\/]+?$/, "");
 run("aucgbot.js");
-if (!aucgbot)
-{	system.stderr.writeln("aucgbot could not be loaded.");
+if (!aucgbot) {
+	system.stderr.writeln("aucgbot could not be loaded.");
 	system.stderr.writeln("system.cwd = ", system.cwd);
 	system.exitCode = 1;
 	system.exit();
