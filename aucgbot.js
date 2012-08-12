@@ -1,5 +1,6 @@
 // -*- Mode: JavaScript; tab-width: 4 -*- vim:tabstop=4:
-/* This Source Code Form is subject to the terms of the Mozilla Public
+/**
+ * @license This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
@@ -15,10 +16,12 @@
  *	aucgbot.start([hostname, port, nick, ident, pass, channels]...);
  */
 
-if (!aucgbot) var aucgbot =
-{	prefs:
-	{	flood:
-		{	lines: 6,
+if (!aucgbot)
+/** @namespace */
+var aucgbot = {
+	prefs: {
+		flood: {
+			lines: 6,
 			secs: 3,
 			check: true,
 			log: true,
@@ -47,11 +50,14 @@ if (!aucgbot) var aucgbot =
 	servs: [],
 	global: this
 };
-aucgbot.version = "3.0 (27 Jun 2012)";
+aucgbot.version = "3.0.1 (12 Aug 2012)";
 
+/**
+ * Start the bot. Each argument is to be passed as arguments to {@link aucgbot#connect}.
+ */
 aucgbot.start =
-function startBot()
-{	for (let args = Array.prototype.slice.call(arguments); args.length; )
+function startBot() {
+	for (let args = Array.prototype.slice.call(arguments); args; )
 		this.connect.apply(this, args.shift());
 	this.started = Date.now();
 	this.startLoop();
@@ -59,23 +65,24 @@ function startBot()
 /**
  * Connect the bot. All arguments are optional.
  *
- * @param {String} serv: The hostname to connect to (default: 127.0.0.1)
- * @param {Number} port: The port to connect to (default: 6667)
- * @param {String} nick: Nick to use (default: aucgbot)
- * @param {String} user: Ident to use (default: aucgbot)
- * @param {String} pass: The server password to use, if any
- * @param {Array} chans: Array or string describing channels to join on connect (default: #bots)
+ * @param {string} [serv] The hostname to connect to (default: 127.0.0.1)
+ * @param {number} [port] The port to connect to (default: 6667)
+ * @param {string} [nick] Nick to use (default: aucgbot)
+ * @param {string} [user] Ident to use (default: aucgbot)
+ * @param {string} [pass] The server password to use, if any
+ * @param {(string|array)} [chans] Channels to join on connect (default: #bots)
+ * @see aucgbot#start
  */
 aucgbot.connect =
-function connectBot(serv, port, nick, user, pass, chans)
-{	var channels = ["#bots"], addr = (serv || "127.0.0.1") + ":" + (parseInt(port) || 6667),
+function connectBot(serv, port, nick, user, pass, chans) {
+	var channels = ["#bots"], addr = (serv || "127.0.0.1") + ":" + (parseInt(port) || 6667),
 	    serv = new Stream("net://" + addr, "rwt"), ln;
 	pass && this.send(serv, "PASS", pass); pass = null;
 	serv.nick = nick || "aucgbot"; serv.flood_lines = 0;
 	this.send(serv, "NICK", serv.nick);
 	this.send(serv, "USER " + (user || "aucgbot") + " 8 * :\x033\17auscompgeek's JS bot");
-	if (chans)
-	{	if (chans instanceof Array)
+	if (chans) {
+		if (chans instanceof Array)
 			channels = chans, chans = null;
 		else if (typeof chans == "string")
 			channels = chans.split(","), chans = null;
@@ -85,15 +92,15 @@ function connectBot(serv, port, nick, user, pass, chans)
 		writeln("[WARNING] No channels specified! Joining ", channels);
 	for (let i = 0; i < channels.length; i++)
 		channels[i] = /^[#&+!]/.test(channels[i]) ? channels[i] : "#" + channels[i];
-	while ((ln = serv.readln()))
-	{	writeln(serv.hostName, ": ", ln);
+	while ((ln = serv.readln())) {
+		writeln(serv.hostName, ": ", ln);
 		if (/^PING (.+)/.test(ln))
 			this.send(serv, "PONG", RegExp.$1);
 		else if (/^:\S+ 433 ./.test(ln))
 			this.send(serv, "NICK", serv.nick += "_");
-		else if (/^:\S+ 003 ./.test(ln))
-		{	if (channels)
-			{	this.send(serv, "JOIN", channels.join(","));
+		else if (/^:\S+ 003 ./.test(ln)) {
+			if (channels) {
+				this.send(serv, "JOIN", channels.join(","));
 				channels = null;
 			}
 			break;
@@ -103,27 +110,29 @@ function connectBot(serv, port, nick, user, pass, chans)
 }
 /**
  * Start the server read line loop.
+ *
+ * @see aucgbot#start
  */
 aucgbot.startLoop =
-function startLoop()
-{	while (this.servs)
-	{	system.wait(this.servs, 60000);
-		for each (let serv in this.servs)
-		{	if (!serv.canRead) continue;
+function startLoop() {
+	while (this.servs) {
+		system.wait(this.servs, 60000);
+		for each (let serv in this.servs) {
+			if (!serv.canRead) continue;
 			this.parseln(serv.readln(), serv);
-			if (system.kbhit())
-			{	if (this.prefs["keyboard.sendInput"])
+			if (system.kbhit()) {
+				if (this.prefs["keyboard.sendInput"])
 					this.send(serv, readln());
-				else if (this.prefs["keyboard.dieOnInput"])
-				{	this.send(serv, "QUIT :Keyboard input.");
+				else if (this.prefs["keyboard.dieOnInput"]) {
+					this.send(serv, "QUIT :Keyboard input.");
 					sleep(500); // Give the server time to receive the QUIT message.
 					serv.close();
 				}
 			}
 		}
 		for (let i = this.servs.length - 1; i >= 0; i--)
-			if (this.servs[i].eof)
-			{	this.servs[i].close();
+			if (this.servs[i].eof) {
+				this.servs[i].close();
 				if (i == this.servs.length - 1)
 					this.servs.length--
 				else
@@ -136,33 +145,33 @@ function startLoop()
 /**
  * Parse a raw IRC line.
  *
- * @param {String} ln: Raw IRC line
- * @param {Stream} serv: Server connection
+ * @param {string} ln Raw IRC line
+ * @param {Stream} serv Server connection
  */
 aucgbot.parseln =
-function parseIRCln(ln, serv)
-{	if (!ln) return; // for weird servers
-	try { ln = decodeUTF8(ln) } catch (ex) {}
+function parseIRCln(ln, serv) {
+	if (!ln) return; // for weird servers
+	try { ln = decodeUTF8(ln); } catch (ex) {}
 	writeln(serv.hostName, ": ", ln);
 	for each (let module in this.modules)
 		if (typeof module.parseln == "function" && module.parseln(ln, serv))
 			return;
 	if (/^:(\S+)!\S+@(\S+) ./.test(ln) && RegExp.$1 == serv.nick) this.host = RegExp.$2;
-	if ((lnary = /^:(\S+)!(\S+)@(\S+) PRIVMSG (\S+) :(.*)/.exec(ln)))
-	{	lnary.shift();
+	if ((lnary = /^:(\S+)!(\S+)@(\S+) PRIVMSG (\S+) :(.*)/.exec(ln))) {
+		lnary.shift();
 		var at = "", dest = lnary[0];
 		if (/^[#&+!]/.test(lnary[3])) at = lnary[0] + ": ", dest = lnary[3];
 		this.onMsg(dest, lnary[4], lnary[0], lnary[2], at, serv);
 	} else if (/^PING (.+)/.test(ln))
 		this.send(serv, "PONG", RegExp.$1);
-	else if (/^:(\S+)!(\S+)@(\S+) INVITE (\S+) :(\S+)/.test(ln))
-	{	if (this.prefs.autoAcceptInvite) this.send(serv, "JOIN", RegExp.$5);
-	} else if (/^:(\S+)!(\S+)@(\S+) NICK :(\S+)/.test(ln))
-	{	if (RegExp.$1 == serv.nick) serv.nick = RegExp.$4;
-	} else if (/^:(\S+)(?:!(\S+)@(\S+)|) MODE (\S+)(?: (.+)|)/.test(ln))
-	{	// XXX Parse!
-	} else if (/^:(\S+!\S+@\S+) KICK (\S+) (\S+) :(.*)/.test(ln) && RegExp.$3 == serv.nick)
-	{	this.prefs["kick.rejoin"] && this.send(serv, "JOIN", RegExp.$2);
+	else if (/^:(\S+)!(\S+)@(\S+) INVITE (\S+) :(\S+)/.test(ln)) {
+		this.prefs.autoAcceptInvite && this.send(serv, "JOIN", RegExp.$5);
+	} else if (/^:(\S+)!(\S+)@(\S+) NICK :(\S+)/.test(ln)) {
+		if (RegExp.$1 == serv.nick) serv.nick = RegExp.$4;
+	} else if (/^:(\S+)(?:!(\S+)@(\S+)|) MODE (\S+)(?: (.+)|)/.test(ln)) {
+		// XXX Parse!
+	} else if (/^:(\S+!\S+@\S+) KICK (\S+) (\S+) :(.*)/.test(ln) && RegExp.$3 == serv.nick) {
+		this.prefs["kick.rejoin"] && this.send(serv, "JOIN", RegExp.$2);
 		this.prefs["kick.log"] && this.log(serv, "KICK", RegExp.$1, RegExp.$2, RegExp.$4);
 	}
 }
@@ -170,21 +179,21 @@ function parseIRCln(ln, serv)
 /**
  * Parse a PRIVMSG.
  *
- * @param {String} dest: Channel or nick to send messages back
- * @param {String} msg: The message
- * @param {String} nick: Nick that sent the PRIVMSG
- * @param {String} host: Hostname that sent the PRIVMSG
- * @param {String} at: Contains "nick: " if sent to a channel, else ""
- * @param {Stream} serv: Server connection
+ * @param {string} dest Channel or nick to send messages back
+ * @param {string} msg The message
+ * @param {string} nick Nick that sent the PRIVMSG
+ * @param {string} host Hostname that sent the PRIVMSG
+ * @param {string} at Contains "nick: " if sent to a channel, else ""
+ * @param {Stream} serv Server connection
  */
 aucgbot.onMsg =
 function onMsg(dest, msg, nick, host, at, serv)
 {	var meping = RegExp("^@?" + serv.nick.replace(/\W/g, "\\$&") + "([:,!.] ?| |$)", "i"), relay = "";
 
 	// fix for buffer playback on ZNC
-	if (this.prefs.zncBufferHacks)
-	{	if (nick == "***")
-		{	if (msg == "Buffer playback...")
+	if (this.prefs.zncBufferHacks) {
+		if (nick == "***") {
+			if (msg == "Buffer playback...")
 				serv.zncBuffer = true;
 			else if (msg == "Playback complete")
 				serv.zncBuffer = false;
@@ -210,14 +219,14 @@ function onMsg(dest, msg, nick, host, at, serv)
 		if (typeof module.onMsg == "function" && module.onMsg(dest, msg, nick, host, at, serv, relay))
 			return;
 
-	if (msg[0] == "\1") // Possible CTCP.
-	{	if (/^\x01([^\1 ]+)(?: ([^\1]*)|)/.test(msg))
+	if (msg[0] == "\1") { // Possible CTCP.
+		if (/^\x01([^\1 ]+)(?: ([^\1]*)|)/.test(msg))
 			this.onCTCP(RegExp.$1.toUpperCase(), RegExp.$2, nick, dest, serv);
-	} else if (this.prefs.prefix && msg.slice(0, this.prefs.prefix.length) == this.prefs.prefix)
-	{	msg = msg.slice(this.prefs.prefix.length).replace(/^(\S+) ?/, "");
+	} else if (this.prefs.prefix && msg.slice(0, this.prefs.prefix.length) == this.prefs.prefix) {
+		msg = msg.slice(this.prefs.prefix.length).replace(/^(\S+) ?/, "");
 		this.parseCmd(dest, RegExp.$1.toLowerCase(), msg, nick, host, at, serv, relay);
-	} else if (meping.test(msg) || !at)
-	{	msg = msg.replace(meping, "").replace(/^(\S+) ?/, "");
+	} else if (meping.test(msg) || !at) {
+		msg = msg.replace(meping, "").replace(/^(\S+) ?/, "");
 		this.parseCmd(dest, RegExp.$1.toLowerCase(), msg, nick, host, at, serv, relay);
 	} else if (/^help!?$/i.test(msg))
 		this.msg(serv, dest, at + "Welcome! To get help, please state your problem. Being specific will get you help faster.");
@@ -225,13 +234,13 @@ function onMsg(dest, msg, nick, host, at, serv)
 /**
  * Ensure that a message isn't part of a flood.
  *
- * @param {String} dest: Channel or nick to send messages back
- * @param {String} msg: The message
- * @param {String} nick: Nick that sent the PRIVMSG
- * @param {String} host: Hostname that sent the PRIVMSG
- * @param {Stream} serv: Server connection
- * @param {String} relay: Relay bot nick or ""
- * @return {Boolean}: True if message is part of a flood
+ * @param {string} dest Channel or nick to send messages back
+ * @param {string} msg The message
+ * @param {string} nick Nick that sent the PRIVMSG
+ * @param {string} host Hostname that sent the PRIVMSG
+ * @param {Stream} serv Server connection
+ * @param {string} relay Relay bot nick or ""
+ * @return {boolean} True if message is part of a flood
  */
 aucgbot.checkFlood =
 function checkFlood(dest, msg, nick, host, serv, relay)
@@ -246,16 +255,16 @@ function checkFlood(dest, msg, nick, host, serv, relay)
 	 */
 	if (serv.zncBuffer) return false;
 	if (Date.now() - serv.flood_lastTime > this.prefs.flood.secs * 1000) serv.flood_lines = 0;
-	if (serv.flood_lines >= this.prefs.flood.lines && Date.now() - serv.flood_lastTime <= this.prefs.flood.secs * 1000)
-	{	let kb = !(relay || dest == nick || nick == serv.nick || host == this.host || nick.match(this.prefs["nokick.nicks"]) || host.match(this.prefs["nokick.hosts"]) || host.match(this.prefs.suHosts) /*|| serv.cmodes[dest][nick].length*/) /*&& serv.cmodes[dest][serv.nick].length*/;
+	if (serv.flood_lines >= this.prefs.flood.lines && Date.now() - serv.flood_lastTime <= this.prefs.flood.secs * 1000) {
+		let kb = !(relay || dest == nick || nick == serv.nick || host == this.host || nick.match(this.prefs["nokick.nicks"]) || host.match(this.prefs["nokick.hosts"]) || host.match(this.prefs.suHosts) /*|| serv.cmodes[dest][nick].length*/) /*&& serv.cmodes[dest][serv.nick].length*/;
 		serv.flood_lastTime = Date.now();
-		if (serv.flood_in)
-		{	if (kb)
+		if (serv.flood_in) {
+			if (kb)
 			{	this.prefs.flood.kick && this.send(serv, "KICK", dest, nick, ":No flooding!");
 				this.prefs.flood.ban && this.send(serv, "MODE", dest, "+b *!*@" + host);
 			}
-		} else
-		{	serv.flood_in = true;
+		} else {
+			serv.flood_in = true;
 			writeln("[WARNING] Flood detected!");
 			kb && this.prefs.flood.kick ? this.send(serv, "KICK", dest, nick, ":No flooding!") :
 			this.prefs.flood.warn && !relay && this.send(serv, "NOTICE", nick, ":Please don't flood.");
@@ -270,25 +279,25 @@ function checkFlood(dest, msg, nick, host, serv, relay)
 /**
  * Parse a command filtered by onMsg().
  *
- * @param {String} dest: Channel or nick to send messages back
- * @param {String} cmd: Command name
- * @param {String} args: Any arguments
- * @param {String} nick: Nick that sent the PRIVMSG
- * @param {String} host: Hostname that sent the PRIVMSG
- * @param {String} at: Contains "nick: " if sent to a channel, else ""
- * @param {Stream} serv: Server connection
- * @param {String} relay: Relay bot nick or ""
+ * @param {string} dest Channel or nick to send messages back
+ * @param {string} cmd Command name
+ * @param {string} args Any arguments
+ * @param {string} nick Nick that sent the PRIVMSG
+ * @param {string} host Hostname that sent the PRIVMSG
+ * @param {string} at Contains "nick: " if sent to a channel, else ""
+ * @param {Stream} serv Server connection
+ * @param {string} relay Relay bot nick or ""
  */
 aucgbot.parseCmd =
-function parseCmd(dest, cmd, args, nick, host, at, serv, relay)
-{	if (cmd == "ping") this.msg(serv, dest, at + "pong", args);
+function parseCmd(dest, cmd, args, nick, host, at, serv, relay) {
+	if (cmd == "ping") this.msg(serv, dest, at + "pong", args);
 	if (cmd == "version") this.msg(serv, dest, at + this.version);
 	if (cmd == "rc" && host.match(this.prefs.suHosts))
 		this.remoteControl(args.split(" ")[0], args.replace(/^(\S+) /, ""), dest, at, nick, serv);
 	if (/stat|uptime/.test(cmd))
 		this.msg(serv, dest, at + "I've been up " + this.up() + ".");
-	if (/listmods|modlist/.test(cmd)) 
-	{	let modlist = [];
+	if (/listmods|modlist/.test(cmd)) {
+		let modlist = [];
 		for (let i in this.modules) modlist.push(i + " " + this.modules[i].version);
 		this.msg(serv, dest, at + "Modules loaded: " + modlist.join(", "));
 	}
@@ -301,11 +310,11 @@ function parseCmd(dest, cmd, args, nick, host, at, serv, relay)
  * Get the uptime of the bot.
  *
  * @author Ogmios
- * @return {String}: Uptime in human readable format
+ * @return {string} Uptime in human readable format
  */
 aucgbot.up =
-function uptime()
-{	var diff = Math.round((Date.now() - this.started) / 1000),
+function uptime() {
+	var diff = Math.round((Date.now() - this.started) / 1000),
 		s = diff % 60, m = (diff % 3600 - s) / 60,
 		h = Math.floor(diff / 3600) % 24, d = Math.floor(diff / 86400);
 	return (d ? d + "d " : "") + (h ? h + "h " : "") + (m ? m + "m " : "") + s + "s";
@@ -313,219 +322,177 @@ function uptime()
 /**
  * Parse a CTCP request.
  *
- * @param {String} type: CTCP request type
- * @param {String} msg: Any arguments
- * @param {String} nick: Nick of the requestee
- * @param {String} dest: Channel to which the request was sent (`nick` if sent in PM)
- * @param {Stream} serv: Server connection
+ * @param {string} type CTCP request type
+ * @param {string} msg Any arguments
+ * @param {string} nick Nick of the requestee
+ * @param {string} dest Channel to which the request was sent (`nick` if sent in PM)
+ * @param {Stream} serv Server connection
  */
 aucgbot.onCTCP =
-function onCTCP(type, msg, nick, dest, serv)
-{	for each (let module in this.modules)
+function onCTCP(type, msg, nick, dest, serv) {
+	for each (let module in this.modules)
 		if (typeof module.onCTCP == "function" && module.onCTCP.apply(module, arguments))
 			return;
-	switch (type)
-	{	case "ACTION":
-			var res =
-			[	"\1ACTION slaps " + nick + " around a bit with a large trout\1",
-				"\1ACTION slaps " + nick + " around a bit with a small fish\1",
-				nick + "! Look over there! *slap*",
-				"\1ACTION gets the battering hammer and bashes " + nick + " with it\1",
-				"\1ACTION bashes " + nick + " with a terrifying Windows ME user guide\1",
-				"\1ACTION beats " + nick + " to a pulp\1",
-				"\1ACTION hits " + nick + " with an enormous Compaq laptop\1",
-				"\1ACTION hits " + nick + " with a breath taking Windows ME user guide\1",
-				"\1ACTION smacks " + nick + "\1",
-				"\1ACTION trips up " + nick + " and laughs\1",
-				"\1ACTION uses his 1337ness against " + nick + "\1",
-				"\1ACTION slaps " + nick + ", therefore adding to his aggressiveness stats\1",
-				"\1ACTION pokes " + nick + " in the ribs\1",
-				"\1ACTION drops a fully grown whale on " + nick + "\1",
-				"\1ACTION whacks " + nick + " with a piece of someone's floorboard\1",
-				"\1ACTION slaps " + nick + " with IE6\1",
-				"\1ACTION trout slaps " + nick + "\1",
-				"\1ACTION hits " + nick + " over the head with a hammer\1",
-				"\1ACTION slaps " + nick + "\1",
-				"\1ACTION slaps " + nick + " with a trout\1",
-				"\1ACTION whacks " + nick + " with a suspicious brick\1",
-				"\1ACTION puts " + nick + "'s fingers in a Chinese finger lock\1",
-				"\1ACTION randomly slaps " + nick + "\1",
-				"\1ACTION pies " + nick + "\1",
-				"Hey! Stop it!", "Go away!", "GETOFF!",
-				"Mooooooooooo!", "MOO!", "Moo.", "Moo. Moo.", "Moo Moo Moo, Moo Moo.", "fish go m00!",
-				"\1ACTION nibbles on some grass\1",
-				"\1ACTION goes and gets a drink\1",
-				"\1ACTION looks in the " + dest + " fridge\1",
-				"\1ACTION quietly meditates on the purpose of " + dest + "\1",
-				"\1ACTION races across the channel\1",
-				"\1ACTION runs around in circles and falls over\1",
-				"\1ACTION wanders aimlessly\1",
-				"\1ACTION eyes " + nick + " menacingly\1",
-				"\1ACTION sniffs " + nick + "\1",
-				"\1ACTION thumps " + nick + "\1",
-				"\1ACTION solves partial differential equations\1"
-			];
-			msg.match("(hit|kick|slap|eat|prod|stab|kill|whack|insult|teabag|(punch|bash|touch|pok)e)s " +
-				serv.nick.replace(/\W/g, "\\$&") + "\\b", "i") &&
-				this.msg(serv, dest, res.random());
-			break;
-		case "VERSION":
-			nctcp(nick, type, "aucg's JS IRC bot v" + this.version +
-					" (JSDB " + system.release + ", JS " + (system.version / 100) + ")");
-			break;
-		case "TIME":
-			nctcp(nick, type, Date());
-			break;
-		case "SOURCE":
-		case "URL":
-			nctcp(nick, type, "https://github.com/auscompgeek/aucgbot on http://jsdb.org");
-			break;
-		case "PING":
-			nctcp(nick, type, msg);
-			break;
-		case "UPTIME":
-		case "AGE":
-			nctcp(nick, type, this.up());
-			break;
-		case "GENDER":
-		case "SEX":
-			nctcp(nick, type, "bot");
-			break;
-		case "LOCATION":
-			nctcp(nick, type, "behind you");
-			break;
-		case "A/S/L":
-		case "ASL":
-			nctcp(nick, type, "2/bot/behind you");
-			break;
-		case "AVATAR":
-		case "ICON":
-		case "FACE":
-			break;
-		case "LANGUAGES":
-		case "LANGUAGE":
-			nctcp(nick, type, "JS,en");
-			break;
-		default:
-			writeln("[ERROR] Unknown CTCP! ^^^^^");
-			this.log(serv, "CTCP", nick + (nick == dest ? "" : " in " + dest), type, msg);
+	switch (type) {
+	case "ACTION":
+		break;
+	case "VERSION":
+		nctcp(nick, type, "aucg's JS IRC bot v" + this.version +
+				" (JSDB " + system.release + ", JS " + (system.version / 100) + ")");
+		break;
+	case "TIME":
+		nctcp(nick, type, Date());
+		break;
+	case "SOURCE":
+	case "URL":
+		nctcp(nick, type, "https://github.com/auscompgeek/aucgbot on http://jsdb.org");
+		break;
+	case "PING":
+		nctcp(nick, type, msg);
+		break;
+	case "UPTIME":
+	case "AGE":
+		nctcp(nick, type, this.up());
+		break;
+	case "GENDER":
+	case "SEX":
+		nctcp(nick, type, "bot");
+		break;
+	case "LOCATION":
+		nctcp(nick, type, "behind you");
+		break;
+	case "A/S/L":
+	case "ASL":
+		nctcp(nick, type, "2/bot/behind you");
+		break;
+	case "AVATAR":
+	case "ICON":
+	case "FACE":
+		break;
+	case "LANGUAGES":
+	case "LANGUAGE":
+		nctcp(nick, type, "JS,en");
+		break;
+	default:
+		writeln("[ERROR] Unknown CTCP! ^^^^^");
+		this.log(serv, "CTCP", nick + (nick == dest ? "" : " in " + dest), type, msg);
 	}
 	function nctcp(nick, type, msg) aucgbot.send(serv, "NOTICE", nick, ":\1" + type, msg + "\1");
 }
 /**
  * Parses a control signal from a user with remote control privileges.
  *
- * @param {String} cmd: Command
- * @param {String} args: Any arguments
- * @param {String} dest: Channel or nick to send messages back
- * @param {String} at: Contains "nick: " if sent to a channel, else ""
- * @param {String} nick: Nick that sent the signal
- * @param {Stream} serv: Server connection
+ * @param {string} cmd Command
+ * @param {string} args Any arguments
+ * @param {string} dest Channel or nick to send messages back
+ * @param {string} at Contains "nick: " if sent to a channel, else ""
+ * @param {string} nick Nick that sent the signal
+ * @param {Stream} serv Server connection
  */
 aucgbot.remoteControl =
-function rcBot(cmd, args, dest, at, nick, serv)
-{	cmd != "log" && this.log(serv, "RC", nick + (at ? " in " + dest : ""), cmd + (args ? " " + args : ""));
-	switch (cmd)
-	{	case "self-destruct": // Hehe, I had to put this in :D
-		case "explode":
-			this.send(serv, "QUIT :" + at, "10... 9... 8... 7... 6... 5... 4... 3... 2... 1... 0... *boom*", args);
-			sleep(500);
-			serv.close();
+function rcBot(cmd, args, dest, at, nick, serv) {
+	cmd != "log" && this.log(serv, "RC", nick + (at ? " in " + dest : ""), cmd + (args ? " " + args : ""));
+	switch (cmd) {
+	case "self-destruct": // Hehe, I had to put this in :D
+	case "explode":
+		this.send(serv, "QUIT :" + at, "10... 9... 8... 7... 6... 5... 4... 3... 2... 1... 0... *boom*", args);
+		sleep(500);
+		serv.close();
+		break;
+	case "die":
+		this.send(serv, "QUIT :" + at + args);
+		sleep(500);
+		serv.close();
+		break;
+	case "connect":
+		var argary = /^(?:irc:\/\/|)(\w[\w.-]+\w)(?::([1-5]\d{0,4}|[6-9]\d{0,3}|6[0-5]{2}[0-3][0-5])|)(?:\/([^?]*)|)(?:\?pass=(.+)|)$/.exec(args);
+		if (!argary) { // Invalid URL?!?!?
+			writeln("[ERROR] Invalid URL! ^^^^^");
 			break;
-		case "die":
-			this.send(serv, "QUIT :" + at + args);
-			sleep(500);
-			serv.close();
+		}
+		argary.shift();
+		this.connect(argary[0], argary[1], serv.nick, "", argary[3], argary[2]);
+		break;
+	case "join":
+		var args = args.split(",");
+		for (let i in args) if (!/^[#&+!]/.test(args[i])) args[i] = "#" + args[i];
+		this.send(serv, "JOIN", args.join(","));
+		break;
+	case "leave":
+		var args = args.split(" "), chans = args.shift().split(",");
+		for (let i in chans) if (!/^[#&+!]/.test(chans[i])) chans[i] = "#" + chans[i];
+		this.send(serv, "PART", chans.join(","), ":" + at + args.join(" "));
+		break;
+	case "kick":
+		var args = args.split(" "), chan = args.shift();
+		if (args[0] == serv.nick) {
+			this.msg(serv, dest, at + "Get me to kick myself, yeah, great idea...");
 			break;
-		case "connect":
-			var argary = /^(?:irc:\/\/|)(\w[\w.-]+\w)(?::([1-5]\d{0,4}|[6-9]\d{0,3}|6[0-5]{2}[0-3][0-5])|)(?:\/([^?]*)|)(?:\?pass=(.+)|)$/.exec(args);
-			if (!argary) // Invalid URL?!?!?
-			{	writeln("[ERROR] Invalid URL! ^^^^^");
-				break;
-			}
-			argary.shift();
-			this.connect(argary[0], argary[1], serv.nick, "", argary[3], argary[2]);
+		}
+		if (/^[^#&+!]/.test(chan)) chan = "#" + chan;
+		this.send(serv, "KICK", chan, args.shift(), ":" + at + args.join(" "));
+		break;
+	case "msg":
+	case "privmsg":
+	case "message":
+		var args = args.split(" ");
+		if (args[0] == serv.nick) {
+			this.msg(dest, at + "Get me to talk to myself, yeah, great idea...");
 			break;
-		case "join":
-			var args = args.split(",");
-			for (let i in args) if (!/^[#&+!]/.test(args[i])) args[i] = "#" + args[i];
-			this.send(serv, "JOIN", args.join(","));
+		}
+		args.unshift(serv);
+		this.msg.apply(this, args);
+		break;
+	case "echo":
+	case "say":
+		this.msg(serv, dest, args);
+		break;
+	case "quote":
+	case "raw":
+		this.send(serv, args);
+		break;
+	case "eval":
+	case "js": // Dangerous!
+		if (/(stringify|uneval).*(aucgbot|this|global)/i.test(args)) {
+			writeln("[WARNING] Possible abuse! ^^^^^");
+			this.send(serv, "NOTICE", nick, ":Please don't try to abuse my remote control.");
 			break;
-		case "leave":
-			var args = args.split(" "), chans = args.shift().split(",");
-			for (let i in chans) if (!/^[#&+!]/.test(chans[i])) chans[i] = "#" + chans[i];
-			this.send(serv, "PART", chans.join(","), ":" + at + args.join(" "));
-			break;
-		case "kick":
-			var args = args.split(" "), chan = args.shift();
-			if (args[0] == serv.nick)
-			{	this.msg(serv, dest, at + "Get me to kick myself, yeah, great idea...");
-				break;
-			}
-			if (/^[^#&+!]/.test(chan)) chan = "#" + chan;
-			this.send(serv, "KICK", chan, args.shift(), ":" + at + args.join(" "));
-			break;
-		case "msg":
-		case "privmsg":
-		case "message":
-			var args = args.split(" ");
-			if (args[0] == serv.nick)
-			{	this.msg(dest, at + "Get me to talk to myself, yeah, great idea...");
-				break;
-			}
-			args.unshift(serv);
-			this.msg.apply(this, args);
-			break;
-		case "echo":
-		case "say":
-			this.msg(serv, dest, args);
-			break;
-		case "quote":
-		case "raw":
-			this.send(serv, args);
-			break;
-		case "eval":
-		case "js": // Dangerous!
-			if (/(stringify|uneval).*(aucgbot|this|global)/i.test(args))
-			{	writeln("[WARNING] Possible abuse! ^^^^^");
-				this.send(serv, "NOTICE", nick, ":Please don't try to abuse my remote control.");
-				break;
-			}
-			try { var res = eval(args) } catch (ex) { res = "exception: " + ex }
-			if (typeof res == "function") res = "function";
-			res && this.msg(serv, dest, at + res);
-			break;
-		/*case "pref":
-			var args = args.split(" ");
-			if (this.prefs[args[0]] == undefined)
-			{	this.send("NOTICE", nick)
-			}*/
-		case "log":
-			this.log(serv, "LOG", nick + (at ? " in " + dest : ""), args);
-			break;
-		case "modload":
-		case "loadmod":
-			try
-			{	for (let args = args.split(" "); args.length; )
-					this.loadModule(args.shift());
-			} catch (ex) { this.msg(serv, dest, at + ex) }
-			break;
-		case "reload":
-			if (!run("aucgbot.js"))
-			{	this.msg(serv, dest, at + "I can't find myself!");
-				this.log(serv, nick + (at ? " in " + dest : ""), "Can't reload aucgbot!");
-			}
-			break;
-		default:
-			writeln("[ERROR] Possible abuse attempt! ^^^^^");
-			this.send(serv, "NOTICE", nick, ":Hmm? Didn't quite get that.");
+		}
+		try { var res = eval(args); } catch (ex) { res = "exception: " + ex; }
+		if (typeof res == "function") res = "function";
+		res && this.msg(serv, dest, at + res);
+		break;
+	/*case "pref":
+		var args = args.split(" ");
+		if (this.prefs[args[0]] == undefined)
+		{	this.send("NOTICE", nick)
+		}*/
+	case "log":
+		this.log(serv, "LOG", nick + (at ? " in " + dest : ""), args);
+		break;
+	case "modload":
+	case "loadmod":
+		try {
+			for (let args = args.split(" "); args.length; )
+				this.loadModule(args.shift());
+		} catch (ex) { this.msg(serv, dest, at + ex); }
+		break;
+	case "reload":
+		if (!run("aucgbot.js")) {
+			this.msg(serv, dest, at + "I can't find myself!");
+			this.log(serv, nick + (at ? " in " + dest : ""), "Can't reload aucgbot!");
+		}
+		break;
+	default:
+		writeln("[ERROR] Possible abuse attempt! ^^^^^");
+		this.send(serv, "NOTICE", nick, ":Hmm? Didn't quite get that.");
 	}
 }
 /**
  * Load a module.
  *
- * @param {String} m: Module name (filename without .jsm extension)
- * @throws TypeError: Throws a TypeError when the module cannot be loaded.
+ * @param {string} m Module name (filename without .jsm extension)
+ * @throws TypeError Throws a TypeError when the module cannot be loaded.
  */
 aucgbot.loadModule =
 function loadModule(m)
@@ -537,20 +504,38 @@ function loadModule(m)
 	delete this.global.module;
 }
 
+/**
+ * Send data to a server connection.
+ *
+ * @usage aucgbot.send(serv, data...)
+ * @return {number} Number of bytes sent
+ */
 aucgbot.send =
-function send() // serv, data...
+function send()
 {	var s = Array.prototype.slice.call(arguments);
 	if (s.length < 2) throw new TypeError("aucgbot.send requires at least 2 arguments");
 	if (!(s[0] instanceof Stream)) throw new TypeError("1st argument to aucgbot.send() must be a Stream");
 	return s.shift().writeln(s.join(" ").replace(/\s+/, " ").replace(/^ | $/g, ""));
 }
+/**
+ * Send a PRIVMSG to a specified destination.
+ *
+ * @usage aucgbot.msg(serv, dest, msg...)
+ * @link aucgbot#send
+ * @return {number} Number of bytes sent
+ */
 aucgbot.msg =
-function msg(serv) // dest, msg...
+function msg(serv)
 {	var s = Array.prototype.slice.call(arguments);
 	if (s.length < 3) throw new TypeError("aucgbot.msg requires at least 3 arguments");
 	s.shift(); s[1] = ":" + s[1]; s.unshift("PRIVMSG"); s.unshift(serv);
 	return this.send.apply(this, s);
 }
+/**
+ * Write text to the log file.
+ *
+ * @usage aucgbot.log(serv, data...)
+ */
 aucgbot.log =
 function log(serv)
 {	if (!this.prefs.log) return;
@@ -564,15 +549,14 @@ function log(serv)
 }
 
 /**
- * Utility function to generate a (psuedo-)random number.
+ * Utility function to generate a (psuedo-)random integer.
  *
- * @deprecated 3.0
- * @param {Number} min: Minimum number
- * @param {Number} max: Maximum number
+ * @param {number} [min] Minimum number
+ * @param {number} [max] Maximum number
  */
-if (typeof ranint != "function")
-function ranint(min, max)
-{	min = min != null ? min : 1;
+if (typeof ranint != "function)
+function ranint(min, max) {
+	min = min != null ? min : 1;
 	max = max != null ? max : 10;
 	if (min >= max) return NaN;
 	return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -580,8 +564,8 @@ function ranint(min, max)
 /**
  * Get a random element of an array. http://svendtofte.com/code/usefull_prototypes
  *
- * @usage array.random()
- * @return {any}: Random element of array.
+ * @this {array}
+ * @return {?} Random element of array.
  */
 if (typeof Array.prototype.random != "function")
 Array.prototype.random =
