@@ -1,2 +1,5 @@
 *.log
 *.json
+*.ini
+*.sqlite
+*.db

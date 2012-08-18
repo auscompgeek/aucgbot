@@ -61,8 +61,8 @@ aucgbot.version = "3.2 (18 Aug 2012)";
  */
 aucgbot.start =
 function startBot() {
-	for (let args = Array.prototype.slice.call(arguments); serv = args.shift(); )
-		this.connect.apply(this, serv);
+	for (let args = Array.prototype.slice.call(arguments); args.length; )
+		this.connect.apply(this, args.shift());
 	this.started = Date.now();
 	this.startLoop();
 };
@@ -165,7 +165,7 @@ function parseIRCln(ln, serv) {
 	if (/^:(\S+)!\S+@(\S+) ./.test(ln) && RegExp.$1 == serv.nick) this.host = RegExp.$2;
 	if ((lnary = /^:(\S+)!(\S+)@(\S+) PRIVMSG (\S+) :(.*)/.exec(ln))) {
 		lnary.shift();
-		var at = "", dest = lnary[0];
+		var dest = lnary[0];
 		if (/^[#&+!]/.test(lnary[3])) dest = lnary[3];
 		this.onMsg(dest, lnary[4], lnary[0], lnary[1], lnary[2], serv);
 	} else if (/^PING (.+)/.test(ln)) {
@@ -188,8 +188,8 @@ function parseIRCln(ln, serv) {
  * @param {string} dest Channel or nick to send messages back
  * @param {string} msg The message
  * @param {string} nick Nick that sent the PRIVMSG
+ * @param {string} ident User's ident
  * @param {string} host Hostname that sent the PRIVMSG
- * @param {string} at Contains "nick: " if sent to a channel, else ""
  * @param {Stream} serv Server connection
  */
 aucgbot.onMsg =
@@ -289,6 +289,7 @@ function checkFlood(dest, msg, nick, host, serv, relay)
  * @param {string} cmd Command name
  * @param {string} args Any arguments
  * @param {string} nick Nick that sent the PRIVMSG
+ * @param {string} ident User's ident
  * @param {string} host Hostname that sent the PRIVMSG
  * @param {Stream} serv Server connection
  * @param {string} relay Relay bot nick or ""
@@ -298,7 +299,7 @@ function parseCmd(dest, cmd, args, nick, ident, host, serv, relay) {
 	if (cmd == "ping") this.reply(serv, dest, nick, "pong", args);
 	if (cmd == "version") this.reply(serv, dest, nick, this.version);
 	if (cmd == "rc" && host.match(this.prefs.suHosts))
-		this.remoteControl(args.split(" ")[0], args.replace(/^(\S+) /, ""), dest, at, nick, serv);
+		this.remoteControl(args.split(" ")[0], args.replace(/^(\S+) /, ""), dest, nick, serv);
 	if (/stat|uptime/.test(cmd))
 		this.msg(serv, dest, at + "I've been up " + this.up() + ".");
 	if (/listmods|modlist/.test(cmd)) {
@@ -392,22 +393,21 @@ function onCTCP(type, msg, nick, dest, serv) {
  * @param {string} cmd Command
  * @param {string} args Any arguments
  * @param {string} dest Channel or nick to send messages back
- * @param {string} at Contains "nick: " if sent to a channel, else ""
  * @param {string} nick Nick that sent the signal
  * @param {Stream} serv Server connection
  */
 aucgbot.remoteControl =
 function rcBot(cmd, args, dest, nick, serv) {
-	cmd != "log" && this.log(serv, "RC", nick + (dest != nick ? " in " + dest : ""), cmd, args);
+	cmd != "log" && this.log(serv, "RC", nick + (dest == nick ? "" : " in " + dest), cmd, args);
 	switch (cmd) {
 	case "self-destruct": // Hehe, I had to put this in :D
 	case "explode":
-		this.send(serv, "QUIT :" + at, "10... 9... 8... 7... 6... 5... 4... 3... 2... 1... 0... *boom*", args);
+		this.send(serv, "QUIT :" + nick + ":", "10... 9... 8... 7... 6... 5... 4... 3... 2... 1... 0... *boom*", args);
 		sleep(500);
 		serv.close();
 		break;
 	case "die":
-		this.send(serv, "QUIT :" + at + args);
+		this.send(serv, "QUIT :" + nick + ":", args);
 		sleep(500);
 		serv.close();
 		break;
@@ -428,7 +428,7 @@ function rcBot(cmd, args, dest, nick, serv) {
 	case "leave":
 		var args = args.split(" "), chans = args.shift().split(",");
 		for (let i in chans) if (!/^[#&+!]/.test(chans[i])) chans[i] = "#" + chans[i];
-		this.send(serv, "PART", chans.join(","), ":" + at + args.join(" "));
+		this.send(serv, "PART", chans.join(","), ":" + nick + ":", args.join(" "));
 		break;
 	case "kick":
 		var args = args.split(" "), chan = args.shift();
@@ -437,7 +437,7 @@ function rcBot(cmd, args, dest, nick, serv) {
 			break;
 		}
 		if (/^[^#&+!]/.test(chan)) chan = "#" + chan;
-		this.send(serv, "KICK", chan, args.shift(), ":" + at + args.join(" "));
+		this.send(serv, "KICK", chan, args.shift(), ":" + nick + ":", args.join(" "));
 		break;
 	case "msg":
 	case "privmsg":
@@ -475,7 +475,7 @@ function rcBot(cmd, args, dest, nick, serv) {
 		{	this.send("NOTICE", nick)
 		}*/
 	case "log":
-		this.log(serv, "LOG", nick + (at ? " in " + dest : ""), args);
+		this.log(serv, "LOG", nick + (dest == nick ? "" : " in " + dest), args);
 		break;
 	case "modload":
 	case "loadmod":
@@ -487,7 +487,7 @@ function rcBot(cmd, args, dest, nick, serv) {
 	case "reload":
 		if (!run("aucgbot.js")) {
 			this.reply(serv, dest, nick, "I can't find myself!");
-			this.log(serv, nick + (at ? " in " + dest : ""), "Can't reload aucgbot!");
+			this.log(serv, nick + (dest == nick ? "" : " in " + dest), "Can't reload aucgbot!");
 		}
 		break;
 	default:
