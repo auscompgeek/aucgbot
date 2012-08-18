@@ -4,20 +4,24 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-/* Designed to be run by JSDB <http://jsdb.org>.
+/**
+ * @fileoverview Designed to be run by JSDB <http://jsdb.org>.
  * Features:
- *	- General flood protection.
- *	- Logging.
- *	- Remote control.
+ * <ul>
+ * <li>General flood protection.</li>
+ * <li>Logging.</li>
+ * <li>Remote control.</li>
+ * </ul>
  *
  * Usage:
- *	run("aucgbot.js");
- *	aucgbot.prefs[pref] = setting;
- *	aucgbot.start([hostname, port, nick, ident, pass, channels]...);
+ * <ul>
+ * <li>run("aucgbot.js");</li>
+ * <li>aucgbot.prefs[pref] = setting;</li>
+ * <li>aucgbot.start([hostname, port, nick, ident, pass, channels]...);</li>
+ * </ul>
  */
 
 if (!aucgbot)
-/** @namespace */
 var aucgbot = {
 	prefs: {
 		flood: {
@@ -34,8 +38,8 @@ var aucgbot = {
 		zncBufferHacks: false, // use ZNC buffer timestamps hack
 		autoAcceptInvite: true, // automatically join on invite
 		"relay.check": true, // toggle relay bot checking
-		"relay.bots": /^(lcp|bik_link|iRelayer|janus|Mingbeast|irfail|rbot|Jellycraft)$/, // regex tested against nicks to check for relay bots
-		"keyboard.sendInput": true, // doesn't work on Windows?
+		"relay.bots": /^(iRelayer|janus|Mingbeast|irfail|rbot)$/, // regex tested against nicks to check for relay bots
+		"keyboard.sendInput": false, // doesn't work on Windows?
 		"keyboard.dieOnInput": false, // only if keyboard.sendInput is false
 		"kick.rejoin": false,
 		"kick.log": true, // on bot kicked
@@ -50,15 +54,15 @@ var aucgbot = {
 	servs: [],
 	global: this
 };
-aucgbot.version = "3.1 (12 Aug 2012)";
+aucgbot.version = "3.2 (18 Aug 2012)";
 
 /**
  * Start the bot. Each argument is to be passed as arguments to {@link aucgbot#connect}.
  */
 aucgbot.start =
 function startBot() {
-	for (let args = Array.prototype.slice.call(arguments); args; )
-		this.connect.apply(this, args.shift());
+	for (let args = Array.prototype.slice.call(arguments); serv = args.shift(); )
+		this.connect.apply(this, serv);
 	this.started = Date.now();
 	this.startLoop();
 };
@@ -70,7 +74,7 @@ function startBot() {
  * @param {string} [nick] Nick to use (default: aucgbot)
  * @param {string} [ident] Ident to use (default: aucgbot)
  * @param {string} [pass] The server password to use, if any
- * @param {(string|array)} [chans] Channels to join on connect (default: #bots)
+ * @param {(string|Array.<string>)} [chans] Channels to join on connect (default: #bots)
  * @see aucgbot#start
  */
 aucgbot.connect =
@@ -115,7 +119,7 @@ function connectBot(serv, port, nick, ident, pass, chans) {
  */
 aucgbot.startLoop =
 function startLoop() {
-	while (this.servs) {
+	while (this.servs.length) {
 		system.wait(this.servs, 60000);
 		for each (let serv in this.servs) {
 			if (!serv.canRead) continue;
@@ -226,10 +230,10 @@ function onMsg(dest, msg, nick, ident, host, serv)
 			this.onCTCP(RegExp.$1.toUpperCase(), RegExp.$2, nick, dest, serv);
 	} else if (this.prefs.prefix && msg.slice(0, this.prefs.prefix.length) == this.prefs.prefix) {
 		msg = msg.slice(this.prefs.prefix.length).replace(/^(\S+) ?/, "");
-		this.parseCmd(dest, RegExp.$1.toLowerCase(), msg, nick, host, serv, relay);
+		this.parseCmd(dest, RegExp.$1.toLowerCase(), msg, nick, ident, host, serv, relay);
 	} else if (meping.test(msg) || dest != nick) {
 		msg = msg.replace(meping, "").replace(/^(\S+) ?/, "");
-		this.parseCmd(dest, RegExp.$1.toLowerCase(), msg, nick, host, serv, relay);
+		this.parseCmd(dest, RegExp.$1.toLowerCase(), msg, nick, ident, host, serv, relay);
 	}
 };
 /**
@@ -260,8 +264,8 @@ function checkFlood(dest, msg, nick, host, serv, relay)
 		let kb = !(relay || dest == nick || nick == serv.nick || host == this.host || nick.match(this.prefs["nokick.nicks"]) || host.match(this.prefs["nokick.hosts"]) || host.match(this.prefs.suHosts) /*|| serv.cmodes[dest][nick].length*/) /*&& serv.cmodes[dest][serv.nick].length*/;
 		serv.flood_lastTime = Date.now();
 		if (serv.flood_in) {
-			if (kb)
-			{	this.prefs.flood.kick && this.send(serv, "KICK", dest, nick, ":No flooding!");
+			if (kb) {
+				this.prefs.flood.kick && this.send(serv, "KICK", dest, nick, ":No flooding!");
 				this.prefs.flood.ban && this.send(serv, "MODE", dest, "+b *!*@" + host);
 			}
 		} else {
@@ -304,7 +308,8 @@ function parseCmd(dest, cmd, args, nick, ident, host, serv, relay) {
 	}
 
 	for each (let module in this.modules) {
-		if (typeof module["cmd_" + cmd] == "function" && module["cmd_" + cmd](dest, args, nick, ident, host, serv, relay))
+		if ((typeof module.parseCmd == "function" && module.parseCmd.apply(module, arguments)) ||
+			(typeof module["cmd_" + cmd] == "function" && module["cmd_" + cmd](dest, args, nick, ident, host, serv, relay)))
 			return;
 	}
 };
@@ -503,6 +508,7 @@ function loadModule(m) {
 		this.modules[m] = module;
 	else
 		throw new TypeError(m + " is not a module.");
+	println("Loaded module ", m, " version ", module.version);
 	delete this.global.module;
 };
 
@@ -543,7 +549,7 @@ function msg(serv) {
  */
 aucgbot.reply =
 function reply(serv, dest, nick) {
-	var msg = String.trim(Array.prototype.slice.call(arguments, 3).join(" ")).replace(/\s+/g, "");
+	var msg = Array.prototype.slice.call(arguments, 3).join(" ").trim().replace(/\s+/g, "");
 	if (!msg) throw new TypeError("aucgbot.reply requires at least 4 arguments");
 	if (!(serv instanceof Stream)) throw new TypeError("1st argument to aucgbot.reply() must be a Stream");
 	if (dest != nick) msg = nick + ": " + msg;
