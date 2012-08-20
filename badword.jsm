@@ -6,7 +6,7 @@
 // PLEASE NOTE: if you edit the badwords list using the rc js command, use
 // "rc js this.modules["badword"].parseList()" otherwise it will not work
 
-module.version = "4.3.2 (12 Aug 2012)";
+module.version = "4.3.3 (20 Aug 2012)";
 module.count = {}; module.sfwChans = [];
 
 module.parseList =
@@ -19,7 +19,7 @@ module.loadCount =
 function loadCount() {
 	try {
 		var file = new Stream("badword.json");
-		this.count = JSON.parse(file.readln());
+		this.count = JSON.parse(file.readFile());
 		file.close();
 	} catch (ex) {}
 }

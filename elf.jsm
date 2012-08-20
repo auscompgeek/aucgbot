@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-module.version = "1.2.2 (12 Aug 2012)";
+module.version = "1.2.3 (20 Aug 2012)";
 module.prefix = "$";
 
 module.initScores =
@@ -17,7 +17,7 @@ module.loadScores =
 function loadScores() {
 	try {
 		var file = new Stream("elfscores.json");
-		this.scores = JSON.parse(file.readln());
+		this.scores = JSON.parse(file.readFile());
 		file.close();
 	} catch (ex) {}
 }
