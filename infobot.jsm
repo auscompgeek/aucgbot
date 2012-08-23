@@ -32,7 +32,7 @@ module.cmd_fact =
 function cmd_fact(dest, args, nick, ident, host, serv, relay) {
 	var def = this.db.get(args);
 	if (def)
-		aucgbot.reply(serv, dest, nick, args + ":", def));
+		aucgbot.reply(serv, dest, nick, args + ":", def);
 	return true;
 }
 module.cmd_sendfact =

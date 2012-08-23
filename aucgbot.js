@@ -54,7 +54,7 @@ var aucgbot = {
 	servs: [],
 	global: this
 };
-aucgbot.version = "3.2 (18 Aug 2012)";
+aucgbot.version = "3.2.1 (23 Aug 2012)";
 
 /**
  * Start the bot. Each argument is to be passed as arguments to {@link aucgbot#connect}.
@@ -296,22 +296,43 @@ function checkFlood(dest, msg, nick, host, serv, relay)
  */
 aucgbot.parseCmd =
 function parseCmd(dest, cmd, args, nick, ident, host, serv, relay) {
-	if (cmd == "ping") this.reply(serv, dest, nick, "pong", args);
-	if (cmd == "version") this.reply(serv, dest, nick, this.version);
-	if (cmd == "rc" && host.match(this.prefs.suHosts))
-		this.remoteControl(args.split(" ")[0], args.replace(/^(\S+) /, ""), dest, nick, serv);
-	if (/stat|uptime/.test(cmd))
+	switch (cmd) {
+	case "ping":
+		this.reply(serv, dest, nick, "pong", args);
+		break;
+	case "version":
+		this.reply(serv, dest, nick, this.version);
+		break;
+	case "rc":
+		host.match(this.prefs.suHosts) && this.remoteControl(args.split(" ")[0], args.replace(/^(\S+) /, ""), dest, nick, serv);
+		break;
+	case "status":
+	case "uptime":
 		this.msg(serv, dest, at + "I've been up " + this.up() + ".");
-	if (/listmods|modlist/.test(cmd)) {
-		let modlist = [];
-		for (let i in this.modules) modlist.push(i + " " + this.modules[i].version);
-		this.msg(serv, dest, at + "Modules loaded: " + modlist.join(", "));
-	}
-
-	for each (let module in this.modules) {
-		if ((typeof module.parseCmd == "function" && module.parseCmd.apply(module, arguments)) ||
-			(typeof module["cmd_" + cmd] == "function" && module["cmd_" + cmd](dest, args, nick, ident, host, serv, relay)))
-			return;
+		break;
+	case "listmods":
+	case "modlist":
+		let mods = [];
+		for (let i in this.modules) mods.push(i + " " + this.modules[i].version);
+		mods.length && this.send(serv, "NOTICE", nick, ":Modules:", mods.join(", "));
+		break;
+	case "listcmds":
+	case "cmdlist":
+		let cmds = [];
+		for each (let m in this.modules) {
+			for (let i in m) {
+				if (i.slice(0, 4) == "cmd_")
+					cmds.push(i.slice(4));
+			}
+		}
+		cmds.length && this.send(serv, "NOTICE", nick, ":" + cmds.join(" "));
+		break;
+	default:
+		for each (let module in this.modules) {
+			if ((typeof module.parseCmd == "function" && module.parseCmd.apply(module, arguments)) ||
+				(typeof module["cmd_" + cmd] == "function" && module["cmd_" + cmd](dest, args, nick, ident, host, serv, relay)))
+				break;
+		}
 	}
 };
 /**
@@ -549,7 +570,7 @@ function msg(serv) {
  */
 aucgbot.reply =
 function reply(serv, dest, nick) {
-	var msg = Array.prototype.slice.call(arguments, 3).join(" ").trim().replace(/\s+/g, "");
+	var msg = Array.prototype.slice.call(arguments, 3).join(" ").trim().replace(/\s+/g, " ");
 	if (!msg) throw new TypeError("aucgbot.reply requires at least 4 arguments");
 	if (!(serv instanceof Stream)) throw new TypeError("1st argument to aucgbot.reply() must be a Stream");
 	if (dest != nick) msg = nick + ": " + msg;
