@@ -4,32 +4,30 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 // Module: Transform text.
 
-module.version = 1.5;
-module.alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-module.alphaLC = "abcdefghijklmnopqrstuvwxyz";
+module.version = 1.8;
+module.UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+module.LOWER = "abcdefghijklmnopqrstuvwxyz";
 
 module.cmd_tr =
 function cmd_tr(dest, msg, nick, ident, host, serv, relay) {
-	const args = /^"(\"?[^"]+(?:\"[^"]*)*)" "(\"?[^"]+(?:\"[^"]*)*)" "(\"?[^"]+(?:\"[^"]*)*)"$/.exec(msg);
-	if (!args)
-		aucgbot.reply(serv, dest, nick, 'Usage: tr "<text>" "<trFromTable>" "<trToTable>"');
-	else
-		aucgbot.reply(serv, dest, nick, tr.apply(null, args));
+	const args = /^"((?:\\")*[^"]+(?:(?:\\")[^"]*)*)" "((?:\\")*[^"]+(?:(?:\\")[^"]*)*)" "((?:\\")*[^"]+(?:(?:\\")[^"]*)*)"$/.exec(msg);
+	aucgbot.reply(serv, dest, nick, args ? tr.apply(null, args) : 'Usage: tr "<text>" "<trFromTable>" "<trToTable>"');
 	return true;
 }
 module.cmd_rot13 =
 function cmd_rot13(dest, msg, nick, ident, host, serv, relay) {
-	aucgbot.reply(serv, dest, nick, tr(msg, this.alphabet + this.alphaLC, "NOPQRSTUVWXYZABCDEFGHIJKLMnopqrstuvwxyzabcdefghijklm"));
+	const ROT13 = "NOPQRSTUVWXYZABCDEFGHIJKLM";
+	aucgbot.reply(serv, dest, nick, tr(msg, this.UPPER + this.LOWER, ROT13 + ROT13.toLowerCase()));
 	return true;
 }
 module.cmd_rot47 =
 function cmd_rot47(dest, msg, nick, ident, host, serv, relay) {
-	aucgbot.reply(serv, dest, nick, tr(msg, "!\"#$%&\'()*+,-./0123456789:;<=>?@" + this.alphabet + "[\\]^_`" + this.alphaLC + "{|}~", "PQRSTUVWXYZ[\\]^_`" + this.alphaLC + "{|}~!\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNO"));
+	aucgbot.reply(serv, dest, nick, tr(msg, "!\"#$%&\'()*+,-./0123456789:;<=>?@" + this.UPPER + "[\\]^_`" + this.LOWER + "{|}~", "PQRSTUVWXYZ[\\]^_`" + this.LOWER + "{|}~!\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNO"));
 	return true;
 }
 module.cmd_revtr =
 function cmd_revtr(dest, msg, nick, ident, host, serv, relay) {
-	aucgbot.reply(serv, dest, nick, tr(msg, this.alphabet + this.alphaLC, this.alphaRev + this.alphaRev.toLowerCase()));
+	aucgbot.reply(serv, dest, nick, tr(msg, this.UPPER + this.LOWER, this.REVUPPER + this.REVLOWER));
 	return true;
 }
 module.cmd_rev =
@@ -51,14 +49,11 @@ function cmd_encode(dest, msg, nick, ident, host, serv, relay) {
 	case "url":
 		aucgbot.reply(serv, dest, nick, encodeURL(msg));
 		return true;
-	case "rot13":
-		return this.cmd_rot13.apply(this, arguments);
-	case "rot47":
-		return this.cmd_rot47.apply(this, arguments);
-	case "revtr":
-		return this.cmd_revtr.apply(this, arguments);
-	case "rev":
-		return this.cmd_rev.apply(this, arguments);
+	case "charcode":
+		var s = [], i;
+		for (i = 0; i < msg.length; i++)
+			s.push(msg.charCodeAt(i));
+		return aucgbot.reply(serv, dest, nick, s.join(" "));
 	}
 }
 module.cmd_decode =
@@ -75,15 +70,18 @@ function cmd_decode(dest, msg, nick, ident, host, serv, relay) {
 	case "url":
 		aucgbot.reply(serv, dest, nick, decodeURL(msg));
 		return true;
-	case "rot13":
-		return this.cmd_rot13.apply(this, arguments);
-	case "rot47":
-		return this.cmd_rot47.apply(this, arguments);
-	case "revtr":
-		return this.cmd_revtr.apply(this, arguments);
-	case "rev":
-		return this.cmd_rev.apply(this, arguments);
+	case "charcode":
+		var s = "", msg = msg.split(" "), i;
+		while (i = msg.shift())
+			s += String.fromCharCode(i);
+		return aucgbot.reply(serv, dest, nick, s);
 	}
+}
+module.cmd_albhed =
+function cmd_albhed(dest, msg, nick, ident, host, serv, relay) {
+	const AL_BHED = "YPLTAVKREZGMSHUBXNCDIJFQOW";
+	aucgbot.reply(serv, dest, nick, tr(msg, this.UPPER + this.LOWER, AL_BHED + AL_BHED.toLowerCase()));
+	return true;
 }
 
 // from http://www.svendtofte.com/code/usefull_prototypes/
@@ -95,7 +93,8 @@ function reverse() {
 	    s += this[i];
 	return s;
 }
-module.alphaRev = module.alphabet.reverse();
+module.REVUPPER = module.UPPER.reverse();
+module.REVLOWER = module.REVUPPER.toLowerCase();
 
 function tr(str, fromTable, toTable) {
 	var s = "";
