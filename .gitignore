@@ -3,3 +3,5 @@
 *.ini
 *.sqlite
 *.db
+.settings
+.project
