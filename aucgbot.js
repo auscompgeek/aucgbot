@@ -54,7 +54,7 @@ var aucgbot = {
 	servs: [],
 	global: this
 };
-aucgbot.version = "3.2.1 (23 Aug 2012)";
+aucgbot.version = "3.2.2 (17 Sep 2012)";
 
 /**
  * Start the bot. Each argument is to be passed as arguments to {@link aucgbot#connect}.
@@ -222,7 +222,7 @@ function onMsg(dest, msg, nick, ident, host, serv)
 	msg = msg.replace(/\s+/g, " ");
 
 	for each (let module in this.modules)
-		if (typeof module.onMsg == "function" && module.onMsg(dest, msg, nick, host, serv, relay))
+		if (typeof module.onMsg == "function" && module.onMsg(dest, msg, nick, ident, host, serv, relay))
 			return;
 
 	if (msg[0] == "\1") { // Possible CTCP.
@@ -231,7 +231,7 @@ function onMsg(dest, msg, nick, ident, host, serv)
 	} else if (this.prefs.prefix && msg.slice(0, this.prefs.prefix.length) == this.prefs.prefix) {
 		msg = msg.slice(this.prefs.prefix.length).replace(/^(\S+) ?/, "");
 		this.parseCmd(dest, RegExp.$1.toLowerCase(), msg, nick, ident, host, serv, relay);
-	} else if (meping.test(msg) || dest != nick) {
+	} else if (meping.test(msg) || dest == nick) {
 		msg = msg.replace(meping, "").replace(/^(\S+) ?/, "");
 		this.parseCmd(dest, RegExp.$1.toLowerCase(), msg, nick, ident, host, serv, relay);
 	}
@@ -258,11 +258,12 @@ function checkFlood(dest, msg, nick, host, serv, relay)
 	 -	e) we don't have any cmodes set on us or
 	 *	f) the message was sent by a relay bot.
 	 */
+	var now = Date.now();
 	if (serv.zncBuffer) return false;
-	if (Date.now() - serv.flood_lastTime > this.prefs.flood.secs * 1000) serv.flood_lines = 0;
-	if (serv.flood_lines >= this.prefs.flood.lines && Date.now() - serv.flood_lastTime <= this.prefs.flood.secs * 1000) {
-		let kb = !(relay || dest == nick || nick == serv.nick || host == this.host || nick.match(this.prefs["nokick.nicks"]) || host.match(this.prefs["nokick.hosts"]) || host.match(this.prefs.suHosts) /*|| serv.cmodes[dest][nick].length*/) /*&& serv.cmodes[dest][serv.nick].length*/;
-		serv.flood_lastTime = Date.now();
+	if (now - serv.flood_lastTime > this.prefs.flood.secs * 1000) serv.flood_lines = 0;
+	if (serv.flood_lines >= this.prefs.flood.lines && now - serv.flood_lastTime <= this.prefs.flood.secs * 1000) {
+		let kb = !(relay || dest == nick || nick == serv.nick || host == this.host || nick.match(this.prefs["nokick.nicks"]) || host.match(this.prefs["nokick.hosts"]) || host.match(this.prefs.suHosts) /*|| serv.cmodes[dest][nick]*/) /*&& serv.cmodes[dest][serv.nick]*/;
+		serv.flood_lastTime = now;
 		if (serv.flood_in) {
 			if (kb) {
 				this.prefs.flood.kick && this.send(serv, "KICK", dest, nick, ":No flooding!");
@@ -278,7 +279,7 @@ function checkFlood(dest, msg, nick, host, serv, relay)
 		return true;
 	}
 	serv.flood_in = false;
-	serv.flood_lastTime = Date.now();
+	serv.flood_lastTime = now;
 	serv.flood_lines++;
 	return false;
 };
@@ -306,18 +307,15 @@ function parseCmd(dest, cmd, args, nick, ident, host, serv, relay) {
 	case "rc":
 		host.match(this.prefs.suHosts) && this.remoteControl(args.split(" ")[0], args.replace(/^(\S+) /, ""), dest, nick, serv);
 		break;
-	case "status":
-	case "uptime":
+	case "status": case "uptime":
 		this.msg(serv, dest, at + "I've been up " + this.up() + ".");
 		break;
-	case "listmods":
-	case "modlist":
+	case "listmods": case "modlist":
 		let mods = [];
 		for (let i in this.modules) mods.push(i + " " + this.modules[i].version);
 		mods.length && this.send(serv, "NOTICE", nick, ":Modules:", mods.join(", "));
 		break;
-	case "listcmds":
-	case "cmdlist":
+	case "listcmds": case "cmdlist":
 		let cmds = [];
 		for each (let m in this.modules) {
 			for (let i in m) {
@@ -346,7 +344,7 @@ function uptime() {
 	var diff = Math.round((Date.now() - this.started) / 1000),
 		s = diff % 60, m = (diff % 3600 - s) / 60,
 		h = Math.floor(diff / 3600) % 24, d = Math.floor(diff / 86400);
-	return (d ? d + "d " : "") + (h ? h + "h " : "") + (m ? m + "m " : "") + s + "s";
+	return (d ? d + "d " : "") + (h ? h + "h " : "") + (m ? m + "m " : "") + (s ? s + "s" : "");
 };
 /**
  * Parse a CTCP request.
@@ -372,34 +370,27 @@ function onCTCP(type, msg, nick, dest, serv) {
 	case "TIME":
 		nctcp(nick, type, Date());
 		break;
-	case "SOURCE":
-	case "URL":
+	case "SOURCE": case "URL":
 		nctcp(nick, type, "https://github.com/auscompgeek/aucgbot on http://jsdb.org");
 		break;
 	case "PING":
 		nctcp(nick, type, msg);
 		break;
-	case "UPTIME":
-	case "AGE":
+	case "UPTIME": case "AGE":
 		nctcp(nick, type, this.up());
 		break;
-	case "GENDER":
-	case "SEX":
+	case "GENDER": case "SEX":
 		nctcp(nick, type, "bot");
 		break;
 	case "LOCATION":
 		nctcp(nick, type, "behind you");
 		break;
-	case "A/S/L":
-	case "ASL":
+	case "A/S/L": case "ASL":
 		nctcp(nick, type, "2/bot/behind you");
 		break;
-	case "AVATAR":
-	case "ICON":
-	case "FACE":
+	case "AVATAR": case "ICON": case "FACE":
 		break;
-	case "LANGUAGES":
-	case "LANGUAGE":
+	case "LANGUAGES": case "LANGUAGE":
 		nctcp(nick, type, "JS,en");
 		break;
 	default:
@@ -460,9 +451,7 @@ function rcBot(cmd, args, dest, nick, serv) {
 		if (/^[^#&+!]/.test(chan)) chan = "#" + chan;
 		this.send(serv, "KICK", chan, args.shift(), ":" + nick + ":", args.join(" "));
 		break;
-	case "msg":
-	case "privmsg":
-	case "message":
+	case "msg": case "privmsg": case "message":
 		var args = args.split(" ");
 		if (args[0] == serv.nick) {
 			this.reply(serv, dest, nick, "Get me to talk to myself, yeah, great idea...");
@@ -471,16 +460,14 @@ function rcBot(cmd, args, dest, nick, serv) {
 		args.unshift(serv);
 		this.msg.apply(this, args);
 		break;
-	case "echo":
-	case "say":
+	case "echo": case "say":
 		this.msg(serv, dest, args);
 		break;
-	case "quote":
-	case "raw":
+	case "quote": case "raw":
 		this.send(serv, args);
 		break;
-	case "eval":
-	case "js": // Dangerous!
+	case "eval": case "js": // Dangerous!
+		// could cause a crash if not handled
 		if (/(stringify|uneval).*(aucgbot|this|global)/i.test(args)) {
 			writeln("[WARNING] Possible abuse! ^^^^^");
 			this.send(serv, "NOTICE", nick, ":Please don't try to abuse my remote control.");
@@ -498,8 +485,7 @@ function rcBot(cmd, args, dest, nick, serv) {
 	case "log":
 		this.log(serv, "LOG", nick + (dest == nick ? "" : " in " + dest), args);
 		break;
-	case "modload":
-	case "loadmod":
+	case "modload": case "loadmod":
 		try {
 			for (let args = args.split(" "); args.length; )
 				this.loadModule(args.shift());
@@ -508,7 +494,7 @@ function rcBot(cmd, args, dest, nick, serv) {
 	case "reload":
 		if (!run("aucgbot.js")) {
 			this.reply(serv, dest, nick, "I can't find myself!");
-			this.log(serv, nick + (dest == nick ? "" : " in " + dest), "Can't reload aucgbot!");
+			this.log(serv, nick + (dest == nick ? "" : " in " + dest), "Can't reload!");
 		}
 		break;
 	default:
