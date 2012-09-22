@@ -4,13 +4,14 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 // Module: Transform text.
 
-module.version = 1.8;
+module.version = 1.9;
 module.UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 module.LOWER = "abcdefghijklmnopqrstuvwxyz";
 
 module.cmd_tr =
 function cmd_tr(dest, msg, nick, ident, host, serv, relay) {
-	const args = /^"((?:\\")*[^"]+(?:(?:\\")[^"]*)*)" "((?:\\")*[^"]+(?:(?:\\")[^"]*)*)" "((?:\\")*[^"]+(?:(?:\\")[^"]*)*)"$/.exec(msg);
+	var args = /^"((?:\\")*[^"]+(?:(?:\\")[^"]*)*)" "((?:\\")*[^"]+(?:(?:\\")[^"]*)*)" "((?:\\")*[^"]+(?:(?:\\")[^"]*)*)"$/.exec(msg);
+	args.shift();
 	aucgbot.reply(serv, dest, nick, args ? tr.apply(null, args) : 'Usage: tr "<text>" "<trFromTable>" "<trToTable>"');
 	return true;
 }
@@ -39,8 +40,7 @@ module.cmd_encode =
 function cmd_encode(dest, msg, nick, ident, host, serv, relay) {
 	var encoding = msg.split(" ")[0], msg = msg.split(" ").slice(1).join(" ");
 	switch (encoding) {
-	case "base64":
-	case "b64":
+	case "base64": case "b64":
 		aucgbot.reply(serv, dest, nick, encodeB64(msg));
 		return true;
 	case "html":
@@ -60,8 +60,7 @@ module.cmd_decode =
 function cmd_decode(dest, msg, nick, ident, host, serv, relay) {
 	var encoding = msg.split(" ")[0], msg = msg.split(" ").slice(1).join(" ");
 	switch (encoding) {
-	case "base64":
-	case "b64":
+	case "base64": case "b64":
 		aucgbot.reply(serv, dest, nick, decodeB64(msg));
 		return true;
 	case "html":

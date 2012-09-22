@@ -38,23 +38,23 @@ var aucgbot = {
 		zncBufferHacks: false, // use ZNC buffer timestamps hack
 		autoAcceptInvite: true, // automatically join on invite
 		"relay.check": true, // toggle relay bot checking
-		"relay.bots": /^(iRelayer|janus|Mingbeast|irfail|rbot)$/, // regex tested against nicks to check for relay bots
-		"keyboard.sendInput": false, // doesn't work on Windows?
-		"keyboard.dieOnInput": false, // only if keyboard.sendInput is false
+		"relay.bots": /^(?:iRelayer|janus|Mingbeast|irfail|rbot)$/, // regex tested against nicks to check for relay bots
+		"keyboard.sendInput": false,
+		"keyboard.dieOnInput": false, // keyboard.sendInput must be false
 		"kick.rejoin": false,
 		"kick.log": true, // on bot kicked
 		// RegExps to not ban/kick nicks/hosts
 		"nokick.nicks": /Tanner|Mardeg|aj00200|ChrisMorgan|JohnTHaller|Bensawsome|juju|Shadow|TMZ|aus?c(ompgeek|g|ow)|Jan|Peng|TFEF|Nightmare/,
 		"nokick.hosts": /bot|spam|staff|dev|math|js|[Jj]ava[Ss]cript/,
 		// regex for allowed hosts to use rc command
-		suHosts: /trek|aucg|^(freenode\/)?(staff|dev)|oper|netadmin|geek|gry|bot(ter|)s|spam|^(127\.\d+\.\d+\.\d+|localhost(\.localdomain)?)$/
+		suHosts: /trek|aucg|^(?:freenode\/)?(?:staff|dev)|oper|netadmin|geek|gry|bot(?:ter)?s|spam|^(?:127\.\d+\.\d+\.\d+|localhost(?:\.localdomain)?)$/
 	},
 	//cmodes: {}, // XXX Parse MODE lines.
 	modules: {},
 	servs: [],
 	global: this
 };
-aucgbot.version = "3.2.2 (17 Sep 2012)";
+aucgbot.version = "3.2.3 (21 Sep 2012)";
 
 /**
  * Start the bot. Each argument is to be passed as arguments to {@link aucgbot#connect}.
@@ -121,31 +121,32 @@ aucgbot.startLoop =
 function startLoop() {
 	while (this.servs.length) {
 		system.wait(this.servs, 60000);
-		for each (let serv in this.servs) {
-			if (!serv.canRead) continue;
-			this.parseln(serv.readln(), serv);
-			if (system.kbhit()) {
-				if (this.prefs["keyboard.sendInput"])
-					this.send(serv, readln());
-				else if (this.prefs["keyboard.dieOnInput"]) {
-					this.send(serv, "QUIT :Keyboard input.");
-					sleep(500); // Give the server time to receive the QUIT message.
-					serv.close();
+		for (let i = this.servs.length - 1, serv; serv = this.servs[i]; i--) {
+			if (serv.canRead) {
+				this.parseln(serv.readln(), serv);
+				if (system.kbhit()) {
+					if (this.prefs["keyboard.sendInput"])
+						this.send(serv, readln());
+					else if (this.prefs["keyboard.dieOnInput"]) {
+						this.send(serv, "QUIT :Keyboard input.");
+						sleep(500); // Give the server time to receive the QUIT message.
+						this.cleanConn(i); continue;
+					}
 				}
 			}
-		}
-		for (let i = this.servs.length - 1; i >= 0; i--) {
-			if (this.servs[i].eof) {
-				this.servs[i].close();
-				if (i == this.servs.length - 1)
-					this.servs.length--
-				else
-					delete this.servs[i]; // XXX must be more robust
-				system.gc();
-			}
+			if (serv.eof) this.cleanConn(i);
 		}
 	}
 };
+aucgbot.cleanConn =
+function cleanConn(i) {
+	this.servs[i].close();
+	if (i == this.servs.length - 1)
+		this.servs.length--
+	else
+		delete this.servs[i]; // XXX must be more robust
+	system.gc();
+}
 
 /**
  * Parse a raw IRC line.
@@ -174,7 +175,7 @@ function parseIRCln(ln, serv) {
 		this.prefs.autoAcceptInvite && this.send(serv, "JOIN", RegExp.$5);
 	} else if (/^:(\S+)!(\S+)@(\S+) NICK :(\S+)/.test(ln)) {
 		if (RegExp.$1 == serv.nick) serv.nick = RegExp.$4;
-	} else if (/^:(\S+)(?:!(\S+)@(\S+)|) MODE (\S+)(?: (.+)|)/.test(ln)) {
+	} else if (/^:(\S+)(?:!(\S+)@(\S+))? MODE (\S+)(?: (.+))?/.test(ln)) {
 		// XXX Parse!
 	} else if (/^:(\S+!\S+@\S+) KICK (\S+) (\S+) :(.*)/.test(ln) && RegExp.$3 == serv.nick) {
 		this.prefs["kick.rejoin"] && this.send(serv, "JOIN", RegExp.$2);
@@ -204,7 +205,7 @@ function onMsg(dest, msg, nick, ident, host, serv)
 			else if (msg == "Playback complete")
 				serv.zncBuffer = false;
 			return;
-		} else if (serv.zncBuffer) msg = msg.replace(/^\[[0-2]?\d:[0-5]\d(:[0-5]\d|)\] /, "");
+		} else if (serv.zncBuffer) msg = msg.replace(/^\[[0-2]?\d:[0-5]\d(:[0-5]\d)?\] /, "");
 	}
 
 	// fix for message relay bots
@@ -213,7 +214,7 @@ function onMsg(dest, msg, nick, ident, host, serv)
 
 	// don't listen to bots
 	if ((/bot[\d_|]*$|Serv|^bot|Op$/i.test(nick) && !(nick == serv.nick)) ||
-	    (host.indexOf("/bot/") != -1 && !(nick == serv.nick || relay)))
+	   (host.indexOf("/bot/") != -1 && !(nick == serv.nick || relay)))
 		return;
 
 	// flood protection
@@ -226,7 +227,7 @@ function onMsg(dest, msg, nick, ident, host, serv)
 			return;
 
 	if (msg[0] == "\1") { // Possible CTCP.
-		if (/^\x01([^\1 ]+)(?: ([^\1]*)|)/.test(msg))
+		if (/^\x01([^\1 ]+)(?: ([^\1]*))?/.test(msg))
 			this.onCTCP(RegExp.$1.toUpperCase(), RegExp.$2, nick, dest, serv);
 	} else if (this.prefs.prefix && msg.slice(0, this.prefs.prefix.length) == this.prefs.prefix) {
 		msg = msg.slice(this.prefs.prefix.length).replace(/^(\S+) ?/, "");
@@ -302,13 +303,13 @@ function parseCmd(dest, cmd, args, nick, ident, host, serv, relay) {
 		this.reply(serv, dest, nick, "pong", args);
 		break;
 	case "version":
-		this.reply(serv, dest, nick, this.version);
+		this.reply(serv, dest, nick, "aucgbot", this.version);
 		break;
 	case "rc":
 		host.match(this.prefs.suHosts) && this.remoteControl(args.split(" ")[0], args.replace(/^(\S+) /, ""), dest, nick, serv);
 		break;
 	case "status": case "uptime":
-		this.msg(serv, dest, at + "I've been up " + this.up() + ".");
+		this.reply(serv, dest, nick, "I've been up", this.up() + ".");
 		break;
 	case "listmods": case "modlist":
 		let mods = [];
@@ -328,7 +329,7 @@ function parseCmd(dest, cmd, args, nick, ident, host, serv, relay) {
 	default:
 		for each (let module in this.modules) {
 			if ((typeof module.parseCmd == "function" && module.parseCmd.apply(module, arguments)) ||
-				(typeof module["cmd_" + cmd] == "function" && module["cmd_" + cmd](dest, args, nick, ident, host, serv, relay)))
+			   (typeof module["cmd_" + cmd] == "function" && module["cmd_" + cmd](dest, args, nick, ident, host, serv, relay)))
 				break;
 		}
 	}
@@ -424,7 +425,7 @@ function rcBot(cmd, args, dest, nick, serv) {
 		serv.close();
 		break;
 	case "connect":
-		var argary = /^(?:irc:\/\/|)(\w[\w.-]+\w)(?::([1-5]\d{0,4}|[6-9]\d{0,3}|6[0-5]{2}[0-3][0-5])|)(?:\/([^?]*)|)(?:\?pass=(.+)|)$/.exec(args);
+		var argary = /^(?:irc:\/\/)?(\w[\w.-]+\w)(?::([1-5]\d{0,4}|[6-9]\d{0,3}|6[0-4]\d{3}|65[0-4]\d\d|655[0-2]\d))?(?:\/([^?]*))?(?:\?pass=(.+))?$/.exec(args);
 		if (!argary) { // Invalid URL?!?!?
 			writeln("[ERROR] Invalid URL! ^^^^^");
 			break;
@@ -487,7 +488,7 @@ function rcBot(cmd, args, dest, nick, serv) {
 		break;
 	case "modload": case "loadmod":
 		try {
-			for (let args = args.split(" "); args.length; )
+			for (let args = args.split(","); args.length; )
 				this.loadModule(args.shift());
 		} catch (ex) { this.reply(serv, dest, nick, ex); }
 		break;
@@ -530,7 +531,7 @@ function send() {
 	var s = Array.prototype.slice.call(arguments);
 	if (s.length < 2) throw new TypeError("aucgbot.send requires at least 2 arguments");
 	if (!(s[0] instanceof Stream)) throw new TypeError("1st argument to aucgbot.send() must be a Stream");
-	return s.shift().writeln(s.join(" ").replace(/\s+/, " ").replace(/^ | $/g, ""));
+	return s.shift().writeln(s.join(" ").trim().replace(/\s+/, " "));
 };
 /**
  * Send a PRIVMSG to a specified destination.
@@ -575,7 +576,7 @@ function log(serv) {
 	for (let i = 1; i < arguments.length; i++)
 		s[i+1] = arguments[i];
 	log = new Stream("aucgbot.log", "a");
-	log.writeln(s.join(": ").replace(/\s+/, " ").replace(/^ | $/g, ""));
+	log.writeln(s.join(": ").trim().replace(/\s+/, " "));
 	log.close();
 };
 
@@ -602,4 +603,4 @@ if (typeof Array.prototype.random != "function")
 Array.prototype.random =
 function randomElement() this[Math.floor((Math.random()*this.length))];
 
-println("aucgbot loaded.");
+writeln("aucgbot loaded.");
