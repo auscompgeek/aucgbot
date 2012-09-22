@@ -6,7 +6,7 @@
 // PLEASE NOTE: if you edit the badwords list using the rc js command, use
 // "rc js this.modules["badword"].parseList()" otherwise it will not work
 
-module.version = "4.3.3 (20 Aug 2012)";
+module.version = "4.3.4 (22 Sep 2012)";
 module.count = {}; module.sfwChans = [];
 
 module.parseList =
@@ -49,7 +49,7 @@ module.badwords = { // "Word": "case-insensitive quoted regex",
 	"Fag": "fag",
 	"Fuck": "f[ua*\\-](?:[cr*\\-][k*\\-]|q)|fk|f(?:cu|sc)king|wh?[au]t [dt][aeh]+ f|wtf|fml|cbf|omfg|stfu|gtfo|lmfao|fubar",
 	"Gay": "g(a|he)y",
-	"God": "g[o*\\-]d|omf?g",
+	"God": "g[o*\\-]d|GERD|omf?g",
 	"Heck": "\\bheck",
 	"Hell": "hell",
 	"Idiot": "idiot",
@@ -83,14 +83,14 @@ module.loadCount();
 
 module.onMsg =
 function onMsg(dest, msg, nick, ident, host, serv) {
-	var word, words, msgParts = msg.split(" "), nick = nick.toLowerCase();
+	var word, words, msgParts = msg.split(" "), nick = nick.split("|")[0].toLowerCase();
 	if (dest != nick) for (let i = 0; i < this.sfwChans.length; i++)
 		if (this.sfwChans[i] == dest) {
 			var dest = nick;
 			break;
 		}
 	if (/^!badwords?$/.test(msgParts[0])) {
-		nick = msgParts[1] ? msgParts[1].toLowerCase() : nick;
+		nick = msgParts[1] ? msgParts[1].split("|")[0].toLowerCase() : nick;
 		word = msgParts[2];
 		if (word && (this.badwords[word] || // is it a valid badword?
 		   this.badwords[(word = word[0].toUpperCase() + word.slice(1))])) {
