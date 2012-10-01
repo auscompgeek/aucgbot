@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-module.version = "0.5.1 (12 Aug 2012)";
+module.version = "0.6 (1 Oct 2012)";
 module.res = [
 	"Mooooooooooo!", "MOO!", "Moo.", "Moo. Moo.", "Moo Moo Moo, Moo Moo.", "fish go m00!",
 	"\1ACTION nibbles on some grass\1",
@@ -19,7 +19,7 @@ module.res = [
 	"\1ACTION solves partial differential equations\1"
 ];
 module.onCTCP =
-function onCTCP(type, msg, nick, dest, serv) {
+function onCTCP(type, msg, nick, dest, conn) {
 	if (type == "ACTION")
 		var res = [
 			"\1ACTION slaps $nick around a bit with a large trout\1",
@@ -49,14 +49,14 @@ function onCTCP(type, msg, nick, dest, serv) {
 			"Hey! Stop it!", "Go away!", "GETOFF!",
 		].concat(this.res);
 		msg.match("(hit|kick|slap|eat|prod|stab|kill|whack|insult|teabag|(punch|bash|touch|pok)e)s " +
-			serv.nick.replace(/\W/g, "\\$&") + "\\b", "i") &&
-			aucgbot.msg(serv, dest, res.random().replace("$dest", dest, "g").replace("$nick", nick, "g"));
+			conn.nick.replace(/\W/g, "\\$&") + "\\b", "i") &&
+			conn.msg(dest, res.random().replace("$dest", dest, "g").replace("$nick", nick, "g"));
 }
 module.onMsg =
-function onMsg(dest, msg, nick, ident, host, serv, relay) {
+function onMsg(dest, msg, nick, ident, host, conn, relay) {
 	if (/(ham|cheese) ?burger|beef/i.test(msg) && !/^au/.test(nick))
-		aucgbot.msg(serv, dest, "\1ACTION eats", nick + "\1");
+		conn.msg(dest, "\1ACTION eats", nick + "\1");
 	else if (/moo|cow/i.test(msg)) {
-		aucgbot.msg(serv, dest, this.res.random().replace("$dest", dest, "g").replace("$nick", nick, "g"));
+		conn.msg(dest, this.res.random().replace("$dest", dest, "g").replace("$nick", nick, "g"));
 	}
 }

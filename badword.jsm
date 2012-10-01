@@ -6,7 +6,7 @@
 // PLEASE NOTE: if you edit the badwords list using the rc js command, use
 // "rc js this.modules["badword"].parseList()" otherwise it will not work
 
-module.version = "4.3.4 (22 Sep 2012)";
+module.version = "4.4 (1 Oct 2012)";
 module.count = {}; module.sfwChans = [];
 
 module.parseList =
@@ -46,8 +46,9 @@ module.badwords = { // "Word": "case-insensitive quoted regex",
 	"Cunt": "[ck][u*\\-]*nt|\\bhk\\b",
 	"Damn": "d[a*\\-@]y*(?:um|mn)|dammit",
 	"Dick": "d[i*\\-!]ck",
-	"Fag": "fag",
-	"Fuck": "f[ua*\\-](?:[cr*\\-][k*\\-]|q)|fk|f(?:cu|sc)king|wh?[au]t [dt][aeh]+ f|wtf|fml|cbf|omfg|stfu|gtfo|lmfao|fubar",
+	"Fag": "fags?\\b",
+	"Faggot": "faggot",
+	"Fuck": "f[ua*\\-](?:[cr*\\-][k*\\-]|q)|\\bfk|f(?:cu|sc)king|wh?[au]t [dt][aeh]+ f|wtf|fml|cbf|omfg|stfu|gtfo|lmfao|fubar",
 	"Gay": "g(a|he)y",
 	"God": "g[o*\\-]d|GERD|omf?g",
 	"Heck": "\\bheck",
@@ -59,14 +60,14 @@ module.badwords = { // "Word": "case-insensitive quoted regex",
 	"Midget": "midget",
 	"Nigger": "nigger",
 	"Piss": "p[i*\\-!]ss",
-	"Porn": "p(?:r[o0]|or)n\b", // pornography is legit
+	"Porn": "p(?:r[o0]|[o0]r)n\b", // pornography is legit
 	"Prick": "pr[i*\\-!]ck",
 	"Pussy": "puss(?:y\\b|ies)",
 	"Queer": "queer",
 	"Retard": "retard",
 	"Screw you": "screw (?:yo)?u",
 	"Shit": "s[h*\\-#][i*\\-!][t*\\-]",
-	"Shut up": "shut(?: the \S+)? up|stfu",
+	"Shut up": "shut(?: the \\S+)? up|stfu",
 	"Slut": "sl[u*\\-]t",
 	"Spastic": "spastic",
 	"Stupid": "stupid",
@@ -82,9 +83,9 @@ module.parseList();
 module.loadCount();
 
 module.onMsg =
-function onMsg(dest, msg, nick, ident, host, serv) {
+function onMsg(dest, msg, nick, ident, host, conn) {
 	var word, words, msgParts = msg.split(" "), nick = nick.split("|")[0].toLowerCase();
-	if (dest != nick) for (let i = 0; i < this.sfwChans.length; i++)
+	if (dest != nick) for (let i = this.sfwChans.length - 1; i >= 0; i--)
 		if (this.sfwChans[i] == dest) {
 			var dest = nick;
 			break;
@@ -100,21 +101,21 @@ function onMsg(dest, msg, nick, ident, host, serv) {
 				this.count[nick][word] += parseInt(msgParts[3]);
 				this.saveCount();
 			} else if (!this.count[nick])
-				aucgbot.msg(serv, dest, "No bad words have been said by", nick, "...yet...");
+				conn.msg(dest, "No bad words have been said by", nick, "...yet...");
 			else
-				aucgbot.msg(serv, dest, nick, "said `" + word + "'", this.count[nick][word], "times!");
+				conn.msg(dest, nick, "said `" + word + "'", this.count[nick][word], "times!");
 		} else if (!this.count[nick])
-			aucgbot.msg(serv, dest, "No bad words have been said by", nick, "...yet...");
+			conn.msg(dest, "No bad words have been said by", nick, "...yet...");
 		else if (word && word.toLowerCase() == "total") {
 			var num = 0;
 			for (let word in this.count[nick])
 				num += this.count[nick][word];
-			aucgbot.msg(serv, dest, "Total number of bad words said by", nick + ":", num);
+			conn.msg(dest, "Total number of bad words said by", nick + ":", num);
 		} else {
 			words = [];
 			for (let word in this.count[nick])
 				words.push(word + ": " + this.count[nick][word]);
-			aucgbot.msg(serv, dest, "Bad words said by", nick + ":", words.join(" - "));
+			conn.msg(dest, "Bad words said by", nick + ":", words.join(" - "));
 		}
 		return true;
 	}

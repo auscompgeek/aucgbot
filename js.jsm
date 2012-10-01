@@ -3,20 +3,20 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-module.version = "0.5 (23 Aug 2012)";
+module.version = "0.5.1 (1 Oct 2012)";
 //module.prefs = { internal: true }
 
 module.cmd_js =
-function cmd_js(dest, msg, nick, ident, host, serv, relay) {
+function cmd_js(dest, msg, nick, ident, host, conn, relay) {
 	var ret, pin;
 	if (!msg) {
-		aucgbot.reply(serv, dest, nick, "Usage: js <expr>");
+		conn.reply(dest, nick, "Usage: js <expr>");
 		return true;
 	}
 	pin = system.safeMode();
 	try {
-		aucgbot.reply(serv, dest, nick, this.eval(msg));
-	} catch (ex) { aucgbot.reply(serv, dest, nick, "uncaught exception:", ex); }
+		conn.reply(dest, nick, this.eval(msg));
+	} catch (ex) { conn.reply(dest, nick, "uncaught exception:", ex); }
 	system.safeMode(pin);
 	return true;
 }

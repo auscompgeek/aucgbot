@@ -2,10 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-var ans;
-
 function calc(expr) {
-	const pi = Math.PI, e = Math.E, phi = (1 + Math.sqrt(5)) / 2, //c = 299798...
+	const ans = Math.ans, pi = Math.PI, e = Math.E, phi = (1 + Math.sqrt(5)) / 2, //c = 299792458,
 		// trigonometric
 		acos = Math.acos,
 		asin = Math.asin,
@@ -37,58 +35,61 @@ function calc(expr) {
 	           .replace(/\b(\d+(?:\.\d+|)|\.\d+) ?([(a-df-wyz])/g,"$1*$2").replace(/\b(ph?i|e) ?([^-+*\/&|^<>%),?: ])/g,"$1*$2").replace(/(\(.+?\)) ?([^-+*\/&|^<>%!),?: ])/g,"$1*$2");
 	while (/pow\(.+,.+\) ?\*\* ?[-+]?(\d+(\.\d|!?)|\.\d)/.test(expr) || /fact\(.+\)!/.test(expr)) // XXX "pow(pow(a,b),c) ** x" becomes "pow(pow(a,pow(b),c),x)"!
 		expr = expr.replace(/pow(\(.+?,)(.+?)\) ?\*\* ?([-+]?(\d+(?:\.\d+|!*)|\.\d+))/g, "pow$1pow($2,$3))").replace(/(fact\(.+?\))!/g, "fact($1)");
-	return Number(eval(expr));
+	return Math.ans = Number(eval(expr));
+
+	function fact(x) {
+		var e = 1;
+		x = Number(x);
+		if (x > 170) // We can't calculate factorials past this, we get Infinity.
+			e = Infinity;
+		else if (x < 0 || isNaN(x) || x != Math.floor(x))
+			e = NaN; // Positive integers only.
+		else
+			for (var i = x; i > 1; i--)
+				e *= i;
+		return e;
+	}
+	function ave() {
+		var total = 0;
+		for (var i = 0; i < arguments.length; i++)
+			total += arguments[i];
+		return total / arguments.length;
+	}
+	function d(sides, count, modifier) { // Partially from cZ dice plugin.
+		var total = 0, i;
+		sides = parseInt(sides) || 6;
+		count = parseInt(count) || 1;
+		if (sides > 100) sides = 100;
+		for (i = 0; i < count; i++)
+			total += ranint(1, sides);
+		return total + (parseFloat(modifier) || 0);
+	}
+	function round(x, prec) prec ? Math.round(x / prec) * prec : Math.round(x);
+	function recip(x) 1 / x;
+	function cbrt(x) pow(x, 1/3);
+	function root(z, x) pow(z, 1/x);
+	function sign(x) abs(x) / x; // or x / abs(x)
+	function deg2rad(x) x * (180 / pi)
+	function rad2deg(x) x * (pi / 180)
+
+	// trigonometry
+	function sec(x) 1 / cos(x);
+	function csc(x) 1 / sin(x);
+	function cot(x) cos(x) / sin(x);
+	function asec(x) acos(1 / x);
+	function acsc(x) asin(1 / x);
+	function cosh(x) (exp(x) + exp(-x))/2;
+	function sinh(x) (exp(x) - exp(-x))/2;
+	function tanh(x) sinh(x) / cosh(x);
+	function coth(x) cosh(x) / sinh(x);
+	function sech(x) 1 / cosh(x);
+	function csch(x) 1 / sinh(x);
+	function acosh(x) log(x + sqrt(x*x-1));
+	function asinh(x) log(x + sqrt(x*x+1));
+	function atanh(x) 1/2 * log((1+x) / (1-x));
+	function asech(x) 1 / acosh(x);
+	function acsch(x) 1 / asinh(x);
+	function acoth(x) 1/2 * log((1+x) / (x-1));
 }
-function fact(x) {
-	var e = 1;
-	x = Number(x);
-	if (x > 170) // We can't calculate factorials past this, we get Infinity.
-		e = Infinity;
-	else if (x < 0 || isNaN(x) || x != Math.floor(x))
-		e = NaN; // Positive integers only.
-	else
-		for (var i = x; i > 1; i--)
-			e *= i;
-	return e;
-}
-function ave() {
-	var total = 0;
-	for (var i = 0; i < arguments.length; i++)
-		total += arguments[i];
-	return total / arguments.length;
-}
-function d(sides, count, modifier) { // Partially from cZ dice plugin.
-	var total = 0, i;
-	sides = parseInt(sides) || 6;
-	count = parseInt(count) || 1;
-	if (sides > 100) sides = 100;
-	for (i = 0; i < count; i++)
-		total += ranint(1, sides);
-	return total + (parseFloat(modifier) || 0);
-}
-function round(x, prec) prec ? Math.round(x / prec) * prec : Math.round(x);
 function f(temp) (temp - 32) / 1.8;
 function c(temp) temp * 1.8 + 32;
-function recip(x) 1 / x;
-function cbrt(x) Math.pow(x, 1/3);
-function root(z, x) Math.pow(z, 1/x);
-function sign(x) Math.abs(x) / x; // or x / Math.abs(x)
-
-// trigonometry
-function sec(x) 1 / Math.cos(x);
-function csc(x) 1 / Math.sin(x);
-function cot(x) Math.cos(x) / Math.sin(x);
-function asec(x) Math.acos(1 / x);
-function acsc(x) Math.asin(1 / x);
-function cosh(x) (Math.exp(x) + Math.exp(-x))/2;
-function sinh(x) (Math.exp(x) - Math.exp(-x))/2;
-function tanh(x) sinh(x) / cosh(x);
-function coth(x) cosh(x) / sinh(x);
-function sech(x) 1 / cosh(x);
-function csch(x) 1 / sinh(x);
-function acosh(x) Math.log(x + Math.sqrt(x*x-1));
-function asinh(x) Math.log(x + Math.sqrt(x*x+1));
-function atanh(x) 1/2 * Math.log((1+x) / (1-x));
-function asech(x) 1 / acosh(x);
-function acsch(x) 1 / asinh(x);
-function acoth(x) 1/2 * Math.log((1+x) / (x-1));

@@ -4,8 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-var servers = [];
-for (let i = 0, s = true; s; i++) {
+var servers = [], i = 0;
+do {
 	servers.push([]);
 
 	for (let j = 0, prompts = ["Hostname", "Port", "Nickname", "Ident", "Pass", "Channels"]; j < prompts.length; j++) {
@@ -14,8 +14,8 @@ for (let i = 0, s = true; s; i++) {
 	}
 
 	print("\nAdd another server? ");
-	s = system.stdin.readln()[0].toLowerCase() == "y";
-}
+	i++;
+} while (system.stdin.readln()[0].toLowerCase() == "y")
 system.cwd = system.script.replace(/[^\\\/]+?$/, "");
 run("aucgbot.js");
 if (!aucgbot) {
