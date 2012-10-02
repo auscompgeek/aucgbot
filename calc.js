@@ -42,27 +42,27 @@ function calc(expr) {
 		x = Number(x);
 		if (x > 170) // We can't calculate factorials past this, we get Infinity.
 			e = Infinity;
-		else if (x < 0 || isNaN(x) || x != Math.floor(x))
+		else if (x < 0 || isNaN(x) || x != floor(x))
 			e = NaN; // Positive integers only.
 		else
-			for (var i = x; i > 1; i--)
+			for (let i = x; i > 1; i--)
 				e *= i;
 		return e;
 	}
 	function ave() {
-		var total = 0;
-		for (var i = 0; i < arguments.length; i++)
-			total += arguments[i];
-		return total / arguments.length;
+		var sum = 0;
+		for (let i = arguments.length - 1; i >= 0; i--)
+			sum += arguments[i];
+		return sum / arguments.length;
 	}
 	function d(sides, count, modifier) { // Partially from cZ dice plugin.
-		var total = 0, i;
+		var sum = Number(modifier) || 0;
 		sides = parseInt(sides) || 6;
 		count = parseInt(count) || 1;
-		if (sides > 100) sides = 100;
-		for (i = 0; i < count; i++)
-			total += ranint(1, sides);
-		return total + (parseFloat(modifier) || 0);
+		if (count > 100) count = 100;
+		for (let i = 0; i < count; i++)
+			sum += ranint(1, sides);
+		return sum;
 	}
 	function round(x, prec) prec ? Math.round(x / prec) * prec : Math.round(x);
 	function recip(x) 1 / x;

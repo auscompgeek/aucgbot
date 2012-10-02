@@ -5,7 +5,7 @@
 
 if (!run("calc.js")) throw "Could not load calc functions from calc.js";
 
-module.version = "2.4 (1 Oct 2012)";
+module.version = "2.4.1 (2 Oct 2012)";
 module.prefs = {
 	abuse: {
 		log: true, // when triggered with =
@@ -21,21 +21,24 @@ module.prefs = {
 	userfriendly: false,
 	actDice: false, // output <x>d<y> as /me rolls a d<y> x times: a, b, c, total: d
 }
-module.abuse = /load|java|ecma|op|doc|cli|(qui|exi|aler|prin|insul|impor)t|undef|raw|throw|win|nan|open|con|pro|patch|plug|play|infinity|my|for|(fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|this|js|sys|scr|(de|loca|unti|rctr|eva)l|[\[{"}\]]|(?!what)'(?!s)/;
+module.abuse = /load|run|java|ecma|op|doc|cli|(qui|exi|aler|prin|insul|impor)t|undef|raw|throw|win|nan|open|con|pro|patch|plug|play|inf|my|for|(fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|read|this|js|sys|scr|(de|loca|unti|rctr|eva)l|[\[{"}\]]|(?!what)'(?!s)/;
 module.list = "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, log, pow, sqrt, abs, ceil, max, min, floor, round, random, ranint, fact, mean, dice, f, c. Constants: e, pi, phi. Operators: %, ^, **. Other topics: decimal, trig.";
 
 module["cmd_="] = module.cmd_calc = module.cmd_math =
 function cmd_calc(dest, msg, nick, ident, host, conn, relay) {
-	var msg = msg.toLowerCase();
+	var msg = msg.toLowerCase(), s;
 	if (msg.match(this.abuse)) {
 		this.prefs.abuse.warn && !relay && conn.send("NOTICE", nick, ":Whoa! Careful dude!");
 		writeln("[WARNING] Abuse detected! ^^^^^");
 		this.prefs.abuse.log && aucgbot.log(conn, "Calc abuse", nick + (dest != nick ? " in " + dest : ""), msg);
 		return true;
 	}
-	if (/^(\d*)d(\d+)$/.test(msg)) return conn.send("PRIVMSG", dest, this.cmdDice(RegExp.$2, RegExp.$1));
-	try { (s = this.parseMsg(msg)) != null && conn.reply(dest, nick, s); }
-	catch (ex) {
+	try {
+		if (/^(\d*)d(\d+)$/.test(msg))
+			conn.send("PRIVMSG", dest, this.cmdDice(RegExp.$2, RegExp.$1));
+		else if ((s = this.parseMsg(msg)) != null)
+			conn.reply(dest, nick, s);
+	} catch (ex) {
 		writeln("[ERROR] ", ex);
 		this.prefs.error.log && aucgbot.log(conn, "CALC ERROR", msg, nick + (dest != nick ? " in " + dest : ""), ex);
 		this.prefs.error.apologise && conn.reply(dest, nick, this.prefs.error.apologymsg);
@@ -55,13 +58,14 @@ function cmd_base(dest, msg, nick, ident, host, conn, relay) {
 module.cmd_qe =
 function cmd_quadraticEquation(dest, msg, nick, ident, host, conn, relay) {
 	var a, b, c, _2a, pron, rhs, resInSqrt, resSqrt, res = [];
-	const helpMsg = "qe: Evaluates the value of the pronumeral in a quadratic equation in general form i.e. ax**2 + bx + c = 0";
-	if (!/^(?:([+-]?\d*) ?\*? ?)?(\w) ?(?:\*\*|\^) ?2 ?(?:([+-] ?\d*) ?\*? ?\2)? ?([+-] ?\d+)? ?= ?([+-]?\d+)$/.test(msg)) {
+	if (!/^(?:([+-]?\d*(?:\.\d*)) ?\*? ?)?(\w) ?(?:\*\*|\^) ?2 ?(?:([+-] ?\d*(?:\.\d*)) ?\*? ?\2)? ?([+-] ?\d+(?:\.\d*))? ?= ?([+-]?\d+(?:\.\d*))$/.test(msg)) {
 		// not a quadratic equation, bail
-		conn.reply(dest, nick, helpMsg);
+		conn.reply(dest, nick, "qe: Evaluates the value of the pronumeral in a quadratic equation in general form i.e. ax**2 + bx + c = 0");
 		return true;
 	}
 	pron = RegExp.$2, a = RegExp.$1, b = RegExp.$3, c = RegExp.$4, rhs = parseFloat(RegExp.$5);
+	if (["+","-"].indexOf(a) != -1) a += "1";
+	if (["+","-"].indexOf(b) != -1) b += "1";
 	a = a ? parseFloat(a) : 1; _2a = 2 * a;
 	b = b ? parseFloat(b.replace(/\s+/, "")) : 1;
 	c = (c ? parseFloat(c.replace(/\s+/, "")) : 0) - rhs;
@@ -112,13 +116,14 @@ function cmdDice(sides, count) { // Partially from cZ dice plugin.
 	var ary = [], total = 0, i;
 	sides = parseInt(sides) || 6;
 	count = parseInt(count) || 1;
-	if (sides > 100) sides = 100;
+	if (count > 100) count = 100;
 	for (i = 0; i < count; i++) {
 		ary[i] = ranint(1, sides);
 		total += ary[i];
+		if (!isFinite(total)) break;
 	}
 	return this.prefs.actDice ? ":\1ACTION rolls a d" + sides + (
-		count > 1 ? " " + count + " times: " + ary.join(", ") + ", total: " + total : ": " + ary[0]
+		count > 1 ? " " + (i+1) + " times: " + ary.join(", ") + ", total: " + total : ": " + ary[0]
 	) + "\1" : count > 1 ? ary.join("+") + "=" + total : ary[0];
 }
 
