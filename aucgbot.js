@@ -54,7 +54,7 @@ var aucgbot = {
 	conns: [],
 	global: this
 };
-aucgbot.version = "4.0 (1 Oct 2012)";
+aucgbot.version = "4.0 (3 Oct 2012)";
 
 /**
  * Start the bot. Each argument is to be passed as arguments to {@link aucgbot#connect}.
@@ -215,7 +215,7 @@ function onMsg(dest, msg, nick, ident, host, conn) {
 
 	// fix for message relay bots
 	if (this.prefs["relay.check"] && nick.match(this.prefs["relay.bots"]) && /^<.+> /.test(msg))
-		msg = msg.replace(/^<(.+?)> /, ""), relay = nick, nick = RegExp.$1.replace(/^\[\w+\]|\/.+/g, ""), at = nick + ": ";
+		msg = msg.replace(/^<(.+?)> /, ""), relay = nick, nick = RegExp.$1.replace(/^\[\w+\] ?|\/.+/g, "");
 
 	// don't listen to bots
 	if ((/bot[\d_|]*$|Serv|^bot|Op$/i.test(nick) && !(nick == conn.nick)) ||
@@ -564,7 +564,7 @@ function msg() {
  */
 Stream.prototype.reply =
 function reply(dest, nick) {
-	var msg = Array.prototype.slice.call(arguments, 3).join(" ").trim().replace(/\s+/g, " ");
+	var msg = Array.prototype.slice.call(arguments, 2).join(" ").trim().replace(/\s+/g, " ");
 	if (!msg) throw new TypeError("Stream.prototype.reply requires at least 3 arguments");
 	if (dest != nick) msg = nick + ": " + msg;
 	return this.writeln("PRIVMSG " + dest + " :" + msg);
