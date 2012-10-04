@@ -54,7 +54,7 @@ var aucgbot = {
 	conns: [],
 	global: this
 };
-aucgbot.version = "4.0 (3 Oct 2012)";
+aucgbot.version = "4.0.1 (4 Oct 2012)";
 
 /**
  * Start the bot. Each argument is to be passed as arguments to {@link aucgbot#connect}.
@@ -437,7 +437,13 @@ function rcBot(cmd, args, dest, nick, conn) {
 			break;
 		}
 		args.shift();
-		this.connect(args[0], args[1], conn.nick, "", args[3], args[2]);
+		try {
+			this.connect(args[0], args[1], conn.nick, "", args[3], args[2]);
+		} catch (ex) {
+			writeln("[ERROR] ", ex);
+			conn.reply(dest, nick, "Error while connecting:", ex);
+			this.log(conn, "CONNECT FAIL", args[0], ex);
+		}
 		break;
 	case "join":
 		args = args.join(" ").split(",");
@@ -500,7 +506,7 @@ function rcBot(cmd, args, dest, nick, conn) {
 	case "reload":
 		if (!run("aucgbot.js")) {
 			conn.reply(dest, nick, "I can't find myself!");
-			this.log(conn, nick + (dest == nick ? "" : " in " + dest), "Can't reload!");
+			this.log(conn, "Can't reload!");
 		}
 		break;
 	default:
