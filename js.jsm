@@ -23,7 +23,7 @@ function cmd_js(dest, msg, nick, ident, host, conn, relay) {
 module.eval =
 function _eval(expr) {
 	var ret, o = {aucgbot:null,system:null};
-	with (o) ret = eval.call(o, expr);
+	with (o) ret = eval(expr);
 	if (typeof ret == "function")
 		return "(function) " + ret.name;
 	if (ret == null) {
