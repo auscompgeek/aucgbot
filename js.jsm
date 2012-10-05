@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-module.version = "0.5.1 (1 Oct 2012)";
+module.version = "0.5.2 (5 Oct 2012)";
 //module.prefs = { internal: true }
 
 module.cmd_js =
@@ -23,7 +23,7 @@ function cmd_js(dest, msg, nick, ident, host, conn, relay) {
 module.eval =
 function _eval(expr) {
 	var ret, o = {aucgbot:null,system:null};
-	with (o) ret = eval.call(o, msg);
+	with (o) ret = eval.call(o, expr);
 	if (typeof ret == "function")
 		return "(function) " + ret.name;
 	if (ret == null) {
