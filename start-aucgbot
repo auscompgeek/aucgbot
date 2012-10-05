@@ -15,7 +15,7 @@ do {
 
 	print("\nAdd another server? ");
 	i++;
-} while (system.stdin.readln()[0].toLowerCase() == "y")
+} while (system.stdin.readln()[0] == "y")
 system.cwd = system.script.replace(/[^\\\/]+?$/, "");
 run("aucgbot.js");
 if (!aucgbot) {
