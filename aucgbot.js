@@ -54,7 +54,7 @@ var aucgbot = {
 	conns: [],
 	global: this
 };
-aucgbot.version = "4.0.1 (4 Oct 2012)";
+aucgbot.version = "4.0.2 (4 Oct 2012)";
 
 /**
  * Start the bot. Each argument is to be passed as arguments to {@link aucgbot#connect}.
@@ -76,7 +76,7 @@ function startBot() {
  * @param {string} [nick] Nick to use (default: aucgbot)
  * @param {string} [ident] Ident to use (default: aucgbot)
  * @param {string} [pass] The server password to use, if any
- * @param {(string|Array.<string>)} [chans] Channels to join on connect (default: #bots)
+ * @param {string|string[]} [chans] Channels to join on connect (default: #bots)
  * @see aucgbot#start
  */
 aucgbot.connect =
@@ -554,7 +554,7 @@ function send() {
  */
 Stream.prototype.msg =
 function msg() {
-	var s = Array.prototype.slice.call(arguments, 1);
+	var s = Array.prototype.slice.call(arguments);
 	s[1] = ":" + s[1]; s.unshift("PRIVMSG");
 	return this.send.apply(this, s);
 };
@@ -610,7 +610,7 @@ function ranint(min, max) {
  * Get a random element of an array. http://svendtofte.com/code/usefull_prototypes
  *
  * @this {Array}
- * @return {?} Random element of array.
+ * @return Random element from array.
  */
 if (typeof Array.prototype.random != "function")
 Array.prototype.random =
