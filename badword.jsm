@@ -6,7 +6,7 @@
 // PLEASE NOTE: if you edit the badwords list using the rc js command, use
 // "rc js this.modules["badword"].parseList()" otherwise it will not work
 
-module.version = "4.4.1 (4 Oct 2012)";
+module.version = "4.4.2 (17 Oct 2012)";
 module.count = {}; module.sfwChans = [];
 
 module.parseList =
@@ -32,10 +32,11 @@ function saveCount() {
 
 module.badwords = { // "Word": "case-insensitive quoted regex",
 	"Arse": "arse",
-	"Asian": "as(ia|ai)n",
-	"Ass": "\\ba[s$]{2}(holes?|es)?\\b|lmf?ao",
+	"Asian": "as(?:ia|ai)n",
+	"Ass": "\\ba[s$]{2}(?:holes?|es)?\\b|lmf?ao",
 	"Bastard": "bastard",
 	"Bitch": "b[i*\\-!]a?tch",
+	"Black": "black",
 	"Bloody": "bloody",
 	"Boob": "b[o0]{2}b",
 	"Butt": "butt",
@@ -49,8 +50,9 @@ module.badwords = { // "Word": "case-insensitive quoted regex",
 	"Dick": "d[i*\\-!]ck",
 	"Fag": "fags?\\b",
 	"Faggot": "faggot",
+	"Fart": "fart",
 	"Fuck": "f[ua*\\-](?:[cr*\\-]?[k*\\-]|q)|\\bfk|f(?:cu|sc)king|wh?[au]t [dt][aeh]+ f|wtf|fml|cbf|omfg|stfu|gtfo|lmfao|fubar",
-	"Gay": "g(a|he)y",
+	"Gay": "g(?:a|he)y",
 	"God": "g[o*\\-]d|GERD|omf?g",
 	"Heck": "\\bheck",
 	"Hell": "hell",
@@ -59,7 +61,8 @@ module.badwords = { // "Word": "case-insensitive quoted regex",
 	"Jew": "jew",
 	"LOL": "lol|lawl|lulz",
 	"Midget": "midget",
-	"Nigger": "nigger",
+	"Nigger": "nigg(?:er|a)",
+	"Penis": "penis",
 	"Piss": "p[i*\\-!]ss",
 	"Porn": "p(?:r[o0]|[o0]r)n\b", // pornography is legit
 	"Prick": "pr[i*\\-!]ck",
@@ -109,13 +112,13 @@ function onMsg(dest, msg, nick, ident, host, conn) {
 					conn.msg(dest, nick, "said `" + word + "'", count[word], "times!");
 			} else if (word.toLowerCase() == "total") {
 				var sum = 0;
-				for each (let word in count)
+				for each (word in count)
 					sum += word;
 				conn.msg(dest, nick, "said a total of", sum, "bad words!");
 			}
 		} else {
 			words = [];
-			for (let word in count)
+			for (word in count)
 				words.push(word + ": " + count[word]);
 			conn.msg(dest, "Bad words said by", nick + ":", words.join(" - "));
 		}
@@ -123,7 +126,7 @@ function onMsg(dest, msg, nick, ident, host, conn) {
 	}
 	if (!msg.match(this.badwordList, "i")) return;
 	if (!count) count = this.count[nick] = {};
-	for (let word in this.badwords)
+	for (word in this.badwords)
 		if (words = msg.match(this.badwords[word], "gi")) {
 			if (!count[word]) count[word] = 0;
 			count[word] += words.length;
