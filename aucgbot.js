@@ -54,7 +54,7 @@ var aucgbot = {
 	conns: [],
 	global: this
 };
-aucgbot.version = "4.0.2 (4 Oct 2012)";
+aucgbot.version = "4.0.3 (24 Oct 2012)";
 
 /**
  * Start the bot. Each argument is to be passed as arguments to {@link aucgbot#connect}.
@@ -125,7 +125,7 @@ function connectBot(host, port, nick, ident, pass, chans) {
 aucgbot.startLoop =
 function startLoop() {
 	while (this.conns.length) {
-		system.wait(this.conns, 60000);
+		system.wait(this.conns, 36000);
 		for (let i = this.conns.length - 1, conn; conn = this.conns[i]; i--) {
 			if (conn.canRead) {
 				this.parseln(conn.readln(), conn);
@@ -349,8 +349,8 @@ function parseCmd(dest, cmd, args, nick, ident, host, conn, relay) {
 aucgbot.up =
 function uptime() {
 	var diff = Math.round((Date.now() - this.started) / 1000),
-		s = diff % 60, m = (diff % 3600 - s) / 60,
-		h = Math.floor(diff / 3600) % 24, d = Math.floor(diff / 86400);
+	    s = diff % 60, m = (diff % 3600 - s) / 60,
+	    h = Math.floor(diff / 3600) % 24, d = Math.floor(diff / 86400);
 	return (d ? d + "d " : "") + (h ? h + "h " : "") + (m ? m + "m " : "") + (s ? s + "s" : "");
 };
 /**
@@ -469,8 +469,7 @@ function rcBot(cmd, args, dest, nick, conn) {
 			conn.reply(dest, nick, "Get me to talk to myself, yeah, great idea...");
 			break;
 		}
-		args.unshift(conn);
-		this.msg.apply(this, args);
+		conn.msg.apply(conn, args);
 		break;
 	case "echo": case "say":
 		conn.msg(dest, args.join(" "));
@@ -483,11 +482,11 @@ function rcBot(cmd, args, dest, nick, conn) {
 		// could cause a crash if unhandled
 		if (/(stringify|uneval).*(aucgbot|this|global)/i.test(args)) {
 			writeln("[WARNING] Possible abuse! ^^^^^");
-			conn.send("NOTICE", nick, ":Please don't try to abuse my remote control.");
+			conn.send("NOTICE", nick, ":Careful there! You don't want to crash me!");
 			break;
 		}
 		try { var res = eval(args); } catch (ex) { res = "exception: " + ex; }
-		if (typeof res == "function") res = "function";
+		if (typeof res == "function") res = "function " + res.name;
 		res && conn.reply(dest, nick, res);
 		break;
 	/*case "pref":
@@ -501,7 +500,7 @@ function rcBot(cmd, args, dest, nick, conn) {
 		try {
 			for (args = args.join(" ").split(","); args.length; )
 				this.loadModule(args.shift());
-		} catch (ex) { conn.reply(dest, nick, ex); }
+		} catch (ex) { conn.reply(dest, nick, ex.fileName + ":" + ex.lineNumber, ex); }
 		break;
 	case "reload":
 		if (!run("aucgbot.js")) {
@@ -536,6 +535,8 @@ function loadModule(m) {
  *
  * @this {Stream} IRC server connection
  * @usage conn.send(data...)
+ * @link Stream.prototype#msg
+ * @link Stream.prototype#reply
  * @return {number} Number of bytes sent
  */
 Stream.prototype.send =
@@ -549,7 +550,10 @@ function send() {
  *
  * @this {Stream} IRC server connection
  * @usage conn.msg(dest, msg...)
+ * @param {string} dest Channel or nick to send message to
+ * @param {string} msg Message to send
  * @link Stream.prototype#send
+ * @link Stream.prototype#reply
  * @return {number} Number of bytes sent
  */
 Stream.prototype.msg =
@@ -563,7 +567,9 @@ function msg() {
  *
  * @this {Stream} IRC server connection
  * @usage conn.reply(dest, nick, msg...)
- * @param {Stream} conn Server connection
+ * @param {string} dest Channel or nick to send message to
+ * @param {string} nick Nick to direct message at
+ * @param {string} msg Message to send to user
  * @link Stream.prototype#send
  * @link Stream.prototype#msg
  * @return {number} Number of bytes sent
@@ -614,6 +620,6 @@ function ranint(min, max) {
  */
 if (typeof Array.prototype.random != "function")
 Array.prototype.random =
-function random() this[Math.floor((Math.random()*this.length))];
+function random() this[Math.floor(Math.random()*this.length)];
 
 writeln("aucgbot loaded.");

@@ -1,7 +1,7 @@
 aucgbot - auscompgeek's JavaScript IRC bot
 ==========================================
 
-This bot is designed to be run with [JSDB](http://jsdb.org/).
+This bot is designed to be run with [JSDB](http://jsdb.org/) 1.8.0.6 or higher.
 
 It is licensed under the [Mozilla Public License v. 2.0](http://mozilla.org/MPL/2.0/).
 

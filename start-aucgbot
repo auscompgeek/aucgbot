@@ -1,11 +1,20 @@
 #!/usr/bin/env jsdb
 // -*- Mode: JavaScript; tab-width: 4 -*- vim:tabstop=4 syntax=javascript:
 /* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this file,
- * You can obtain one at http://mozilla.org/MPL/2.0/. */
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-var servers = [], i = 0;
-do {
+system.cwd = system.script.replace(/[^\\\/]+?$/, "");
+run("aucgbot.js");
+if (!aucgbot) {
+	println("aucgbot could not be loaded.");
+	println("system.cwd = ", system.cwd);
+	sleep(750);
+	system.exitCode = 1;
+	system.exit();
+}
+
+for (let servers = [], i = 0, s = true; s; i++) {
 	servers.push([]);
 
 	for (let j = 0, prompts = ["Hostname", "Port", "Nickname", "Ident", "Pass", "Channels"]; j < prompts.length; j++) {
@@ -14,14 +23,17 @@ do {
 	}
 
 	print("\nAdd another server? ");
-	i++;
-} while (system.stdin.readln()[0] == "y")
-system.cwd = system.script.replace(/[^\\\/]+?$/, "");
-run("aucgbot.js");
-if (!aucgbot) {
-	system.stderr.writeln("aucgbot could not be loaded.");
-	system.stderr.writeln("system.cwd = ", system.cwd);
-	system.exitCode = 1;
-	system.exit();
+	s = readln()[0] == "y";
 }
+
+print("\nLoad modules: ");
+for (let m = readln().trim().split(","); m.length; ) {
+	try {
+		aucgbot.loadModule(m.shift());
+	} catch (ex) {
+		println(ex);
+		println(ex.stack);
+	}
+}
+
 aucgbot.start.apply(aucgbot, servers);
