@@ -6,7 +6,7 @@
 // PLEASE NOTE: if you edit the badwords list using the rc js command, use
 // "rc js this.modules["badword"].parseList()" otherwise it will not work
 
-module.version = "4.4.2 (17 Oct 2012)";
+module.version = "4.4.3 (28 Oct 2012)";
 module.count = {}; module.sfwChans = [];
 
 module.parseList =
@@ -51,7 +51,7 @@ module.badwords = { // "Word": "case-insensitive quoted regex",
 	"Fag": "fags?\\b",
 	"Faggot": "faggot",
 	"Fart": "fart",
-	"Fuck": "f[ua*\\-](?:[cr*\\-]?[k*\\-]|q)|\\bfk|f(?:cu|sc)king|wh?[au]t [dt][aeh]+ f|wtf|fml|cbf|omfg|stfu|gtfo|lmfao|fubar",
+	"Fuck": "f[ua*\\-][crw*\\-]?[kq*\\-]|\\bfk|f(?:cu|sc)king|wh?[au]t [dt][aeh]+ f|wtf|fml|cbf|omfg|stfu|gtfo|lmfao|fubar",
 	"Gay": "g(?:a|he)y",
 	"God": "g[o*\\-]d|GERD|omf?g",
 	"Heck": "\\bheck",
@@ -61,7 +61,7 @@ module.badwords = { // "Word": "case-insensitive quoted regex",
 	"Jew": "jew",
 	"LOL": "lol|lawl|lulz",
 	"Midget": "midget",
-	"Nigger": "nigg(?:er|a)",
+	"Nigger": "ni[gq]{2,}(?:er|a)",
 	"Penis": "penis",
 	"Piss": "p[i*\\-!]ss",
 	"Porn": "p(?:r[o0]|[o0]r)n\b", // pornography is legit
@@ -70,7 +70,7 @@ module.badwords = { // "Word": "case-insensitive quoted regex",
 	"Queer": "queer",
 	"Retard": "retard",
 	"Screw you": "screw (?:yo)?u",
-	"Shit": "s[h*\\-#][i*\\-!][t*\\-]",
+	"Shit": "s[h*\\-#][ie*\\-!][t*\\-]",
 	"Shut up": "shut(?: the \\S+)? up|stfu",
 	"Slut": "sl[u*\\-]t",
 	"Spastic": "spastic",
@@ -81,6 +81,7 @@ module.badwords = { // "Word": "case-insensitive quoted regex",
 	"Wank": "wank",
 	"Whore": "whore",
 	"Wuss": "wuss",
+	"YOLO": "YOLO|u only live once",
 	"iPhone": "iPhone"
 }
 module.parseList();

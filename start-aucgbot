@@ -14,19 +14,7 @@ if (!aucgbot) {
 	system.exit();
 }
 
-print("\nLoad modules: ");
-for (let m = readln().trim().split(","); m.length; ) {
-	try {
-		aucgbot.loadModule(m.shift());
-	} catch (ex) {
-		println(ex);
-		println(ex.stack);
-	}
-}
-
-{
-let servers = [];
-for (let i = 0, s = true; s; i++) {
+for (let servers = [], i = 0, s = true; s; i++) {
 	servers.push([]);
 
 	for (let j = 0, prompts = ["Hostname", "Port", "Nickname", "Ident", "Pass", "Channels"]; j < prompts.length; j++) {
@@ -37,5 +25,15 @@ for (let i = 0, s = true; s; i++) {
 	print("\nAdd another server? ");
 	s = readln()[0] == "y";
 }
-aucgbot.start.apply(aucgbot, servers);
+
+print("\nLoad modules: ");
+for (let m = readln().trim().split(","); m.length; ) {
+	try {
+		aucgbot.loadModule(m.shift());
+	} catch (ex) {
+		println(ex);
+		println(ex.stack);
+	}
 }
+
+aucgbot.start.apply(aucgbot, servers);
