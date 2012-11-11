@@ -21,6 +21,6 @@ function cmd_google(dest, msg, nick, ident, host, conn, relay) {
 		return true;
 	}
 	var result0 = data.responseData.results[0];
-	conn.reply(dest, nick, result0 ? result0.url, "-", result0.titleNoFormatting : "No results.");
+	conn.reply(dest, nick, result0 ? (result0.url + " - " + result0.titleNoFormatting) : "No results.");
 	return true;
 }
