@@ -23,6 +23,7 @@
 
 if (!aucgbot)
 var aucgbot = {
+	ERR_MSG_SELF: "Get me to talk to myself, yeah, great idea...",
 	prefs: {
 		flood: {
 			lines: 6,
@@ -47,14 +48,14 @@ var aucgbot = {
 		"nokick.nicks": /Tanner|Mardeg|aj00200|ChrisMorgan|JohnTHaller|Bensawsome|juju|Shadow|TMZ|aus?c(ompgeek|g|ow)|Jan|Peng|TFEF|Nightmare/,
 		"nokick.hosts": /bot|spam|staff|dev|math|js|[Jj]ava[Ss]cript/,
 		// regex for allowed hosts to use rc command
-		suHosts: /trek|aucg|^(?:freenode\/)?(?:staff|dev)|oper|netadmin|geek|gry|bot(?:ter)?s|spam|^(?:127\.\d+\.\d+\.\d+|localhost(?:\.localdomain)?)$/
+		suHosts: /trek|aucg|^(?:freenode\/|)(?:staff|dev)|oper|netadmin|geek|gry|bot(?:ter|)s|^(?:127\.\d+\.\d+\.\d+|localhost(?:\.localdomain)?)$/
 	},
 	//cmodes: {}, // XXX Parse MODE lines.
 	modules: {},
 	conns: [],
 	global: this
 };
-aucgbot.version = "4.0.3 (24 Oct 2012)";
+aucgbot.version = "4.1 (19 Nov 2012)";
 
 /**
  * Start the bot. Each argument is to be passed as arguments to {@link aucgbot#connect}.
@@ -83,10 +84,7 @@ aucgbot.connect =
 function connectBot(host, port, nick, ident, pass, chans) {
 	var channels = ["#bots"], addr = (host || "127.0.0.1") + ":" + (parseInt(port) || 6667),
 	    conn = new Stream("net://" + addr, "rwt"), ln;
-	if (pass) {
-		conn.send("PASS", pass);
-		pass = null;
-	}
+	if (pass) conn.send("PASS", pass), pass = null;
 	conn.nick = nick || "aucgbot"; conn.flood_lines = 0;
 	conn.send("NICK", conn.nick);
 	conn.send("USER " + (ident || "aucgbot") + " 8 * :\x033\17auscompgeek's JS bot");
@@ -115,7 +113,7 @@ function connectBot(host, port, nick, ident, pass, chans) {
 			break;
 		}
 	}
-	this.conns.push(conn); system.gc();
+	this.conns.push(conn), system.gc();
 };
 /**
  * Start the server read line loop.
@@ -147,11 +145,13 @@ aucgbot.cleanConn =
 function cleanConn(i) {
 	this.conns[i].close();
 	if (i == this.conns.length - 1)
-		this.conns.length--
+		this.conns.length--;
+	else if (i == 0)
+		this.conns.shift();
 	else
 		delete this.conns[i]; // XXX must be more robust
 	system.gc();
-}
+};
 
 /**
  * Parse a raw IRC line.
@@ -160,7 +160,7 @@ function cleanConn(i) {
  * @param {Stream} conn Server connection
  */
 aucgbot.parseln =
-function parseIRCln(ln, conn) {
+function parseIRCln(ln, conn) { // XXX parse IRC quoting
 	if (!ln) return; // for weird servers
 	try { ln = decodeUTF8(ln); } catch (ex) {}
 	writeln(conn.hostName, ": ", ln);
@@ -171,22 +171,23 @@ function parseIRCln(ln, conn) {
 	if (/^:(\S+)!\S+@(\S+) ./.test(ln) && RegExp.$1 == conn.nick) this.host = RegExp.$2;
 	if ((lnary = /^:(\S+)!(\S+)@(\S+) PRIVMSG (\S+) :(.*)/.exec(ln))) {
 		lnary.shift();
-		var dest = lnary[0];
-		if (/^[#&+!]/.test(lnary[3])) dest = lnary[3];
+		let dest = /^[#&+!]/.test(lnary[3]) ? lnary[3] : lnary[0];
 		this.onMsg(dest, lnary[4], lnary[0], lnary[1], lnary[2], conn);
+		lnary = null;
+		system.gc();
 	} else if (/^PING (.+)/.test(ln)) {
 		conn.send("PONG", RegExp.$1);
 	} else if (/^:(\S+)!(\S+)@(\S+) INVITE (\S+) :(\S+)/.test(ln)) {
 		this.prefs.autoAcceptInvite && conn.send("JOIN", RegExp.$5);
 	} else if (/^:(\S+)!(\S+)@(\S+) NICK :(\S+)/.test(ln)) {
 		if (RegExp.$1 == conn.nick) conn.nick = RegExp.$4;
-	} else if (/^:(\S+)(?:!(\S+)@(\S+))? MODE (\S+)(?: (.+))?/.test(ln)) {
+	//} else if (/^:(\S+)(?:!(\S+)@(\S+)|) MODE (\S+)(?: (.+))?/.test(ln)) {
 		// XXX Parse!
 	} else if (/^:(\S+!\S+@\S+) KICK (\S+) (\S+) :(.*)/.test(ln) && RegExp.$3 == conn.nick) {
 		this.prefs["kick.rejoin"] && conn.send("JOIN", RegExp.$2);
 		this.prefs["kick.log"] && this.log(conn, "KICK", RegExp.$1, RegExp.$2, RegExp.$4);
 	}
-}
+};
 
 /**
  * Parse a PRIVMSG.
@@ -210,7 +211,7 @@ function onMsg(dest, msg, nick, ident, host, conn) {
 			else if (msg == "Playback complete")
 				conn.zncBuffer = false;
 			return;
-		} else if (conn.zncBuffer) msg = msg.replace(/^\[[0-2]?\d:[0-5]\d(?::[0-5]\d)?\] /, "");
+		} else if (conn.zncBuffer) msg = msg.replace(/^\[[0-2]?\d:[0-5]\d(?::[0-5]\d|)\] /, "");
 	}
 
 	// fix for message relay bots
@@ -231,8 +232,8 @@ function onMsg(dest, msg, nick, ident, host, conn) {
 		if (typeof module.onMsg == "function" && module.onMsg(dest, msg, nick, ident, host, conn, relay))
 			return;
 
-	if (msg[0] == "\1") { // Possible CTCP.
-		if (/^\x01([^\1 ]+)(?: ([^\1]*))?/.test(msg))
+	if (!relay && msg[0] == "\1" && msg[-1] == "\1") { // Possible CTCP.
+		if (/^\x01([^\1 ]+)(?: ([^\1]*)|)\x01$/.test(msg)) // XXX parse CTCP \x01 quoting
 			this.onCTCP(RegExp.$1.toUpperCase(), RegExp.$2, nick, dest, conn);
 	} else if (this.prefs.prefix && msg.slice(0, this.prefs.prefix.length) == this.prefs.prefix) {
 		msg = msg.slice(this.prefs.prefix.length).replace(/^(\S+) ?/, "");
@@ -268,7 +269,9 @@ function checkFlood(dest, msg, nick, host, conn, relay) {
 	if (conn.zncBuffer) return false;
 	if (now - conn.flood_lastTime > this.prefs.flood.secs * 1000) conn.flood_lines = 0;
 	if (conn.flood_lines >= this.prefs.flood.lines && now - conn.flood_lastTime <= this.prefs.flood.secs * 1000) {
-		let kb = !(relay || dest == nick || nick == conn.nick || host == this.host || nick.match(this.prefs["nokick.nicks"]) || host.match(this.prefs["nokick.hosts"]) || host.match(this.prefs.suHosts) /*|| conn.cmodes[dest][nick]*/) /*&& conn.cmodes[dest][conn.nick]*/;
+		let kb = !(relay || dest == nick || nick == conn.nick || host == this.host
+		       || nick.match(this.prefs["nokick.nicks"]) || host.match(this.prefs["nokick.hosts"]) || host.match(this.prefs.suHosts)
+		       /*|| conn.cmodes[dest][nick]*/) /*&& conn.cmodes[dest][conn.nick]*/;
 		conn.flood_lastTime = now;
 		if (conn.flood_in) {
 			if (kb) {
@@ -284,9 +287,7 @@ function checkFlood(dest, msg, nick, host, conn, relay) {
 		this.prefs.flood.log && this.log(conn, "Flood", nick + (dest == nick ? "" : " in " + dest), msg);
 		return true;
 	}
-	conn.flood_in = false;
-	conn.flood_lastTime = now;
-	conn.flood_lines++;
+	conn.flood_in = false, conn.flood_lastTime = now, conn.flood_lines++;
 	return false;
 };
 /**
@@ -312,7 +313,7 @@ function parseCmd(dest, cmd, args, nick, ident, host, conn, relay) {
 		break;
 	case "rc":
 		args = args.split(" ");
-		host.match(this.prefs.suHosts) && this.remoteControl(args[0], args.slice(1), dest, nick, conn);
+		host.match(this.prefs.suHosts) && this.remoteControl(args.shift(), args, dest, nick, conn);
 		break;
 	case "status": case "uptime":
 		conn.reply(dest, nick, "I've been up", this.up() + ".");
@@ -320,7 +321,7 @@ function parseCmd(dest, cmd, args, nick, ident, host, conn, relay) {
 	case "listmods": case "modlist":
 		let mods = [];
 		for (let i in this.modules) mods.push(i + " " + this.modules[i].version);
-		mods.length && conn.send("NOTICE", nick, ":Modules:", mods.join(", "));
+		mods.length && conn.send("NOTICE", nick, ":" + mods.join(", "));
 		break;
 	case "listcmds": case "cmdlist":
 		let cmds = [];
@@ -348,10 +349,11 @@ function parseCmd(dest, cmd, args, nick, ident, host, conn, relay) {
  */
 aucgbot.up =
 function uptime() {
+	if (!this.started) return "I have no idea what my uptime is.";
 	var diff = Math.round((Date.now() - this.started) / 1000),
 	    s = diff % 60, m = (diff % 3600 - s) / 60,
 	    h = Math.floor(diff / 3600) % 24, d = Math.floor(diff / 86400);
-	return (d ? d + "d " : "") + (h ? h + "h " : "") + (m ? m + "m " : "") + (s ? s + "s" : "");
+	return (d ? d + "d " : "") + (h ? h + "h " : "") + (m ? m + "min " : "") + (s ? s + "s" : "");
 };
 /**
  * Parse a CTCP request.
@@ -431,7 +433,7 @@ function rcBot(cmd, args, dest, nick, conn) {
 		conn.close();
 		break;
 	case "connect":
-		args = /^(?:irc:\/\/)?(\w[\w.-]+\w)(?::([1-5]\d{0,4}|[6-9]\d{0,3}|6[0-4]\d{3}|65[0-4]\d\d|655[0-2]\d))?(?:\/([^?]*))?(?:\?pass=(.+))?$/.exec(args);
+		args = /^(?:irc:\/\/|)(\w[\w.-]+\w)(?::([1-5]\d{0,4}|[6-9]\d{0,3}|6[0-4]\d{3}|65[0-4]\d\d|655[0-2]\d))?(?:|\/([^?]*))(?:\?pass=(.+))?$/.exec(args.join(" "));
 		if (!args) { // Invalid URL?!?!?
 			writeln("[ERROR] Invalid URL! ^^^^^");
 			break;
@@ -448,7 +450,7 @@ function rcBot(cmd, args, dest, nick, conn) {
 	case "join":
 		args = args.join(" ").split(",");
 		for (let i in args) if (!/^[#&+!]/.test(args[i])) args[i] = "#" + args[i];
-		conn.send("JOIN", args.join(","));
+		conn.send("JOIN", ":" + args.join(","));
 		break;
 	case "leave":
 		var chans = args.shift().split(",");
@@ -466,7 +468,7 @@ function rcBot(cmd, args, dest, nick, conn) {
 		break;
 	case "msg": case "privmsg": case "message":
 		if (args[0] == conn.nick) {
-			conn.reply(dest, nick, "Get me to talk to myself, yeah, great idea...");
+			conn.reply(dest, nick, this.ERR_MSG_SELF);
 			break;
 		}
 		conn.msg.apply(conn, args);
@@ -488,6 +490,9 @@ function rcBot(cmd, args, dest, nick, conn) {
 		try { var res = eval(args); } catch (ex) { res = "exception: " + ex; }
 		if (typeof res == "function") res = "function " + res.name;
 		res && conn.reply(dest, nick, res);
+		break;
+	case "gc":
+		system.gc();
 		break;
 	/*case "pref":
 		if (this.prefs[args[0]] == undefined)
@@ -542,7 +547,7 @@ function loadModule(m) {
 Stream.prototype.send =
 function send() {
 	var s = Array.prototype.slice.call(arguments);
-	if (s.length < 1) throw new TypeError("Stream.prototype.send requires at least 2 arguments");
+	if (s.length < 1) throw new TypeError("Stream.prototype.send requires at least 1 argument");
 	return this.writeln(s.join(" ").trim().replace(/\s+/, " "));
 };
 /**
@@ -593,33 +598,32 @@ function log(conn) {
 	if (arguments.length < 2) throw new TypeError("aucgbot.log requires at least 2 arguments");
 	var s = [conn.hostName, Date.now()], log;
 	for (let i = 1; i < arguments.length; i++)
-		s[i+1] = arguments[i];
+		s.push(arguments[i]);
 	log = new Stream("aucgbot.log", "a");
 	log.writeln(s.join(": ").trim().replace(/\s+/, " "));
-	log.close();
+	log.close(), log = null, system.gc();
 };
 
+if (typeof ranint != "function")
 /**
- * Generate a (psuedo-)random integer.
+ * Generate a psuedo-random integer.
  *
  * @param {number} [min] Minimum number (default: 1)
  * @param {number} [max] Maximum number (default: 10)
  */
-if (typeof ranint != "function")
 function ranint(min, max) {
 	min = min != null ? min : 1;
 	max = max != null ? max : 10;
 	if (min >= max) return NaN;
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+if (typeof Array.prototype.random != "function")
 /**
  * Get a random element of an array. http://svendtofte.com/code/usefull_prototypes
  *
  * @this {Array}
  * @return Random element from array.
  */
-if (typeof Array.prototype.random != "function")
-Array.prototype.random =
-function random() this[Math.floor(Math.random()*this.length)];
+Array.prototype.random = function random() this[Math.floor(Math.random()*this.length)];
 
 writeln("aucgbot loaded.");
