@@ -1,12 +1,12 @@
 // -*- Mode: JavaScript; tab-width: 4 -*- vim:tabstop=4 syntax=javascript:
 /* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this file,
- * You can obtain one at http://mozilla.org/MPL/2.0/. */
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 // PLEASE NOTE: if you edit the badwords list using the rc js command, use
 // "rc js this.modules["badword"].parseList()" otherwise it will not work
 
-module.version = "4.4.3 (28 Oct 2012)";
+module.version = "4.4.4 (19 Nov 2012)";
 module.count = {}; module.sfwChans = [];
 
 module.parseList =
@@ -48,10 +48,11 @@ module.badwords = { // "Word": "case-insensitive quoted regex",
 	"Cunt": "[ck][u*\\-]*nt|\\bhk\\b",
 	"Damn": "d[a*\\-@]y*(?:um|mn)|dammit",
 	"Dick": "d[i*\\-!]ck",
+	"Dork": "dork",
 	"Fag": "fags?\\b",
-	"Faggot": "faggot",
+	"Faggot": "fagg[oe]t",
 	"Fart": "fart",
-	"Fuck": "f[ua*\\-][crw*\\-]?[kq*\\-]|\\bfk|f(?:cu|sc)king|wh?[au]t [dt][aeh]+ f|wtf|fml|cbf|omfg|stfu|gtfo|lmfao|fubar",
+	"Fuck": "f[ua*\\-][crw*\\-]?[kq*\\-]|\\bfk|f(?:cu|sc)kin|wh?[au]t [dt][aeh]+ f|wtf|fml|cbf|omfg|stfu|gtfo|lmfao|fubar|idgaf",
 	"Gay": "g(?:a|he)y",
 	"God": "g[o*\\-]d|GERD|omf?g",
 	"Heck": "\\bheck",
@@ -59,6 +60,7 @@ module.badwords = { // "Word": "case-insensitive quoted regex",
 	"Idiot": "idiot",
 	"Jerk": "jerk",
 	"Jew": "jew",
+	"Leb": "leb\\b",
 	"LOL": "lol|lawl|lulz",
 	"Midget": "midget",
 	"Nigger": "ni[gq]{2,}(?:er|a)",
@@ -69,15 +71,16 @@ module.badwords = { // "Word": "case-insensitive quoted regex",
 	"Pussy": "puss(?:y\\b|ies)",
 	"Queer": "queer",
 	"Retard": "retard",
-	"Screw you": "screw (?:yo)?u",
+	"Screw you": "screw (?:yo|)u",
 	"Shit": "s[h*\\-#][ie*\\-!][t*\\-]",
-	"Shut up": "shut(?: the \\S+)? up|stfu",
+	"Shut up": "shut(?: the \\S+|) up|stfu",
 	"Slut": "sl[u*\\-]t",
 	"Spastic": "spastic",
-	"Stupid": "stupid",
+	"Stupid": "st(?:u|oo)pid",
 	"Tit": "\\btit", // quantitative is not a bad word
 	"Turd": "turd",
 	"Twat": "twat",
+	"Twit": "twit",
 	"Wank": "wank",
 	"Whore": "whore",
 	"Wuss": "wuss",
@@ -89,21 +92,23 @@ module.loadCount();
 
 module.onMsg =
 function onMsg(dest, msg, nick, ident, host, conn) {
-	var nick = nick.split("|")[0].toLowerCase(), count = this.count[nick], word, words;
-	if (dest != nick) for (let i = this.sfwChans.length - 1; i >= 0; i--)
-		if (this.sfwChans[i] == dest) {
-			var dest = nick;
-			break;
-		}
+	if (dest != nick && this.sfwChans.indexOf(dest) == -1)
+		dest = nick;
+	var nick = nick.split("|", 1)[0].toLowerCase(), count = this.count[nick], word, words;
 	if (/^!badwords?\b/.test(msg)) {
 		msg = msg.split(" "), word = msg[2];
 		if (msg[1])
-			nick = msg[1].split("|")[0].toLowerCase(), count = this.count[nick];
+			nick = msg[1].split("|", 1)[0].toLowerCase(), count = this.count[nick];
 		if (!count)
 			conn.msg(dest, "No bad words have been said by", nick, "...yet...");
 		else if (word) {
-			// is it a valid badword?
-			if (this.badwords[word] || this.badwords[(word = word[0].toUpperCase() + word.slice(1))]) {
+			if (word.toLowerCase() == "total") {
+				var sum = 0;
+				for each (word in count)
+					sum += word;
+				conn.msg(dest, nick, "said a total of", sum, "bad words!");
+			// Is it a valid badword? Take pity if the user didn't capitalise.
+			} else if (this.badwords[word] || this.badwords[(word = word[0].toUpperCase() + word.slice(1))]) {
 				if (msg[3] && host.match(aucgbot.prefs.suHosts)) {
 					if (!count) count = this.count[nick] = {};
 					if (!count[word]) count[word] = 0;
@@ -111,17 +116,12 @@ function onMsg(dest, msg, nick, ident, host, conn) {
 					this.saveCount();
 				} else
 					conn.msg(dest, nick, "said `" + word + "'", count[word], "times!");
-			} else if (word.toLowerCase() == "total") {
-				var sum = 0;
-				for each (word in count)
-					sum += word;
-				conn.msg(dest, nick, "said a total of", sum, "bad words!");
 			}
 		} else {
 			words = [];
 			for (word in count)
 				words.push(word + ": " + count[word]);
-			conn.msg(dest, "Bad words said by", nick + ":", words.join(" - "));
+			conn.reply(dest, nick, words.join(" - "));
 		}
 		return true;
 	}
