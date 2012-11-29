@@ -22,7 +22,7 @@ Features
   - Solve quadratic equations.
 
 ### Other modules
-  - *infobot*: Create and recall factoids! (Database stored across channels and networks.)
+  - **infobot**: Create and recall factoids! (Database stored across channels and networks.)
     Commands:
       * def: define factoids
       * no: redefine factoids
@@ -31,21 +31,22 @@ Features
       * tell: send factoid to someone in PM
       * show: target factoid at someone in channel
 
-  - *badword*: Track a person's usage of "bad words"! (Database stored across channels and networks.)
+  - **badword**: Track a person's usage of "bad words"! (Database stored across channels and networks.)
     Usage: !badword \[_nick_] [_word_|total]: Get how many times _nick_ has said _word_ (all if omitted). If _word_ = total, sum the counts.
     If you don't want messages from this module to be sent to a channel: rc js this.modules.badword.sfwChans.push("_channel_")
 
-  - *elf*: A unique Christmas game (across networks if you wish)!
+  - **elf**: A unique Christmas game (across networks if you wish)!
     Runs in #elf by default, to change: rc js this.modules.elf.chan = "_channel_"
     Note, it will run in the same channel across all networks.
 
-  - *tr*: Transform text!
+  - **tr**: Transform text!
     Commands:
       * tr "_text_" "_frm_" "_to_": Replaces each character in _frm_ with the corresponding character in _to_ within _text_.
       * rot13: ROT13. If you don't know what it is, Google it.
       * rot47: ROT47. Again, Google it. (ROT47 is a bit more technical than ROT13.)
       * rev: Reverse the text.
       * encode/decode: Encode/decode text.
+
     Encodings:
       * base64
       * html
@@ -53,9 +54,9 @@ Features
       * charcode: a.k.a. dec encoding. Isn't exactly the same with Unicode characters however.
       * albhed: The Al Bhed language from Final Fantasy X, for all those FF fans out there.
 
-  - *yt*: YouTube! Get info about a YouTube video before clicking the link!
+  - **yt**: YouTube! Get info about a YouTube video before clicking the link!
 
-  - *google*: Google!
+  - **google**: Google!
 
 Basic usage
 -----------
