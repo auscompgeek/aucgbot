@@ -3,6 +3,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/*jshint expr: true */
 
 system.cwd = system.script.replace(/[^\\\/]+?$/, "");
 run("aucgbot.js");
@@ -14,20 +15,8 @@ if (!aucgbot) {
 	system.exit();
 }
 
-for (let servers = [], i = 0, s = true; s; i++) {
-	servers.push([]);
-
-	for (let j = 0, prompts = ["Hostname", "Port", "Nickname", "Ident", "Pass", "Channels"]; j < prompts.length; j++) {
-		print(prompts[j], ": ");
-		servers[i].push(readln());
-	}
-
-	print("\nAdd another server? ");
-	s = readln()[0] == "y";
-}
-
 print("\nLoad modules: ");
-for (let m = readln().trim().split(","); m.length; ) {
+for (let m = readln().trim().split(","); m.length;) {
 	try {
 		aucgbot.loadModule(m.shift());
 	} catch (ex) {
@@ -36,4 +25,19 @@ for (let m = readln().trim().split(","); m.length; ) {
 	}
 }
 
+{
+let servers = [];
+for (let s = true, server; s;) {
+	server = [];
+
+	for (let i = 0, prompts = ["\nHostname", "Port", "Nickname", "Ident", "Pass", "Channels"]; i < prompts.length; i++) {
+		print(prompts[i], ": ");
+		server.push(readln());
+	}
+
+	servers.push(server);
+	print("Add another server? ");
+	s = readln()[0] == "y";
+}
 aucgbot.start.apply(aucgbot, servers);
+}

@@ -7,10 +7,12 @@ module.version = 0.1;
 
 module.cmd_bofh =
 function cmd_bofh(dest, args, nick, ident, host, conn, relay) {
+	var data;
 	try {
-		var stream = new Stream("net://bofh.jeffballard.us:666"), data = stream.readFile();
+		var stream = new Stream("net://bofh.jeffballard.us:666");
+		data = stream.readFile();
+		stream.close();
 	} catch (ex) {}
-	stream.close();
 	conn.reply(dest, nick, data || "telnet: Unable to connect to remote host: Connection refused");
 	return true;
-}
+};

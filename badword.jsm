@@ -6,36 +6,33 @@
 // PLEASE NOTE: if you edit the badwords list using the rc js command, use
 // "rc js this.modules["badword"].parseList()" otherwise it will not work
 
-module.version = "4.4.4 (19 Nov 2012)";
-module.count = {}; module.sfwChans = [];
+module.version = "4.5 (22 Dec 2012)";
+module.count = {}, module.sfwChans = [];
 
-module.parseList =
-function parseList() {
+module.parseList = function parseList() {
 	var badwords = [];
-	for (word in this.badwords) badwords.push(this.badwords[word]);
+	for (var word in this.badwords) badwords.push(this.badwords[word]);
 	this.badwordList = badwords.join("|");
-}
-module.loadCount =
-function loadCount() {
+};
+module.loadDB = function loadDB() {
 	try {
 		var file = new Stream("badword.json");
 		this.count = JSON.parse(file.readFile());
 		file.close();
 	} catch (ex) {}
-}
-module.saveCount =
-function saveCount() {
+};
+module.saveDB = function saveDB() {
 	var file = new Stream("badword.json", "w");
 	file.write(JSON.stringify(this.count));
 	file.close();
-}
+};
 
 module.badwords = { // "Word": "case-insensitive quoted regex",
 	"Arse": "arse",
 	"Asian": "as(?:ia|ai)n",
 	"Ass": "\\ba[s$]{2}(?:holes?|es)?\\b|lmf?ao",
 	"Bastard": "bastard",
-	"Bitch": "b[i*\\-!]a?tch",
+	"Bitch": "b[i!*-]a?tch",
 	"Black": "black",
 	"Bloody": "bloody",
 	"Boob": "b[o0]{2}b",
@@ -44,93 +41,118 @@ module.badwords = { // "Word": "case-insensitive quoted regex",
 	"Coon": "coon",
 	"Crap": "crap",
 	"Cripple": "cripple",
-	"Cum": "cum",
-	"Cunt": "[ck][u*\\-]*nt|\\bhk\\b",
-	"Damn": "d[a*\\-@]y*(?:um|mn)|dammit",
-	"Dick": "d[i*\\-!]ck",
+	"Cum": "\\bcum(?:s(?:tain|)|)\\b",
+	"Cunt": "[ck][u*-]*nt|\\bhk\\b",
+	"Damn": "d[a@*-]y*(?:um|mn)|dammit",
+	"Dick": "d[i!*-]ck|smd",
 	"Dork": "dork",
-	"Fag": "fags?\\b",
+	"Fag": "fag[sz]?\\b",
 	"Faggot": "fagg[oe]t",
 	"Fart": "fart",
-	"Fuck": "f[ua*\\-][crw*\\-]?[kq*\\-]|\\bfk|f(?:cu|sc)kin|wh?[au]t [dt][aeh]+ f|wtf|fml|cbf|omfg|stfu|gtfo|lmfao|fubar|idgaf",
+	"Fap": "fap",
+	"Fuck": "f(?:u+a*|oo|[*-])[crw*-]?[kq*-]|\\bfk|f(?:cu|sc)kin|wh?[au]t [dt][aeh]+ f|wtf|fml|cbf|omfg|stfu|gtfo|lmfao|fubar|idgaf",
 	"Gay": "g(?:a|he)y",
-	"God": "g[o*\\-]d|GERD|omf?g",
+	"God": "g(?:[o*-]|er|aw)d|omf?g|oh em gee",
 	"Heck": "\\bheck",
 	"Hell": "hell",
+	"Hoe": "h[o*-]e",
 	"Idiot": "idiot",
 	"Jerk": "jerk",
-	"Jew": "jew",
+	"Jew": "jews?\\b",
 	"Leb": "leb\\b",
-	"LOL": "lol|lawl|lulz",
+	"LOL": "lol|lawl|lulz|el oh el",
 	"Midget": "midget",
 	"Nigger": "ni[gq]{2,}(?:er|a)",
 	"Penis": "penis",
-	"Piss": "p[i*\\-!]ss",
-	"Porn": "p(?:r[o0]|[o0]r)n\b", // pornography is legit
-	"Prick": "pr[i*\\-!]ck",
-	"Pussy": "puss(?:y\\b|ies)",
+	"Piss": "p[i!*-]ss",
+	"Porn": "p(?:r[o0]|[o0]r)n(?:star|)[sz]?\b", // pornography is legit
+	"Prick": "pr[i!*-]ck",
+	"Pussy": "puss(?:y\\b|ie[sz])",
 	"Queer": "queer",
 	"Retard": "retard",
 	"Screw you": "screw (?:yo|)u",
-	"Shit": "s[h*\\-#][ie*\\-!][t*\\-]",
+	"Shit": "s[h#*-][ie!*-]+[t*-]",
 	"Shut up": "shut(?: the \\S+|) up|stfu",
-	"Slut": "sl[u*\\-]t",
+	"Slut": "sl[u*-]t",
 	"Spastic": "spastic",
 	"Stupid": "st(?:u|oo)pid",
+	"Swag": "swag",
 	"Tit": "\\btit", // quantitative is not a bad word
 	"Turd": "turd",
 	"Twat": "twat",
 	"Twit": "twit",
-	"Wank": "wank",
+	"Vag": "vag\\b",
+	"Vagina": "vagina",
+	"Wank": "wanks?\\b",
+	"Wanker": "wanker",
 	"Whore": "whore",
 	"Wuss": "wuss",
-	"YOLO": "YOLO|u only live once",
+	"YOLO": "yolo|u only live once",
 	"iPhone": "iPhone"
-}
+};
 module.parseList();
-module.loadCount();
+module.loadDB();
 
-module.onMsg =
-function onMsg(dest, msg, nick, ident, host, conn) {
-	if (dest != nick && this.sfwChans.indexOf(dest) == -1)
+module.onMsg = function onMsg(dest, msg, nick, ident, host, conn) {
+	if (dest != nick && this.sfwChans.indexOf(dest) != -1)
 		dest = nick;
-	var nick = nick.split("|", 1)[0].toLowerCase(), count = this.count[nick], word, words;
+	nick = nick.split("|", 1)[0];
+	var name = nick.toLowerCase(), count = this.count[name], word, words;
 	if (/^!badwords?\b/.test(msg)) {
 		msg = msg.split(" "), word = msg[2];
 		if (msg[1])
-			nick = msg[1].split("|", 1)[0].toLowerCase(), count = this.count[nick];
-		if (!count)
+			nick = msg[1].split("|", 1)[0], name = nick.toLowerCase(), count = this.count[name];
+		if (!count && !(word && msg[3] && host.match(aucgbot.prefs.suHosts)))
 			conn.msg(dest, "No bad words have been said by", nick, "...yet...");
 		else if (word) {
-			if (word.toLowerCase() == "total") {
+			if (word == "nick")
+				conn.msg(dest, "Umm, the nick in the database is", count.nick, "but why are you asking?");
+			else if (word.toLowerCase() == "total") {
 				var sum = 0;
-				for each (word in count)
-					sum += word;
+				for (word in count) {
+					if (word == "nick")
+						nick = count.nick;
+					else
+						sum += count[word];
+				}
 				conn.msg(dest, nick, "said a total of", sum, "bad words!");
 			// Is it a valid badword? Take pity if the user didn't capitalise.
-			} else if (this.badwords[word] || this.badwords[(word = word[0].toUpperCase() + word.slice(1))]) {
+			} else if (word in this.badwords || (word = word[0].toUpperCase() + word.slice(1)) in this.badwords) {
 				if (msg[3] && host.match(aucgbot.prefs.suHosts)) {
-					if (!count) count = this.count[nick] = {};
-					if (!count[word]) count[word] = 0;
+					if (!count)
+						count = this.count[nick] = {};
+					if (!count[word])
+						count[word] = 0;
 					count[word] += parseInt(msg[3]);
 					this.saveCount();
-				} else
+				} else {
 					conn.msg(dest, nick, "said `" + word + "'", count[word], "times!");
+				}
 			}
 		} else {
 			words = [];
-			for (word in count)
-				words.push(word + ": " + count[word]);
+			for (word in count) {
+				if (word == "nick")
+					nick = count.nick;
+				else
+					words.push(word + ": " + count[word]);
+			}
 			conn.reply(dest, nick, words.join(" - "));
 		}
 		return true;
 	}
-	if (!msg.match(this.badwordList, "i")) return;
-	if (!count) count = this.count[nick] = {};
-	for (word in this.badwords)
-		if (words = msg.match(this.badwords[word], "gi")) {
-			if (!count[word]) count[word] = 0;
+	if (!msg.match(this.badwordList, "i"))
+		return;
+	if (!count)
+		count = this.count[name] = {};
+	if (nick != name)
+		count.nick = nick;
+	for (word in this.badwords) {
+		if ((words = msg.match(this.badwords[word], "gi"))) {
+			if (!count[word])
+				count[word] = 0;
 			count[word] += words.length;
 		}
-	this.saveCount();
-}
+	}
+	this.saveDB();
+};
