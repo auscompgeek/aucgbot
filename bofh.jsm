@@ -7,12 +7,23 @@ module.version = 0.1;
 
 module.cmd_bofh =
 function cmd_bofh(dest, args, nick, ident, host, conn, relay) {
-	var data;
+	var excuses;
 	try {
-		var stream = new Stream("net://bofh.jeffballard.us:666");
-		data = stream.readFile();
-		stream.close();
-	} catch (ex) {}
-	conn.reply(dest, nick, data || "telnet: Unable to connect to remote host: Connection refused");
+		var file = new Stream("excuses.txt");
+		excuses = file.readFile().split("\n");
+		file.close();
+	} catch (ex) {
+		excuses = [
+			"out of memory",
+			"Typo in the code",
+			"permission denied",
+			"404 Excuses Not Found",
+			"NOTICE: alloc: /dev/null: filesystem full",
+			"YOU HAVE AN I/O ERROR -> Incompetent Operator error",
+			"telnet: Unable to connect to remote host: Connection refused",
+			"operation failed because: there is no message for this error (#1014)"
+		];
+	}
+	conn.reply(dest, nick, excuses.random());
 	return true;
 };
