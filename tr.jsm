@@ -2,9 +2,11 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/// @fileoverview aucgbot module: Transform text.
+/** @fileoverview aucgbot module: Transform text. */
+/*jshint es5: true, esnext: true, nonstandard: true */
+/*global decodeB64: false, decodeHTML: false, decodeURL: false, encodeB64: false, encodeHTML: false, encodeURL: false, module: false */
 
-module.version = 2.1;
+module.version = 2.2;
 module.UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 module.LOWER = "abcdefghijklmnopqrstuvwxyz";
 module.ALPHABET = module.UPPER + module.LOWER;
@@ -33,9 +35,9 @@ module.cmd_rev = function cmd_rev(dest, msg, nick, ident, host, conn, relay) {
 	return true;
 };
 module.cmd_encode = function cmd_encode(dest, msg, nick, ident, host, conn, relay) {
-	var args = msg.split(" ");
-	msg = args.slice(1).join(" ");
-	switch (args[0].toLowerCase()) {
+	var args = msg.split(" "), type = args.shift().toLowerCase();
+	msg = args.join(" ");
+	switch (type) {
 	case "base64": case "b64":
 		conn.reply(dest, nick, encodeB64(msg));
 		return true;
@@ -51,10 +53,17 @@ module.cmd_encode = function cmd_encode(dest, msg, nick, ident, host, conn, rela
 	case "uricomponent":
 		conn.reply(dest, nick, encodeURIComponent(msg));
 		return true;
-	case "charcode":
+	case "escape":
+		conn.reply(dest, nick, escape(msg));
+		return true;
+	case "charcode": case "dec": case "hex": case "bin":
 		var s = [];
-		for (var i = 0; i < msg.length; i++)
-			s.push(msg.charCodeAt(i));
+		for (var i = 0; i < msg.length; i++) {
+			if (type == "bin")
+				s.push(msg.charCodeAt(i).toString(2).zfill(8));
+			else
+				s.push(msg.charCodeAt(i).toString(type == "hex" ? 16 : 10));
+		}
 		conn.reply(dest, nick, s.join(" "));
 		return true;
 	case "albhed":
@@ -63,9 +72,9 @@ module.cmd_encode = function cmd_encode(dest, msg, nick, ident, host, conn, rela
 	}
 };
 module.cmd_decode = function cmd_decode(dest, msg, nick, ident, host, conn, relay) {
-	var args = msg.split(" ");
-	msg = args.slice(1).join(" ");
-	switch (args[0].toLowerCase()) {
+	var args = msg.split(" "), type = args.shift().toLowerCase();
+	msg = args.join(" ");
+	switch (type) {
 	case "base64": case "b64":
 		conn.reply(dest, nick, decodeB64(msg));
 		return true;
@@ -81,8 +90,14 @@ module.cmd_decode = function cmd_decode(dest, msg, nick, ident, host, conn, rela
 	case "uricomponent":
 		conn.reply(dest, nick, decodeURIComponent(msg));
 		return true;
-	case "charcode":
-		conn.reply(dest, nick, String.fromCharCode.apply(null, msg.split(" ")));
+	case "escape":
+		conn.reply(dest, nick, unescape(msg));
+		return true;
+	case "charcode": case "dec":
+		conn.reply(dest, nick, String.fromCharCode.apply(null, args));
+		return true;
+	case "hex": case "bin":
+		conn.reply(dest, nick, String.fromCharCode.apply(null, args.map(function (x) parseInt(x, type == "hex" ? 16 : 2))));
 		return true;
 	case "albhed":
 		conn.reply(dest, nick, tr(msg, this.AL_BHED, this.ALPHABET));
@@ -91,21 +106,29 @@ module.cmd_decode = function cmd_decode(dest, msg, nick, ident, host, conn, rela
 };
 
 // from https://developer.mozilla.org/en/A_re-introduction_to_JavaScript
-String.prototype.reverse = function reverse() {
+String.reverse = function reverse(str) {
 	var s = "";
-	for (var i = this.length - 1; i >= 0; i--)
-		s += this[i];
+	for (var i = str.length - 1; i >= 0; i--)
+		s += str[i];
 	return s;
 };
+String.prototype.reverse = function reverse() String.reverse(this);
 module.REVUPPER = module.UPPER.reverse();
 module.REVLOWER = module.REVUPPER.toLowerCase();
 
+String.zfill = function zfill(str, l) {
+	while (str.length < l)
+		str = "0" + str;
+	return str;
+};
+String.prototype.zfill = function zfill(l) String.zfill(this, l);
+
 /**
- * Translates text in a similar fashion to the UNIX <code>tr</code> utility.
+ * Translates text in a similar fashion to the UNIX tr utility.
  *
- * @param {string|string[]} str The string to transform.
- * @param {string|string[]} frm Table containing characters to replace.
- * @param {string|string[]} to Table containing characters to replace with.
+ * @param {string} str The string to transform.
+ * @param {string} frm Table containing characters to replace.
+ * @param {string} to Table containing characters to replace with.
  * @return {string} Transformed string.
  */
 function tr(str, frm, to) {

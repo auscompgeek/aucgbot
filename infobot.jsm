@@ -2,6 +2,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/*global Record: false, aucgbot: false, module: false, system: false */
 
 module.version = 1.1;
 module.db = new Record();
@@ -20,7 +21,7 @@ module.cmd_def = function cmd_def(dest, args, nick, ident, host, conn, relay) {
 		this.db.set(term, args.join("=")), this.db.save();
 	return true;
 };
-module.cmd_no = function cmd_no(dest, args, nick, ident, host, conn, relay) {
+module["cmd_no,"] = module.cmd_no = function cmd_no(dest, args, nick, ident, host, conn, relay) {
 	args = args.split("=");
 	this.db.set(args.shift(), args.join("="));
 	this.db.save();
@@ -30,7 +31,7 @@ module.cmd_reloadfacts = function cmd_reloadfacts(dest, args, nick, ident, host,
 	conn.reply(dest, nick, "Loaded", this.db.load(), "factoids.");
 	return true;
 };
-module.cmd_fact = module.cmd_info = function cmd_fact(dest, args, nick, ident, host, conn, relay) {
+module["cmd_what's"] = module.cmd_fact = module.cmd_info = function cmd_fact(dest, args, nick, ident, host, conn, relay) {
 	var def = this.db.get(args);
 	if (def)
 		conn.reply(dest, nick, def);

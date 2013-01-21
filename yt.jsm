@@ -3,19 +3,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*jshint expr: true */
+/*global Stream: false, aucgbot: false, module: false, system: false */
 
-module.version = 0.3;
+module.version = 0.4;
 
 module.cmd_yt = module.cmd_youtube =
 function cmd_yt(dest, msg, nick, ident, host, conn, relay) {
-	var id;
-	if (msg.test(/^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|v\/)|youtu\.be\/)([\w\-]+)(?:[?&#].*)?$/i))
-		id = RegExp.$1;
-	else {
+	if (!msg.test(/^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|v\/)|youtu\.be\/)([\w\-]+)(?:[?&#].*)?$/i)) {
 		conn.reply(dest, nick, "Get info about a YouTube video. Usage: yt <link|id>");
 		return true;
 	}
-	var stream = new Stream("http://gdata.youtube.com/feeds/api/videos/" + id + "?v=2&alt=json", null, {"User-Agent": "aucgbot/" + aucgbot.version + " (" + system.platform + "; JSDB " + system.release + "; JavaScript " + system.version / 10 + ") mod_yt/" + this.version}), data;
+	var id = RegExp.$1, stream = new Stream("http://gdata.youtube.com/feeds/api/videos/" + id + "?v=2&alt=json", null, {"User-Agent": "aucgbot/" + aucgbot.version + " (" + system.platform + "; JSDB " + system.release + "; JavaScript " + system.version / 10 + ") mod_yt/" + this.version}), data;
 	try {
 		data = JSON.parse(stream.readFile()).entry;
 	} catch (ex) {}
@@ -35,6 +33,7 @@ function cmd_yt(dest, msg, nick, ident, host, conn, relay) {
 
 	{
 		let dura = data.media$group.yt$duration.seconds,
+			f = function(n) n < 10 ? "0" + n : n,
 			m = f(Math.floor((dura % 3600) / 60)),
 			s = f(dura % 60),
 			h = Math.floor(dura / 3600);
@@ -59,6 +58,4 @@ function cmd_yt(dest, msg, nick, ident, host, conn, relay) {
 
 	conn.reply(dest, nick, res.join(" - "));
 	return true;
-
-	function f(n) n < 10 ? "0" + n : n;
 };

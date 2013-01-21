@@ -2,8 +2,9 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/*global Stream: false, aucgbot: false, module: false, println: false, randint: false */
 
-module.version = "1.3.1 (21 Dec 2012)";
+module.version = "1.3.2 (21 Jan 2012)";
 module.prefix = "$";
 module.chan = "##elf";
 
@@ -29,7 +30,7 @@ module.saveScores = function saveScores() {
 };
 
 module.parseln = function parseln(ln, conn) {
-	if (!(/^:([^\s!@]+)![^\s!@]+@[^\s!@]+ JOIN :?(\S+)\r/.test(ln) && RegExp.$2 == this.chan && RegExp.$1 != conn.nick))
+	if (!/^:([^\s!@]+)![^\s!@]+@[^\s!@]+ JOIN :?(\S+)\r/.test(ln) || RegExp.$2 != this.chan || RegExp.$1 == conn.nick)
 		return false;
 	var nick = RegExp.$1;
 	if (this.scores.score[nick]) {
@@ -48,8 +49,8 @@ module.parseln = function parseln(ln, conn) {
 	return true;
 };
 module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
-	if (msg.slice(0, this.prefix.length) != this.prefix)
-		return;
+	if (this.prefix && msg.slice(0, this.prefix.length) != this.prefix)
+		return false;
 	msg = msg.slice(this.prefix.length).toLowerCase().split(" ");
 	switch (msg[0]) {
 	case "info":
@@ -69,8 +70,7 @@ module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
 			if (this.scores.coins[nick] >= cost) {
 				this.scores.coins[nick] -= cost;
 				this.scores.materials[nick] += n;
-				conn.msg(this.chan, nick, "has bought", n,
-					"materials. This has cost", cost, "in total.");
+				conn.msg(this.chan, nick, "has bought", n, "materials. This has cost", cost, "in total.");
 			}
 			break;
 		case "voice":
@@ -135,8 +135,8 @@ module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
 				this.scores.coins[nick] += 50;
 				this.scores.reputation[nick] += 150;
 				conn.msg(this.chan, nick, "makes a teddy bear.",
-					"The teddy bear is poorly made and is nearly falling apart.",
-					"Santa is not happy.", nick, "gets 50 points and 50 coins.");
+					"The teddy bear is poorly made and is nearly falling apart. Santa is not happy.",
+					nick, "gets 50 points and 50 coins.");
 				break;
 			case 4:
 				this.scores.score[nick] += 250;
@@ -154,9 +154,9 @@ module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
 		conn.msg(dest, "buy: Buy items to use in the game. - make: Make a toy. - info: Show your current scores.");
 		return true;
 	case "elfreset":
-		if (host.match(aucgbot.prefs.suHosts)) {
+		if (aucgbot.isSU(nick, ident, host)) {
 			this.initScores();
-			aucgbot.log(conn, "ELF RESET", nick + (at ? " in " + dest : ""));
+			aucgbot.log(conn, "ELF RESET", nick + (dest != nick ? " in " + dest : ""));
 			conn.msg(this.chan, "Variables reset!!!");
 		}
 		return true;

@@ -14,7 +14,7 @@ Features
   - Multi-server support.
   - Modular.
 
-### Calculator (*calcbot*) features
+### Calculator (calcbot) features
   - Error reporting.
   - Dice.
   - Temperature conversion.
@@ -32,18 +32,22 @@ Features
       * show: target factoid at someone in channel
 
   - **badword**: Track a person's usage of "bad words"! (Database stored across channels and networks.)
+
     Usage: !badword \[_nick_] [_word_|total]: Get how many times _nick_ has said _word_ (all if omitted). If _word_ = total, sum the counts.
-    If you don't want messages from this module to be sent to a channel: rc js this.modules.badword.sfwChans.push("_channel_")
+
+    If you don't want messages from this module to be sent to a channel: rc js this.modules["badword"].sfwChans.push("_channel_")
 
   - **elf**: A unique Christmas game (across networks if you wish)!
-    Runs in #elf by default, to change: rc js this.modules.elf.chan = "_channel_"
+
+    Runs in ##elf by default, to change: rc js this.modules["elf"].chan = "_channel_"
+
     Note, it will run in the same channel across all networks.
 
   - **tr**: Transform text!
     Commands:
       * tr "_text_" "_frm_" "_to_": Replaces each character in _frm_ with the corresponding character in _to_ within _text_.
       * rot13: ROT13. If you don't know what it is, Google it.
-      * rot47: ROT47. Again, Google it. (ROT47 is a bit more technical than ROT13.)
+      * rot47: ROT47. Google it.
       * rev: Reverse the text.
       * encode/decode: Encode/decode text.
 
@@ -70,4 +74,4 @@ aucgbot.start([hostname, port, nick, ident, pass, channels]...);
 
 The above can be run from a script, not just from a jsdb prompt.
 I don't recommend storing passwords on disk however.
-Running ./start-aucgbot will prompt for each server property.
+Running ./start-aucgbot will prompt for modules and each server property.

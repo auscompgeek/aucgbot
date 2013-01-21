@@ -2,8 +2,10 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/*jshint expr: true */
+/*global module: false */
 
-module.version = "0.7 (15 Dec 2012)";
+module.version = "0.7.1 (2 Jan 2013)";
 module.res = [
 	"Mooooooooooo!", "MOO!", "Moo.", "Moo. Moo.", "Moo Moo Moo, Moo Moo.", "fish go m00!",
 	"\x01ACTION nibbles on some grass\x01",
@@ -29,6 +31,9 @@ module.res = [
  * @returns {boolean} true if the bot should stop processing the action.
  */
 module.onAction = function onAction(msg, nick, dest, conn, relay) {
+	if (!msg.match("(hit|kick|slap|eat|prod|stab|kill|whack|insult|teabag|(punch|bash|touch|pok)e)s " + conn.nick.replace(/\W/g, "\\$&") + "\\b", "i"))
+		return false;
+	function me(msg) "\x01ACTION " + msg + "\x01";
 	var res = [
 		me("slaps $nick around a bit with a large trout"),
 		me("slaps $nick around a bit with a small fish"),
@@ -58,11 +63,8 @@ module.onAction = function onAction(msg, nick, dest, conn, relay) {
 		me("pies $nick"),
 		"Hey! Stop it!", "Go away!", "GETOFF!"
 	].concat(this.res);
-	if (msg.match("(hit|kick|slap|eat|prod|stab|kill|whack|insult|teabag|(punch|bash|touch|pok)e)s " + conn.nick.replace(/\W/g, "\\$&") + "\\b", "i")) {
-		conn.msg(dest, res.random().replace("$dest", dest, "g").replace("$nick", nick, "g"));
-		return true;
-	}
-	function me(s) "\x01ACTION " + s + "\x01";
+	conn.msg(dest, res.random().replace("$dest", dest, "g").replace("$nick", nick, "g"));
+	return true;
 };
 /**
  * Parse a PRIVMSG.

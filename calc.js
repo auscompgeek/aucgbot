@@ -3,6 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*jshint esnext: true, evil: true, expr: true, regexdash: true, smarttabs: true */
+/*global randint: false */
 
 function calc(expr) {
 	const ans = Math.ans, pi = Math.PI, e = Math.E, phi = (1 + Math.sqrt(5)) / 2, //c = 299792458,
@@ -37,7 +38,8 @@ function calc(expr) {
 	           .replace(/\b(\d+(?:\.\d+|)|\.\d+) ?([(a-df-wyz])/g, "$1*$2").replace(/\b(ph?i|e) ?([^+*\/&|\^<>%),?: -])/g, "$1*$2").replace(/(\(.*?\)) ?([^+*\/&|\^<>%!),?: -])/g, "$1*$2");
 	while (/pow\(.+,.+\) ?\*\* ?[+-]?(\d+(\.\d|!?)|\.\d)/.test(expr) || /fact\(.+\)!/.test(expr)) // FIXME "pow(pow(a,b),c) ** x" becomes "pow(pow(a,pow(b),c),x)"!
 		expr = expr.replace(/pow(\(.+?,)(.+?)\) ?\*\* ?([+-]?(\d+(?:\.\d+|!*)|\.\d+))/g, "pow$1pow($2,$3))").replace(/(fact\(.+?\))!/g, "fact($1)");
-	return Math.ans = +eval(expr);
+	Math.ans = +eval(expr);
+	return expr;
 
 	function fact(x) {
 		var e = 1;
@@ -79,8 +81,8 @@ function calc(expr) {
 
 	// trigonometry
 	function sec(z) 1 / cos(z);
-	function csc(z) 1 / sin(z);
-	function cot(z) cos(z) / sin(z);
+	function csc(z) 1 / s(z);
+	function cot(z) cos(z) / s(z);
 	function asec(z) acos(1 / z);
 	function acsc(z) asin(1 / z);
 	function cosh(z) (exp(z) + exp(-z)) / 2;

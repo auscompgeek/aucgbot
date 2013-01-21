@@ -2,11 +2,12 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/*global aucgbot: false, c: false, calc: false, encodeUTF8: false, f: false, module: false, randint: false, run: false, writeln: false */
 
 if (!run("calc.js"))
-	throw new TypeError("Could not load calc functions from calc.js");
+	throw new Error("Could not load calc functions from calc.js");
 
-module.version = "2.4.2 (26 Dec 2012)";
+module.version = "2.5 (8 Jan 2013)";
 module.prefs = {
 	abuse: {
 		log: true, // when triggered with =
@@ -20,23 +21,23 @@ module.prefs = {
 	},
 	easterEggs: true, // toggle Easter eggs :-)
 	userfriendly: false,
-	actDice: false // output <x>d<y> as /me rolls a d<y> x times: a, b, c, total: d
+	actDice: false // output <x>d<y> as /me rolls a d<y> x times: a, b, c; total: d
 };
-module.abuse = /load|run|java|ecma|op|doc|cli|(qui|exi|aler|prin|insul|impor)t|undef|raw|throw|win|nan|open|con|pro|patch|plug|play|inf|my|for|(fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|read|this|js|sys|scr|(de|loca|unti|rctr|eva)l|[\[{"}\]]|(?!what)'(?!s)/;
+module.abuse = /load|run|java|ecma|op|doc|cli|(?:qui|exi|aler|prin|insul|impor|scrip)t|def|raw|throw|win|nan|open|con|p(?:ro|atch|lug|lay)|inf|my|for|(?:fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|read|this|js|sys|scr|(?:de|loca|unti|rctr|eva)l|[\[{"}\]]|(?!what)'(?!s)/;
 module.list = "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, ln, pow, sqrt, abs, ceil, max, min, floor, round, random, randint, fact, mean, dice, f, c. Constants: e, pi, phi. Operators: %, ^, **. Other topics: decimal, trig.";
 
 module["cmd_="] = module.cmd_calc = module.cmd_math = function cmd_calc(dest, msg, nick, ident, host, conn, relay) {
-	var s;
 	msg = msg.toLowerCase().replace(/\/\/.*$/, "");
 	if (msg.match(this.abuse)) {
 		if (this.prefs.abuse.warn && !relay)
 			conn.send("NOTICE", nick, ":Whoa! Careful dude!");
 		writeln("[WARNING] Abuse detected! ^^^^^");
 		if (this.prefs.abuse.log)
-			aucgbot.log(conn, "Calc abuse", nick + (dest != nick ? " in " + dest : ""), msg);
+			aucgbot.log(conn, "CALC ABUSE", nick + (dest != nick ? " in " + dest : ""), msg);
 		return true;
 	}
 	try {
+		var s;
 		if (/^(\d*)d(\d+)$/.test(msg))
 			conn.msg(dest, this.cmdDice(RegExp.$2, RegExp.$1));
 		else if ((s = this.parseMsg(msg)))
@@ -44,7 +45,7 @@ module["cmd_="] = module.cmd_calc = module.cmd_math = function cmd_calc(dest, ms
 	} catch (ex) {
 		writeln("[ERROR] ", ex);
 		if (this.prefs.error.log)
-			aucgbot.log(conn, "CALC ERROR", msg, nick + (dest != nick ? " in " + dest : ""), ex);
+			aucgbot.log(conn, "CALC ERROR", nick + (dest != nick ? " in " + dest : ""), msg, ex);
 		if (this.prefs.error.apologise)
 			conn.reply(dest, nick, this.prefs.error.apologymsg);
 		if (this.prefs.error.sendError)
@@ -60,7 +61,7 @@ module.cmd_base = function cmd_base(dest, msg, nick, ident, host, conn, relay) {
 		conn.reply(dest, nick, parseInt(args[0], args[1]).toString(parseInt(args[2]) || 10));
 	return true;
 };
-module.cmd_qe = function cmd_quadraticEquation(dest, msg, nick, ident, host, conn, relay) {
+module.cmd_qe = function cmd_quadraticEqn(dest, msg, nick, ident, host, conn, relay) {
 	var a, b, c, _2a, pron, resInSqrt, resSqrt, res = [];
 	if (!/^(?:([+\-]?\d*(?:\.\d*)) ?\*? ?)?(\w) ?(?:\*\*|\^) ?2 ?(?:([+\-] ?\d*(?:\.\d*)) ?\*? ?\2)? ?([+\-] ?\d+(?:\.\d*))? ?= ?([+\-]?\d+(?:\.\d*))$/.test(msg)) {
 		// not a quadratic equation, bail
@@ -114,32 +115,32 @@ module.parseMsg = function parseMsg(msg) {
 	if (/^([+\-]?(\d+(?:\.\d+|)|\.\d+))[\u00b0 ]?c$/.test(msg))
 		return c(RegExp.$1) + "F";
 	// calculate & return result
-	var ans = calc(msg);
+	msg = calc(msg);
 	if (this.prefs.userfriendly) {
-		if (isNaN(ans))
+		if (isNaN(Math.ans))
 			return "That isn't a real number.";
-		if (ans == Infinity)
-			return this.prefs.easterEggs ? "IT'S OVER 9000!!!1" : "That's a number that's too large for me.";
-		if (ans == -Infinity)
-			return "That's a number that's too small for me.";
+		if (Math.ans == Infinity)
+			return this.prefs.easterEggs ? "IT'S OVER 9000!!!1" : "That's a number that's too big for me.";
+		if (Math.ans == -Infinity)
+			return "That's a number that's too negative for me.";
 	}
-	return msg + ": " + ans;
+	return msg + ": " + Math.ans;
 };
-module.cmdDice = function cmdDice(sides, count) { // Partially from cZ dice plugin.
-	var ary = [], total = 0, i;
+// Based on cZ dice plugin.
+module.cmdDice = function cmdDice(sides, count) {
+	var ary = [], total = 0, i = 0;
 	sides = parseInt(sides) || 6;
 	count = parseInt(count) || 1;
 	if (count > 100)
 		count = 100;
-	for (i = 0; i < count; i++) {
-		ary[i] = randint(1, sides);
-		total += ary[i];
+	for (; i < count; i++) {
+		total += ary[i] = randint(1, sides);
 		if (!isFinite(total))
 			break;
 	}
 	return this.prefs.actDice ? "\x01ACTION rolls a d" + sides + (
-		count > 1 ? " " + (i + 1) + " times: " + ary.join(", ") + ", total: " + total : ": " + ary[0]
-	) + "\x01" : count > 1 ? ary.join("+") + "=" + total : ary[0];
+		count > 1 ? " " + (i + 1) + " times: " + ary.join(", ") + "; total: " + total : ": " + ary[0]
+	) + "\x01" : count > 1 ? ary.join(" + ") + " = " + total : ary[0];
 };
 
 module.help = function calcHelp(e) {
@@ -152,9 +153,9 @@ module.help = function calcHelp(e) {
 		return "atan(z): Get the arc tangent of z in radians. See also: atan2, tan";
 	case "atan2":
 		return "atan2(y,x): Get atan(y/x). -pi < atan2(y,x) < pi. " +
-			"The vector in the plane from (0,0) to point (x,y) makes the angle " +
-			"with the positive X axis. The point of this is so the signs of x & y " +
-			"are known, so it can compute the correct quadrant for the angle. e.g. " +
+			"The vector in the plane from (0,0) to (x,y) makes the angle " +
+			"with the + X axis. This is so the signs of x & y are known " +
+			"so the correct quadrant for the angle can be computed. e.g. " +
 			"atan(1) = atan2(1,1) = pi/4, but atan2(-1,-1) = -3*pi/4. See also: atan, tan";
 	case "sine": case "sin":
 		return "sin(z): Get the sine of z radians, opp/hyp. See also: asin, cos, tan";
@@ -164,16 +165,16 @@ module.help = function calcHelp(e) {
 		return "tan(z): Get the tangent of z radians, opp/adj, sin(z)/cos(z). See also: atan, atan2, sin, cos";
 	case "exp":
 		return "exp(x): Get e**x. See also: e, pow, ln.";
-	case "logarit": case "log": case "ln":
+	case "logarit": case "log": case "loge": case "ln":
 		return "ln(x): Get the logarithm of x to base e. See also: e";
 	case "power": case "pow": case "**":
 		return "pow(x,y), x**y: Get x raised to the power of y. x**y**z = pow(x,pow(y,z)) " +
-			"to respect order of operations. x and y can't be expressions with 'x**y', " +
+			"to respect order of operations. x and y can't be expressions with x**y, " +
 			"but x can be in the format of pow(a,pow(b,c)). See also: exp, sqrt, e";
 	case "^":
 		return "x^y: Bitwise XOR (exclusive OR), not exponentiation! See also: **";
-	case "squarer": // square root
-	case "root": case "sqrt":
+	case "squarer": case "sqroot": // square root
+	case "sqrt":
 		return "sqrt(x): Get the square root of x. See also: pow, root";
 	case "root":
 		return "root(z,x): Get the xth root of z. See also: pow, sqrt";
@@ -186,26 +187,26 @@ module.help = function calcHelp(e) {
 	case "min":
 		return "min(x,y): Get the lesser of x & y. See also: max";
 	case "floor":
-		return "floor(x): Get the integer part of a decimal. Commonly used for random numbers. See also: rand, randint, round";
+		return "floor(x): Get the integer part of a decimal, i.e. round down. See also: round";
 	case "roundde": // round decimal
 	case "round":
-		return "round(x,[prec]): Round a number off to the nearest <prec>. See also: floor, rand, randint";
+		return "round(x,[prec]): Round a number off to the nearest prec. See also: floor";
 	case "randomd": // random decimal
 	case "random": case "rand": case "rnd":
-		return "rnd(): Get a random decimal e.g. floor(rnd()*(max-min+1))+min. See also: floor, round, randint";
+		return "rand(): Get a random decimal e.g. floor(rand()*(max-min+1))+min. See also: dice, floor, randint";
 	case "randomi": // random integer
-	case "randomr": // ChatZilla calls it randomRange
-	case "getrand": // getRandomInt example on MDN (https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Math/random#Example:_Using_Math.random)
+	case "randomr": // randomRange (ChatZilla)
+	case "getrand": // getRandomInt https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Math/random#Example:_Using_Math.random
 	case "randint": // like Python's random module
-	//case "ranint":
+	//case "ranint": // original name in aucgbot
 		return "randint([min,[max]]): Get a random integer between min & max, default = 1 & 10. See also: dice, rand, floor, round";
 	case "factori": case "fact": case "!":
-		return "fact(x), x!: Get the factorial of the positive integer x. There's an upper limit of 170 due to " +
-			"technical restrictions. x can't be an expression with 'x!', but x can be in the format of fact(y).";
+		return "fact(x), x!: Get the factorial of the positive integer x where x < 170 due to technical " +
+			"restrictions. x can't be an expression with 'x!', but x can be in the format of fact(y).";
 	case "recipro": case "recip":
 		return "recip(x), 1/x, pow(x,-1), x**-1: Get the reciprocal of x. See also: pow";
 	case "average": case "mean": case "ave": case "avg":
-		return "ave(x,y,...): Get the mean/average of {x,y,...} i.e. (x+y+...)/#ofScores";
+		return "ave(x,y,...): Get the mean/average of {x,y,...} i.e. (x+y+...)/#scores";
 	case "dice": case "d":
 		return "d([x,[y,[z]]]), [y]d<x>: Roll y dice with x number of sides, then add z. " +
 			"NB: x & y can't be expressions with <y>d<x>! See also: randint";
@@ -214,9 +215,9 @@ module.help = function calcHelp(e) {
 	case "c":
 		return "c(x), <x>c: Convert x degrees Celsius to degrees Fahrenheit. See also: f";
 	case "e":
-		return "e: If used in the middle of a number, i.e. <x>e<y>, used to denote " +
-			"scientific notation e.g. 2e100 = 2*10**100. NB: No spaces allowed! " +
-			"Euler's constant in other cases. See also: exp, log, pow";
+		return "e: If used in the middle of a number, i.e. <x>e<y>, " +
+			"used to denote scientific notation e.g. 2e100 = 2*10**100. " +
+			"Euler's number in other cases. See also: exp, log, pow";
 	case "pi":
 		return "pi: The mathematical constant pi, 4*atan 1, the ratio of a circle's circumference to its diameter, 180 degrees, approximately 22/7 or 3.14.";
 	case "phi":
@@ -226,7 +227,7 @@ module.help = function calcHelp(e) {
 	case "decimal": case ".":
 		return "Decimal operations can be inaccurate. If you need better accuracy, use your computer's calculator!";
 	case "trig":
-		return "Note that the trigonometric functions expect/return angles in radians - to convert radians to degrees multiply by 180/pi and vice versa.";
+		return "Note that the trigonometric functions expect/return angles in radians. To convert radians to degrees multiply by 180/pi and vice versa.";
 	case "list":
 		return this.list;
 	default:
