@@ -21,7 +21,7 @@
  */
 
 /*jshint boss: true, es5: true, esnext: true, eqnull: true, evil: true, expr: true, forin: true, regexdash: true, indent: 1, white: false */
-/*global Stream: false, decodeUTF8: false, readln: false, run: false, sleep: false, system: false, writeln: false,
+/*global Stream: false, decodeUTF8: false, encodeB64: false, readln: false, run: false, sleep: false, system: false, writeln: false,
 	aucgbot: true, global: true, module: true, randint: true */
 
 var aucgbot = aucgbot || {
@@ -84,11 +84,30 @@ aucgbot.start = function startBot() {
  * @param {string|string[]} [chans] Channels to join on connect (default: #bots).
  * @see aucgbot#start
  */
-aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans) {
+aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasluser, saslpass) {
 	var channels = ["#bots"], addr = (host || "127.0.0.1") + ":" + (parseInt(port) || 6667),
 		conn = new Stream("net://" + addr, "rwt"), ln;
 	if (pass)
 		conn.send("PASS", pass);
+	if (sasluser && saslpass) {
+		conn.send("CAP REQ sasl");
+		while ((ln = conn.readln().trim())) {
+			writeln(conn.hostName, ": ", ln);
+			if (ln == "AUTHENTICATE +")
+				conn.send("AUTHENTICATE", encodeB64(sasluser + "\0" + sasluser + "\0" + saslpass));
+			else if (/^:\S+ CAP \* ACK :sasl/.test(ln))
+				conn.send("AUTHENTICATE PLAIN");
+			else if (/^:\S+ 90([345]) ./.test(ln)) {
+				conn.send("CAP END");
+				if (RegExp.$1 != "3") {
+					conn.send("QUIT");
+					conn.close();
+					return;
+				}
+				break;
+			}
+		}
+	}
 	conn.send("NICK", conn.nick = nick || "aucgbot");
 	conn.send("USER", (ident || "aucgbot"), "8 * :\x033\x0fauscompgeek's JS bot");
 	if (chans) {

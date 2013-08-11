@@ -31,7 +31,7 @@ let servers = [];
 for (let s = true, server; s;) {
 	server = [];
 
-	for (let i = 0, prompts = ["\nHostname", "Port", "Nickname", "Ident", "Pass", "Channels"]; i < prompts.length; i++) {
+	for (let i = 0, prompts = ["\nHostname", "Port", "Nickname", "Ident", "Pass", "Channels", "SASL user", "SASL pass"]; i < prompts.length; i++) {
 		print(prompts[i], ": ");
 		server.push(readln());
 	}
