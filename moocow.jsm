@@ -43,7 +43,7 @@ module.onAction = function onAction(msg, nick, dest, conn, relay) {
 		me("beats $nick to a pulp"),
 		me("whams $nick into auscompgeek's Nokia"),
 		me("hits $nick with an enormous Compaq laptop"),
-		me("hits $nick with auscompgeek's Lenovo Edge 11 (DER)"),
+		me("hits $nick with auscompgeek's Lenovo Edge 11 (NSW-DER edition)"),
 		me("hits $nick with a breath taking Windows ME user guide"),
 		me("smacks $nick"),
 		me("trips up $nick and laughs"),

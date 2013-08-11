@@ -2,12 +2,13 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/*global Stream: false, module: false */
 
 module.version = 0.2;
 
 module.cmd_g = module.cmd_google =
 function cmd_google(dest, msg, nick, ident, host, conn, relay) {
-	var stream = new Stream("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q=" + encodeURIComponent(msg)), data;
+	var data, stream = new Stream("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q=" + encodeURIComponent(msg));
 	try {
 		data = JSON.parse(stream.readFile());
 	} catch (ex) {}

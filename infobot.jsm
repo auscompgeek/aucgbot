@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global Record: false, aucgbot: false, module: false, system: false */
 
-module.version = 1.1;
+module.version = 1.2;
 module.db = new Record();
 module.db.caseSensitive = false;
 module.db.TABLE_NAME = "Factoids";
@@ -31,11 +31,18 @@ module.cmd_reloadfacts = function cmd_reloadfacts(dest, args, nick, ident, host,
 	conn.reply(dest, nick, "Loaded", this.db.load(), "factoids.");
 	return true;
 };
-module["cmd_what's"] = module.cmd_fact = module.cmd_info = function cmd_fact(dest, args, nick, ident, host, conn, relay) {
+module.cmd_fact = module.cmd_info = function cmd_fact(dest, args, nick, ident, host, conn, relay) {
 	var def = this.db.get(args);
 	if (def)
 		conn.reply(dest, nick, def);
 	return true;
+};
+module["cmd_what's"] = function cmd_whats(dest, args, nick, ident, host, conn, relay) {
+	var def = this.db.get(args.replace(/\?$/, ""));
+	if (def) {
+		conn.reply(dest, nick, def);
+		return true;
+	}
 };
 module.cmd_who = module.cmd_what = function cmd_what(dest, args, nick, ident, host, conn, relay) {
 	if (!/^(?:is|are) (.+?)\??$/i.test(args))

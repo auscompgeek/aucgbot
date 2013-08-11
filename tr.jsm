@@ -6,11 +6,12 @@
 /*jshint es5: true, esnext: true, nonstandard: true */
 /*global decodeB64: false, decodeHTML: false, decodeURL: false, encodeB64: false, encodeHTML: false, encodeURL: false, module: false */
 
-module.version = 2.2;
+module.version = 2.3;
 module.UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 module.LOWER = "abcdefghijklmnopqrstuvwxyz";
 module.ALPHABET = module.UPPER + module.LOWER;
 module.AL_BHED = "YPLTAVKREZGMSHUBXNCDIJFQOWypltavkrezgmshubxncdijfqow";
+module.GOOGLERESE = "ynficwlbkuomxsevzpdrjgthaq";
 
 module.cmd_tr = function cmd_tr(dest, msg, nick, ident, host, conn, relay) {
 	var args = /^"((?:\\")*[^"]+(?:\\"[^"]*)*)" "((?:\\")*[^"]+(?:\\"[^"]*)*)" "((?:\\")*[^"]+(?:\\"[^"]*)*)"$/.exec(msg);
@@ -69,6 +70,9 @@ module.cmd_encode = function cmd_encode(dest, msg, nick, ident, host, conn, rela
 	case "albhed":
 		conn.reply(dest, nick, tr(msg, this.ALPHABET, this.AL_BHED));
 		return true;
+	case "googlerese":
+		conn.reply(dest, nick, tr(msg, this.LOWER, this.GOOGLERESE));
+		return true;
 	}
 };
 module.cmd_decode = function cmd_decode(dest, msg, nick, ident, host, conn, relay) {
@@ -93,19 +97,26 @@ module.cmd_decode = function cmd_decode(dest, msg, nick, ident, host, conn, rela
 	case "escape":
 		conn.reply(dest, nick, unescape(msg));
 		return true;
-	case "charcode": case "dec":
+	case "charcode":
 		conn.reply(dest, nick, String.fromCharCode.apply(null, args));
 		return true;
+	case "codepoint": case "codept": case "dec":
+		conn.reply(dest, nick, String.fromCodePoint.apply(null, args));
+		return true;
 	case "hex": case "bin":
-		conn.reply(dest, nick, String.fromCharCode.apply(null, args.map(function (x) parseInt(x, type == "hex" ? 16 : 2))));
+		conn.reply(dest, nick, String.fromCodePoint.apply(null, args.map(function (x) parseInt(x, type == "hex" ? 16 : 2))));
 		return true;
 	case "albhed":
 		conn.reply(dest, nick, tr(msg, this.AL_BHED, this.ALPHABET));
+		return true;
+	case "googlerese":
+		conn.reply(dest, nick, tr(msg, this.GOOGLERESE, this.lower));
 		return true;
 	}
 };
 
 // from https://developer.mozilla.org/en/A_re-introduction_to_JavaScript
+// henceforth licensed in public domain
 String.reverse = function reverse(str) {
 	var s = "";
 	for (var i = str.length - 1; i >= 0; i--)
@@ -113,6 +124,7 @@ String.reverse = function reverse(str) {
 	return s;
 };
 String.prototype.reverse = function reverse() String.reverse(this);
+
 module.REVUPPER = module.UPPER.reverse();
 module.REVLOWER = module.REVUPPER.toLowerCase();
 
@@ -122,6 +134,20 @@ String.zfill = function zfill(str, l) {
 	return str;
 };
 String.prototype.zfill = function zfill(l) String.zfill(this, l);
+
+// shim in ES5: ECMA-262 6th Edition, 15.5.3.3
+String.fromCodePoint = function fromCodePoint() {
+	var points = [];
+	Array.forEach(arguments, function (offset) {
+		if (offset < 0x10000)
+			points.unshift(offset);
+		else {
+			offset -= 0x10000;
+			points.unshift(0xD800 | (offset >> 10), 0xDC00 | (offset & 0x3FF));
+		}
+	});
+	return String.fromCharCode.apply(null, points);
+};
 
 /**
  * Translates text in a similar fashion to the UNIX tr utility.

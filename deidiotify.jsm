@@ -2,6 +2,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/*global aucgbot: false, module: false */
 
 module.version = "0.6 (22 Dec 2012)";
 module.prefs = {
@@ -20,8 +21,8 @@ module.onMsg = function onMsg(dest, msg, nick, ident, host, conn) {
 	msg = msg.split(" ");
 	switch (msg[0]) {
 	case "ciao":
-		if (this.prefs["ciao"] && msg.length == 1) {
-			conn.send("NOTICE", nick, ":Welcome. Please note we do not support warez around here, as this is an free, open-source software network.");
+		if (this.prefs.ciao && msg.length == 1) {
+			conn.send("NOTICE", nick, ":Welcome. Please note we do not support warez around here, as this is a free, open-source software network.");
 			return true;
 		}
 		break;

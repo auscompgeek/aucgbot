@@ -2,12 +2,12 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global aucgbot: false, c: false, calc: false, encodeUTF8: false, f: false, module: false, randint: false, run: false, writeln: false */
+/*global aucgbot: false, ctof: false, calc: false, encodeUTF8: false, ftoc: false, module: false, randint: false, run: false, writeln: false */
 
 if (!run("calc.js"))
 	throw new Error("Could not load calc functions from calc.js");
 
-module.version = "2.5 (8 Jan 2013)";
+module.version = "2.7.1 (28 Apr 2013)";
 module.prefs = {
 	abuse: {
 		log: true, // when triggered with =
@@ -23,11 +23,11 @@ module.prefs = {
 	userfriendly: false,
 	actDice: false // output <x>d<y> as /me rolls a d<y> x times: a, b, c; total: d
 };
-module.abuse = /load|run|java|ecma|op|doc|cli|(?:qui|exi|aler|prin|insul|impor|scrip)t|def|raw|throw|win|nan|open|con|p(?:ro|atch|lug|lay)|inf|my|for|(?:fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|read|this|js|sys|scr|(?:de|loca|unti|rctr|eva)l|[\[{"}\]]|(?!what)'(?!s)/;
-module.list = "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, ln, pow, sqrt, abs, ceil, max, min, floor, round, random, randint, fact, mean, dice, f, c. Constants: e, pi, phi. Operators: %, ^, **. Other topics: decimal, trig.";
+module.abuse = /load|run|java|ecma|op|doc|cli|(?:qui|exi|aler|prin|insul|impor|scrip)t|def|raw|throw|win|nan|open|con|p(?:ro|atch|lug|lay)|inf|my|for|(?:fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|read|this|js|sys|scr|(?:de|loca|unti|rctr|eva)l|glob|[\[{'"}\]]/;
+module.list = "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, ln, pow, sqrt, abs, ceil, max, min, floor, round, random, randint, fact, mean, dice, ftoc, ctof. Constants: e, pi, phi, c. Operators: %, ^, **. Other topics: decimal, trig.";
 
 module["cmd_="] = module.cmd_calc = module.cmd_math = function cmd_calc(dest, msg, nick, ident, host, conn, relay) {
-	msg = msg.toLowerCase().replace(/\/\/.*$/, "");
+	msg = msg.replace(/(?:\/\/|@).*$/, "").toLowerCase();
 	if (msg.match(this.abuse)) {
 		if (this.prefs.abuse.warn && !relay)
 			conn.send("NOTICE", nick, ":Whoa! Careful dude!");
@@ -111,9 +111,9 @@ module.parseMsg = function parseMsg(msg) {
 	if (/[jkz]|\b\d*i\b/.test(msg))
 		return "I don't support algebra. Sorry for any inconvenience.";
 	if (/^([+\-]?(\d+(?:\.\d+|)|\.\d+))[\u00b0 ]?f$/.test(msg))
-		return f(RegExp.$1) + "C";
+		return ftoc(RegExp.$1) + "C";
 	if (/^([+\-]?(\d+(?:\.\d+|)|\.\d+))[\u00b0 ]?c$/.test(msg))
-		return c(RegExp.$1) + "F";
+		return ctof(RegExp.$1) + "F";
 	// calculate & return result
 	msg = calc(msg);
 	if (this.prefs.userfriendly) {
@@ -145,7 +145,7 @@ module.cmdDice = function cmdDice(sides, count) {
 
 module.help = function calcHelp(e) {
 	switch (e.replace(/help|[? #]|math\.*|imum|ing|er/g, "").slice(0, 7)) {
-	case "arccosi": case "arccos": case "acos":
+	case "arccosi": case "arccos": case "acos": case "cos^-1": case "cos^(-1":
 		return "acos(z): Get the arc cosine of z in radians. See also: cos";
 	case "arcsine": case "arcsin": case "asin": case "sin^-1": case "sin^(-1":
 		return "asin(z): Get the arc sine of z in radians. See also: sin";
@@ -173,8 +173,8 @@ module.help = function calcHelp(e) {
 			"but x can be in the format of pow(a,pow(b,c)). See also: exp, sqrt, e";
 	case "^":
 		return "x^y: Bitwise XOR (exclusive OR), not exponentiation! See also: **";
-	case "squarer": case "sqroot": // square root
-	case "sqrt":
+	case "squarer": // square root
+	case "sqroot": case "sqrt":
 		return "sqrt(x): Get the square root of x. See also: pow, root";
 	case "root":
 		return "root(z,x): Get the xth root of z. See also: pow, sqrt";
@@ -187,10 +187,10 @@ module.help = function calcHelp(e) {
 	case "min":
 		return "min(x,y): Get the lesser of x & y. See also: max";
 	case "floor":
-		return "floor(x): Get the integer part of a decimal, i.e. round down. See also: round";
+		return "floor(x): Round a number down, i.e. towards -Infinity. See also: round";
 	case "roundde": // round decimal
 	case "round":
-		return "round(x,[prec]): Round a number off to the nearest prec. See also: floor";
+		return "round(x,[prec]): Round a number off to the nearest prec, default 1. See also: floor";
 	case "randomd": // random decimal
 	case "random": case "rand": case "rnd":
 		return "rand(): Get a random decimal e.g. floor(rand()*(max-min+1))+min. See also: dice, floor, randint";
@@ -198,7 +198,6 @@ module.help = function calcHelp(e) {
 	case "randomr": // randomRange (ChatZilla)
 	case "getrand": // getRandomInt https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Math/random#Example:_Using_Math.random
 	case "randint": // like Python's random module
-	//case "ranint": // original name in aucgbot
 		return "randint([min,[max]]): Get a random integer between min & max, default = 1 & 10. See also: dice, rand, floor, round";
 	case "factori": case "fact": case "!":
 		return "fact(x), x!: Get the factorial of the positive integer x where x < 170 due to technical " +
@@ -210,24 +209,28 @@ module.help = function calcHelp(e) {
 	case "dice": case "d":
 		return "d([x,[y,[z]]]), [y]d<x>: Roll y dice with x number of sides, then add z. " +
 			"NB: x & y can't be expressions with <y>d<x>! See also: randint";
-	case "f":
-		return "f(x), <x>f: Convert x degrees Fahrenheit to degrees Celsius. See also: c";
-	case "c":
-		return "c(x), <x>c: Convert x degrees Celsius to degrees Fahrenheit. See also: f";
+	case "ftoc":
+		return "ftoc(x): Convert x degrees Fahrenheit to degrees Celsius. See also: c";
+	case "ctof":
+		return "ctof(x): Convert x degrees Celsius to degrees Fahrenheit. See also: f";
 	case "e":
 		return "e: If used in the middle of a number, i.e. <x>e<y>, " +
 			"used to denote scientific notation e.g. 2e100 = 2*10**100. " +
 			"Euler's number in other cases. See also: exp, log, pow";
 	case "pi":
-		return "pi: The mathematical constant pi, 4*atan 1, the ratio of a circle's circumference to its diameter, 180 degrees, approximately 22/7 or 3.14.";
+		return "pi: The mathematical constant pi, 4*atan 1, the ratio of a circle's circumference to its diameter, 180 degrees, ~ 22/7 or 3.14.";
 	case "phi":
 		return "phi: The mathematical constant phi, (1+sqrt 5)/2, the golden ratio.";
+	case "c":
+		return "c: The speed of light, ~ 3e8.";
 	case "mod": case "%":
 		return "x%y: Modulus, the remainder of division, not percentage.";
 	case "decimal": case ".":
-		return "Decimal operations can be inaccurate. If you need better accuracy, use your computer's calculator!";
+		return "Decimal operations can be inaccurate. If you need better accuracy, use an actual calculator or Wolfram|Alpha!";
 	case "trig":
-		return "Note that the trigonometric functions expect/return angles in radians. To convert radians to degrees multiply by 180/pi and vice versa.";
+		return "Note that the trigonometric functions expect/return angles in radians. " +
+			"To convert radians to degrees multiply by 180/pi and vice versa. " +
+			"The functions degrees and radians are provided for your use.";
 	case "list":
 		return this.list;
 	default:

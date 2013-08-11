@@ -8,7 +8,7 @@
 // PLEASE NOTE: if you edit the badwords list using the rc js command, also
 // `this.modules.badword.parseList()` otherwise it will not work
 
-module.version = "5.0 (21 Jan 2013)";
+module.version = "5.0.1 (2 Feb 2013)";
 module.db = {}, module.sfwChans = [];
 
 module.parseList = function parseList() {
@@ -32,6 +32,7 @@ module.loadDB = function loadDB() {
 	 * We don't want to define __proto__ if __proto__ has been removed
 	 * or if hasOwnProperty("__proto__") => false already.
 	 * This seems to have interesting effects.
+	 * Do not use this unless you really need it and it actually works properly.
 	 *
 	 * uneval(obj): "null"
 	 * Boolean(obj), !!obj: true
@@ -41,6 +42,7 @@ module.loadDB = function loadDB() {
 	 * Number(obj), +obj: TypeError: can't convert obj to number
 	 * Firefox web console: TypeError: can't convert null to primitive type
 	 *                                            wat^
+	 * v8: Object.hasOwnProperty(obj, x): TypeError: Cannot convert object to primitive value
 	 */
 	//if (this.db.__proto__ == Object.prototype && Object.prototype.hasOwnProperty.call({}, "__proto__"))
 		//this.db.__proto__ = null;
@@ -138,8 +140,9 @@ module.badwords = {
 	"Retard": "retard",
 	"Screw you": "screw (?:yo|)u",
 	"Seems legit": "seems legit",
+	"Shat": "shat",
 	"Shit": "s[h#*-][ie1!*-]+[t7*-]|\\$#[i1!][t7]|\\bs word\\b",
-	"Shut up": "shut(?:(?: the \\S+|) up| the front door| your pie hole)|stfu",
+	"Shut up": "shut(?:(?: the \\S+|) up| the front door| (?:your|yo|ur) pie hole)|stfu",
 	"Slut": "sl[u*-]t",
 	"Spastic": "spastic",
 	"Stuff": "stuff",
@@ -169,13 +172,13 @@ module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
 	var db, word, words;
 	if (/^!badwords?\b/.test(msg)) {
 		msg = msg.split(" ").slice(1);
-		var name = (msg.shift() || nick).replace(/\|.*/, "");
+		var name = (msg.shift() || nick).split("|")[0];
 		db = this.getUser(name), word = msg.shift(), msg = msg.join(" ");
 		if (!db && !(word && msg && aucgbot.isSU(nick, ident, host)))
 			conn.msg(dest, name, "hasn't said any bad words...yet...");
 		else if (word) {
 			if (word == "nick") {
-				if (msg && aucgbot.isSU(nick, ident, host)) {
+				if (msg && aucgbot.isSU(nick, ident, host, dest, relay)) {
 					if (!db)
 						db = this.getUser(name, true);
 					db.nick = msg;
@@ -195,12 +198,12 @@ module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
 				conn.msg(dest, name, "said a total of", sum, "bad words!");
 			// Is it a valid badword? Take pity if the user didn't capitalise.
 			} else if ((this.badwords.hasOwnProperty(word) || this.badwords.hasOwnProperty(word = word[0].toUpperCase() + word.slice(1))) && typeof this.badwords[word] == "string") {
-				if (msg && aucgbot.isSU(nick, ident, host)) {
+				if (msg && aucgbot.isSU(nick, ident, host, dest, relay)) {
 					if (!db)
 						db = this.getUser(name, true);
 					if (!db[word])
 						db[word] = 0;
-					db[word] += parseInt(msg);
+					db[word] += parseInt(msg); // missing radix intended
 					this.saveDB();
 				} else {
 					conn.msg(dest, db.nick || name, "said `" + word + "'", db[word] || 0, "times!");
@@ -223,7 +226,7 @@ module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
 	msg = msg.toLowerCase();
 	if (!this.badwordList.test(msg))
 		return;
-	db = this.getUser(nick.replace(/\|.*/, ""), true);
+	db = this.getUser(nick.split("|")[0], true);
 	for (word in this.badwords) {
 		if (this.badwords.hasOwnProperty(word) && typeof this.badwords[word] == "string" && (words = msg.match(this.badwords[word], "g"))) {
 			if (!db[word])

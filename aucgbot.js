@@ -20,11 +20,11 @@
  * </ul>
  */
 
-/*jshint boss: true, es5: true, esnext: true, evil: true, expr: true, forin: true, regexdash: true, indent: 1, white: false */
-/*global Stream: false, aucgbot: true, decodeUTF8: false, global: true, module: true, randint: true, readln: false, run: false, sleep: false, system: false, writeln: false */
+/*jshint boss: true, es5: true, esnext: true, eqnull: true, evil: true, expr: true, forin: true, regexdash: true, indent: 1, white: false */
+/*global Stream: false, decodeUTF8: false, readln: false, run: false, sleep: false, system: false, writeln: false,
+	aucgbot: true, global: true, module: true, randint: true */
 
-if (!this.aucgbot)
-aucgbot = {
+var aucgbot = aucgbot || {
 	ERR_MSG_SELF: "Get me to talk to myself, yeah, great idea...",
 	prefs: {
 		flood: {
@@ -49,6 +49,7 @@ aucgbot = {
 		// RegExps to not ban/kick nicks/hosts
 		"nokick.nicks": /Tanner|Mardeg|aj00200|ChrisMorgan|JohnTHaller|Bensawsome|juju|Shadow|TMZ|aus?c(ompgeek|g|ow)|Jan|Peng|TFEF|Nightmare/,
 		"nokick.hosts": /bot|spam|staff|dev|math|js|[Jj]ava[Ss]cript/,
+		suDests: [],
 		// regex for allowed hosts to use rc command
 		suHosts: /trek|aucg|^(?:freenode\/|)(?:staff|dev)|oper|netadmin|geek|gry|bot(?:ter|)s|^(?:127\.\d+\.\d+\.\d+|localhost(?:\.localdomain)?)$/
 	},
@@ -56,7 +57,7 @@ aucgbot = {
 	modules: {},
 	conns: []
 };
-aucgbot.version = "4.3 (21 Jan 2013)";
+aucgbot.version = "4.3.1 (2 Feb 2013)";
 global = this;
 
 /**
@@ -65,8 +66,10 @@ global = this;
  * @usage aucgbot.start([hostname, port, nick, ident, pass, channels]...);
  */
 aucgbot.start = function startBot() {
-	for (let args = Array.slice(arguments); args.length;)
+	var args = Array.slice(arguments);
+	while (args.length)
 		this.connect.apply(this, args.shift());
+	args = null;
 	this.started = Date.now();
 	this.startLoop();
 };
@@ -85,7 +88,7 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans) {
 	var channels = ["#bots"], addr = (host || "127.0.0.1") + ":" + (parseInt(port) || 6667),
 		conn = new Stream("net://" + addr, "rwt"), ln;
 	if (pass)
-		conn.send("PASS", pass), pass = null;
+		conn.send("PASS", pass);
 	conn.send("NICK", conn.nick = nick || "aucgbot");
 	conn.send("USER", (ident || "aucgbot"), "8 * :\x033\x0fauscompgeek's JS bot");
 	if (chans) {
@@ -95,7 +98,6 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans) {
 			channels = chans.split(",");
 		else
 			writeln("[WARNING] Can't join channels specified! Joining ", channels);
-		chans = null;
 	} else {
 		writeln("[WARNING] No channels specified! Joining ", channels);
 	}
@@ -109,11 +111,13 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans) {
 			conn.send("NICK", conn.nick += "_");
 		else if (/^:\S+ 003 ./.test(ln)) {
 			if (channels)
-				conn.send("JOIN", channels.join(",")), channels = null;
+				conn.send("JOIN", ":" + channels.join(",")), channels = null;
 			break;
 		}
 	}
-	conn.flood_lines = 0, this.conns.push(conn), system.gc();
+	conn.flood_lines = 0;
+	this.conns.push(conn);
+	system.gc();
 };
 /**
  * Start the server read line loop.
@@ -352,9 +356,9 @@ aucgbot.parseCmd = function parseCmd(dest, cmd, args, nick, ident, host, conn, r
 		var cmds = [];
 		for (var m in this.modules) {
 			if (this.modules.hasOwnProperty(m)) {
-				for (var i in this.modules[m]) {
-					if (this.modules[m].hasOwnProperty(i) && i.slice(0, 4) == "cmd_")
-						cmds.push(i.slice(4));
+				for (var p in this.modules[m]) {
+					if (this.modules[m].hasOwnProperty(p) && p.slice(0, 4) == "cmd_")
+						cmds.push(p.slice(4));
 				}
 			}
 		}
@@ -453,7 +457,7 @@ aucgbot.remoteControl = function rcBot(cmd, args, dest, nick, conn) {
 	switch (cmd) {
 	case "self-destruct": // Hehe, I had to put this in :D
 	case "explode":
-		conn.send("QUIT :" + nick + ":", "10... 9... 8... 7... 6... 5... 4... 3... 2... 1... 0... *boom*", args.join(" "));
+		conn.send("QUIT :" + nick + ": 10... 9... 8... 7... 6... 5... 4... 3... 2... 1... 0... *boom*", args.join(" "));
 		sleep(500), conn.close();
 		break;
 	case "die":
@@ -477,9 +481,9 @@ aucgbot.remoteControl = function rcBot(cmd, args, dest, nick, conn) {
 		break;
 	case "join":
 		args = args.join(" ").split(",");
-		for (var i = args.length - 1; i >= 0; i--) {
-			if (!/^[#&+!]/.test(args[i]))
-				args[i] = "#" + args[i];
+		for (var a = args.length - 1; a >= 0; a--) {
+			if (!/^[#&+!]/.test(args[a]))
+				args[a] = "#" + args[a];
 		}
 		conn.send("JOIN", ":" + args.join(","));
 		break;
@@ -563,10 +567,12 @@ aucgbot.remoteControl = function rcBot(cmd, args, dest, nick, conn) {
  * @param {string} nick User's nickname.
  * @param {string} ident User's username.
  * @param {string} host User's hostname.
+ * @param {string} dest Destination of message, if any.
+ * @param {string} relay Relay bot, if any.
  * @return {boolean} Whether the user is a superuser.
  */
-aucgbot.isSU = function isSU(nick, ident, host) {
-	return host.match(this.prefs.suHosts);
+aucgbot.isSU = function isSU(nick, ident, host, dest, relay) {
+	return host.match(this.prefs.suHosts) || this.prefs.suDests.indexOf(dest) != -1;
 };
 /**
  * Load a module.
@@ -680,7 +686,7 @@ aucgbot.log = function _log(conn) {
 
 if (typeof randint != "function")
 /**
- * Generate a psuedo-random integer.
+ * Generate a psuedo-random integer. Similar to Python's random.randint method.
  *
  * @param {number} [min] Minimum number (default: 1).
  * @param {number} [max] Maximum number (default: 10).

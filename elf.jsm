@@ -154,7 +154,7 @@ module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
 		conn.msg(dest, "buy: Buy items to use in the game. - make: Make a toy. - info: Show your current scores.");
 		return true;
 	case "elfreset":
-		if (aucgbot.isSU(nick, ident, host)) {
+		if (aucgbot.isSU(nick, ident, host, dest, relay)) {
 			this.initScores();
 			aucgbot.log(conn, "ELF RESET", nick + (dest != nick ? " in " + dest : ""));
 			conn.msg(this.chan, "Variables reset!!!");

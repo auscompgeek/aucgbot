@@ -54,7 +54,7 @@ module.cmd_insult = function cmd_insult(dest, args, nick, ident, host, conn, rel
 	var count = adjs.length, adj1 = adjs.random(), adj2;
 	if (count > 1) {
 		var index = randint(0, count);
-		if (adjs[index] == adj1) { // musn't be the same as %adj1
+		if (adjs[index] == adj1) { // musn't be the same as adj1
 			index++;
 			if (index >= count)
 				index = 0;
@@ -80,7 +80,7 @@ module.cmd_slap = function cmd_slap(dest, args, nick, ident, host, conn, relay) 
 		me("beats $nick to a pulp"),
 		me("whams $nick into auscompgeek's Nokia"),
 		me("hits $nick with an enormous Compaq laptop"),
-		me("hits $nick with auscompgeek's Lenovo Edge 11 (DER)"),
+		me("hits $nick with auscompgeek's Lenovo Edge 11 (NSW-DER edition)"),
 		me("hits $nick with a breath taking Windows ME user guide"),
 		me("smacks $nick"),
 		me("trips up $nick and laughs"),
