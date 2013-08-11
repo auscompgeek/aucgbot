@@ -52,6 +52,7 @@ Features
       * encode/decode: Encode/decode text.
 
     Encodings:
+
       * base64
       * html
       * url
