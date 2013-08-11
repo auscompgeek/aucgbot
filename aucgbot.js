@@ -57,7 +57,7 @@ var aucgbot = aucgbot || {
 	modules: {},
 	conns: []
 };
-aucgbot.version = "4.3.1 (2 Feb 2013)";
+aucgbot.version = "4.4 (11 Aug 2013)";
 global = this;
 
 /**
@@ -103,7 +103,7 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans) {
 	}
 	for (var i = channels.length, chan; chan = channels[i]; i++)
 		channels[i] = /^[#&+!]/.test(chan) ? chan : "#" + chan;
-	while ((ln = conn.readln())) {
+	while ((ln = conn.readln().trim())) {
 		writeln(conn.hostName, ": ", ln);
 		if (/^PING (.+)/.test(ln))
 			conn.send("PONG", RegExp.$1);
@@ -129,7 +129,7 @@ aucgbot.startLoop = function startLoop() {
 		system.wait(this.conns, 36000);
 		for (var i = this.conns.length - 1, conn; conn = this.conns[i]; i--) {
 			if (conn.canRead) {
-				this.parseln(conn.readln(), conn);
+				this.parseln(conn.readln().trim(), conn);
 				if (system.kbhit()) {
 					if (this.prefs["keyboard.dieOnInput"])
 						conn.send("QUIT :Keyboard input.");
@@ -628,7 +628,7 @@ aucgbot.modMethod = function modMethod(id, args) {
 Stream.prototype.send = function send(/* ...data */) {
 	if (!arguments.length)
 		throw new TypeError("Stream.prototype.send requires at least 1 argument");
-	return this.writeln(Array.join(arguments, " ").trim().replace(/\s+/g, " "));
+	return this.writeln(Array.join(arguments, " ").trim());
 };
 /**
  * Send a PRIVMSG to a specified destination.
@@ -661,7 +661,7 @@ Stream.prototype.msg = function msg() {
  * @return {number} Number of bytes sent.
  */
 Stream.prototype.reply = function reply(dest, nick) {
-	var msg = Array.slice(arguments, 2).join(" ").trim().replace(/\s+/g, " ");
+	var msg = Array.slice(arguments, 2).join(" ").trim();
 	if (!msg)
 		throw new TypeError("Stream.prototype.reply requires at least 3 arguments");
 	if (dest != nick)
@@ -680,7 +680,7 @@ aucgbot.log = function _log(conn) {
 	if (arguments.length < 2)
 		throw new TypeError("aucgbot.log requires at least 2 arguments");
 	var file = new Stream("aucgbot.log", "a");
-	file.writeln(conn.hostName, ": ", Date.now(), ": ", Array.slice(arguments, 1).join(": ").trim().replace(/\s+/g, " "));
+	file.writeln(conn.hostName, ": ", Date.now(), ": ", Array.slice(arguments, 1).join(": ").trim());
 	file.close();
 };
 
