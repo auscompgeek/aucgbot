@@ -5,7 +5,7 @@
 /*jshint es5: true, esnext: true, expr: true */
 /*global Stream: false, aucgbot: false, module: false, system: false */
 
-module.version = 1.0;
+module.version = 1.4;
 
 module.cmd_yt = module.cmd_youtube =
 function cmd_yt(dest, msg, nick, ident, host, conn, relay) {
@@ -14,7 +14,7 @@ function cmd_yt(dest, msg, nick, ident, host, conn, relay) {
 		return true;
 	}
 	var id = RegExp.$1, data, stream = new Stream("http://gdata.youtube.com/feeds/api/videos/" + id + "?v=2&alt=jsonc", null,
-		{"User-Agent": "aucgbot/" + aucgbot.version + " (+https://github.com/auscompgeek/aucgbot; " + system.platform + "; JSDB " + system.release + ") mod_yt/" + this.version});
+		{"User-Agent": aucgbot.useragent + " mod_yt/" + this.version});
 	try {
 		data = JSON.parse(stream.readFile()).data;
 	} catch (ex) {}
@@ -34,10 +34,13 @@ function cmd_yt(dest, msg, nick, ident, host, conn, relay) {
 		res.push((h ? h + ":" : "") + m + ":" + s);
 	}
 
-	res.push(data.rating.toFixed(2) + "/5 (" + data.likeCount + "/" + data.ratingCount + ")");
+	if (data.rating)
+		res.push(data.rating.toFixed(2) + "/5 (" + data.likeCount + "+ " + data.ratingCount - data.likeCount + "-)");
 
 	res.push(data.viewCount + " views");
-	res.push(data.commentCount + " comments");
+
+	if (data.commentCount)
+		res.push(data.commentCount + " comments");
 
 	res.push(data.category);
 
