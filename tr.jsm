@@ -6,7 +6,7 @@
 /*jshint es5: true, esnext: true, nonstandard: true */
 /*global decodeB64: false, decodeHTML: false, decodeURL: false, encodeB64: false, encodeHTML: false, encodeURL: false, module: false */
 
-module.version = 2.3;
+module.version = 2.4;
 module.UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 module.LOWER = "abcdefghijklmnopqrstuvwxyz";
 module.ALPHABET = module.UPPER + module.LOWER;
@@ -33,6 +33,10 @@ module.cmd_revtr = function cmd_revtr(dest, msg, nick, ident, host, conn, relay)
 };
 module.cmd_rev = function cmd_rev(dest, msg, nick, ident, host, conn, relay) {
 	conn.reply(dest, nick, msg.reverse());
+	return true;
+};
+module.cmd_revword = function cmd_revword(dest, msg, nick, ident, host, conn, relay) {
+	conn.reply(dest, nick, msg.split(" ").map(String.reverse).join(" "));
 	return true;
 };
 module.cmd_encode = function cmd_encode(dest, msg, nick, ident, host, conn, relay) {
@@ -110,13 +114,13 @@ module.cmd_decode = function cmd_decode(dest, msg, nick, ident, host, conn, rela
 		conn.reply(dest, nick, tr(msg, this.AL_BHED, this.ALPHABET));
 		return true;
 	case "googlerese":
-		conn.reply(dest, nick, tr(msg, this.GOOGLERESE, this.lower));
+		conn.reply(dest, nick, tr(msg, this.GOOGLERESE, this.LOWER));
 		return true;
 	}
 };
 
 // from https://developer.mozilla.org/en/A_re-introduction_to_JavaScript
-// henceforth licensed in public domain
+// henceforth licensed in whatever license the MDN is (probably MPL)
 String.reverse = function reverse(str) {
 	var s = "";
 	for (var i = str.length - 1; i >= 0; i--)
@@ -140,10 +144,10 @@ String.fromCodePoint = function fromCodePoint() {
 	var points = [];
 	Array.forEach(arguments, function (offset) {
 		if (offset < 0x10000)
-			points.unshift(offset);
+			points.push(offset);
 		else {
 			offset -= 0x10000;
-			points.unshift(0xD800 | (offset >> 10), 0xDC00 | (offset & 0x3FF));
+			points.push(0xD800 | (offset >> 10), 0xDC00 | (offset & 0x3FF));
 		}
 	});
 	return String.fromCharCode.apply(null, points);
