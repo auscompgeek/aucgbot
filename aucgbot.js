@@ -57,7 +57,8 @@ var aucgbot = aucgbot || {
 	modules: {},
 	conns: []
 };
-aucgbot.version = "4.4 (11 Aug 2013)";
+aucgbot.version = "4.5 (2 Sep 2013)";
+aucgbot.useragent = "aucgbot/" + aucgbot.version + " (+https://github.com/auscompgeek/aucgbot; " + system.platform + "; JSDB " + system.release + ")";
 global = this;
 
 /**
@@ -625,8 +626,11 @@ aucgbot.modMethod = function modMethod(id, args) {
 		for (var m in this.modules) {
 			if (this.modules.hasOwnProperty(m)) {
 				module = this.modules[m];
-				if (typeof module == "object" && typeof module[id] == "function" && module.hasOwnProperty(id) && module[id].apply(module, args))
-					return true;
+				if (typeof module == "object" && module && module.hasOwnProperty(id)) {
+					method = module[id];
+					if (typeof method == "function" && method.apply(module, args))
+						return true;
+				}
 			}
 		}
 	} finally {
