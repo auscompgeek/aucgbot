@@ -5,7 +5,7 @@
 /*jshint es5: true, esnext: true, expr: true */
 /*global Stream: false, aucgbot: false, module: false, system: false */
 
-module.version = 1.4;
+module.version = 1.5;
 
 module.cmd_yt = module.cmd_youtube =
 function cmd_yt(dest, msg, nick, ident, host, conn, relay) {
@@ -35,7 +35,7 @@ function cmd_yt(dest, msg, nick, ident, host, conn, relay) {
 	}
 
 	if (data.rating)
-		res.push(data.rating.toFixed(2) + "/5 (" + data.likeCount + "+ " + data.ratingCount - data.likeCount + "-)");
+		res.push(data.rating.toFixed(2) + "/5 (" + data.likeCount + "+ " + (data.ratingCount - data.likeCount) + "-)");
 
 	res.push(data.viewCount + " views");
 
