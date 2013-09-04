@@ -5,11 +5,9 @@
 /*jshint expr: true */
 /*global module: false, randint: false */
 
-module.version = 0.1;
+module.version = 0.3;
 
-// Comes up with a random insult. Copyedited from mozbot.
-module.cmd_insult = function cmd_insult(dest, args, nick, ident, host, conn, relay) {
-	var adjs = ["acidic", "antique", "contemptible", "culturally-unsound",
+module.adjs = ["acidic", "antique", "contemptible", "culturally-unsound",
 	"despicable", "evil", "fermented", "festering", "foul", "fulminating", "humid", "impure",
 	"inept", "inferior", "industrial", "left-over", "low-quality", "malodorous", "off-color",
 	"penguin-molesting", "petrified", "pointy-nosed", "salty", "sausage-snorfling",
@@ -31,11 +29,11 @@ module.cmd_insult = function cmd_insult(dest, args, nick, ident, host, conn, rel
 	"imp-bladdereddle-headed", "boil-brained", "tottering", "hedge-born",
 	"hugger-muggered", "elf-skinned", "Microsoft-loving"];
 
-	var amnts = ["accumulation", "bucket", "coagulation", "enema-bucketful",
+module.amnts = ["accumulation", "bucket", "coagulation", "enema-bucketful",
 	"gob", "half-mouthful", "heap", "mass", "mound", "petrification", "pile", "puddle", "stack",
 	"thimbleful", "tongueful", "ooze", "quart", "bag", "plate", "ass-full", "assload"];
 
-	var nouns = ["bat toenails", "bug spit", "cat hair", "chicken piss",
+module.nouns = ["bat toenails", "bug spit", "cat hair", "chicken piss",
 	"dog vomit", "dung", "fat woman's stomach-bile", "fish heads",
 	"guano", "gunk", "pond scum", "rat retch", "red dye number-9",
 	"Sun IPC manuals", "waffle-house grits", "yoo-hoo", "dog balls",
@@ -46,32 +44,49 @@ module.cmd_insult = function cmd_insult(dest, args, nick, ident, host, conn, rel
 	"poopy", "poop", "craptacular carpet droppings", "jizzum",
 	"cold sores", "anal warts", "IE user"];
 
+// Comes up with a random insult. Copyedited from mozbot.
+module.cmd_insult = function cmd_insult(dest, args, nick, ident, host, conn, relay) {
+	switch (args.toLowerCase()) {
+	case "yourself":
+		conn.reply(dest, nick, "Nice try fool.");
+		return true;
+	case "urself":
+		conn.reply(dest, nick, "At least learn to spell.");
+		return true;
+	case "mozilla": case "firefox":
+		conn.reply(dest, args, "You are nothing but the best browser on the planet.");
+		return true;
+	case "c++":
+		conn.reply(dest, args, "You are evil.");
+		return true;
+	}
+
 	//
 	// Insults are formed by making combinations of:
 	//
 	//    You are nothing but a(n) {adj} {amt} of {adj} {noun}
 	//
-	var count = adjs.length, adj1 = adjs.random(), adj2;
+	var count = this.adjs.length, adj1 = this.adjs.random(), adj2;
 	if (count > 1) {
 		var index = randint(0, count);
-		if (adjs[index] == adj1) { // musn't be the same as adj1
+		if (this.adjs[index] == adj1) { // musn't be the same as adj1
 			index++;
 			if (index >= count)
 				index = 0;
 		}
-		adj2 = adjs[index];
+		adj2 = this.adjs[index];
 	} else {
 		adj2 = "err... of... some";
 	}
-	var amnt = amnts.random(), noun = nouns.random();
+	var amnt = this.amnts.random(), noun = nouns.random();
 	var an = /^[aeiou]/.test(adj1) ? "an" : "a";
 	conn.reply(dest, args || nick, "You are nothing but", an, adj1, amnt, "of", adj2, noun + ".");
 	return true;
 };
 
-module.cmd_slap = function cmd_slap(dest, args, nick, ident, host, conn, relay) {
+module.makeSlaps = function makeSlaps() {
 	function me(msg) "\x01ACTION " + msg + "\x01";
-	var res = [
+	return [
 		me("slaps $nick around a bit with a large trout"),
 		me("slaps $nick around a bit with a small fish"),
 		"$nick! Look over there! *slap*",
@@ -80,7 +95,7 @@ module.cmd_slap = function cmd_slap(dest, args, nick, ident, host, conn, relay) 
 		me("beats $nick to a pulp"),
 		me("whams $nick into auscompgeek's Nokia"),
 		me("hits $nick with an enormous Compaq laptop"),
-		me("hits $nick with auscompgeek's Lenovo Edge 11 (NSW-DER edition)"),
+		me("hits $nick with auscompgeek's DER-NSW Lenovo Edge 11"),
 		me("hits $nick with a breath taking Windows ME user guide"),
 		me("smacks $nick"),
 		me("trips up $nick and laughs"),
@@ -101,8 +116,13 @@ module.cmd_slap = function cmd_slap(dest, args, nick, ident, host, conn, relay) 
 		me("eats $nick"),
 		me("teabags $nick"),
 		me("hits $nick over the head with a 2-by-4"),
-		me("drops a bowling bowl on $nick")
+		me("drops a bowling bowl on $nick"),
+		me("drops a large CRT monitor off a balcony above $nick")
 	];
-	conn.msg(dest, res.random().replace("$nick", args || nick));
+};
+module.slaps = module.makeSlaps();
+
+module.cmd_slap = function cmd_slap(dest, args, nick, ident, host, conn, relay) {
+	conn.msg(dest, this.slaps.random().replace("$nick", args && args != conn.nick && args != "me" ? args : nick));
 	return true;
 };
