@@ -5,7 +5,7 @@
 /*jshint expr: true */
 /*global module: false, randint: false */
 
-module.version = 0.3;
+module.version = 0.4;
 
 module.adjs = ["acidic", "antique", "contemptible", "culturally-unsound",
 	"despicable", "evil", "fermented", "festering", "foul", "fulminating", "humid", "impure",
@@ -78,9 +78,10 @@ module.cmd_insult = function cmd_insult(dest, args, nick, ident, host, conn, rel
 	} else {
 		adj2 = "err... of... some";
 	}
-	var amnt = this.amnts.random(), noun = nouns.random();
+	var amnt = this.amnts.random(), noun = this.nouns.random();
 	var an = /^[aeiou]/.test(adj1) ? "an" : "a";
-	conn.reply(dest, args || nick, "You are nothing but", an, adj1, amnt, "of", adj2, noun + ".");
+	conn.reply(dest, args && args != conn.nick && args != "me" ? args : nick,
+	           "You are nothing but", an, adj1, amnt, "of", adj2, noun + ".");
 	return true;
 };
 
