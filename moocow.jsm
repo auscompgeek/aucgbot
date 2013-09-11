@@ -52,7 +52,7 @@ module.onAction = function onAction(msg, nick, dest, conn, relay) {
  * @param {string} relay If sent by a relay bot, the relay bot's nick, else "".
  */
 module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
-	if (/(ham|cheese) ?burger|beef/i.test(msg) && !/^au/.test(nick))
+	if (/(ham|cheese) ?burger|big mac|beef/i.test(msg) && !/^au/.test(nick))
 		conn.msg(dest, "\x01ACTION eats", nick + "\x01");
 	else if (/moo|cow/i.test(msg))
 		conn.msg(dest, this.res.random().replace("$dest", dest, "g").replace("$nick", nick, "g"));

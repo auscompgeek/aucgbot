@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global Stream: false, module: false */
 
-module.version = 0.2;
+module.version = 0.5;
 
 module.cmd_g = module.cmd_google =
 function cmd_google(dest, msg, nick, ident, host, conn, relay) {
@@ -21,7 +21,10 @@ function cmd_google(dest, msg, nick, ident, host, conn, relay) {
 		conn.reply(dest, nick, data.responseStatus, data.responseDetails);
 		return true;
 	}
-	var result0 = data.responseData.results[0];
-	conn.reply(dest, nick, result0 ? (result0.url + " - " + result0.titleNoFormatting) : "No results.");
+	var res0 = data.responseData.results[0];
+	conn.reply(dest, nick, res0 ? (
+			res0.url + " - " + res0.titleNoFormatting + " - " +
+			decodeHTML(decodeUTF8(res0.content)).replace(/<\/?b>/g, "\002").replace(/\s+/g, " ")
+		) : "No results.");
 	return true;
 };

@@ -51,13 +51,13 @@ var aucgbot = aucgbot || {
 		"nokick.hosts": /bot|spam|staff|dev|math|js|[Jj]ava[Ss]cript/,
 		suDests: [],
 		// regex for allowed hosts to use rc command
-		suHosts: /trek|aucg|^(?:freenode\/|)(?:staff|dev)|oper|netadmin|geek|gry|bot(?:ter|)s|^(?:127\.\d+\.\d+\.\d+|localhost(?:\.localdomain)?)$/
+		suHosts: /aucg|auscompgeek|^(?:freenode\/|)(?:staff|dev)|botters|^(?:127\.\d+\.\d+\.\d+|localhost(?:\.localdomain)?)$/
 	},
 	//cmodes: {}, // TODO Parse MODE lines.
 	modules: {},
 	conns: []
 };
-aucgbot.version = "4.5 (2 Sep 2013)";
+aucgbot.version = "4.7 (3 Sep 2013)";
 aucgbot.useragent = "aucgbot/" + aucgbot.version + " (+https://github.com/auscompgeek/aucgbot; " + system.platform + "; JSDB " + system.release + ")";
 global = this;
 
@@ -121,8 +121,9 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 	} else {
 		writeln("[WARNING] No channels specified! Joining ", channels);
 	}
+	conn.chantypes = "#&+!";
 	for (var i = channels.length, chan; chan = channels[i]; i++)
-		channels[i] = /^[#&+!]/.test(chan) ? chan : "#" + chan;
+		channels[i] = conn.chantypes.contains(chan[0]) ? "#" + chan : chan;
 	while ((ln = conn.readln().trim())) {
 		writeln(conn.hostName, ": ", ln);
 		if (/^PING (.+)/.test(ln))
@@ -250,7 +251,7 @@ aucgbot.onMsg = function onMsg(dest, msg, nick, ident, host, conn) {
 	var meping = RegExp("^@?" + conn.nick.replace(/\W/g, "\\$&") + "([:,!.] ?| |$)", "i"), relay = "";
 
 	// fix for message relay bots
-	if (this.prefs["relay.check"] && this.prefs["relay.bots"].indexOf(nick) != -1) {
+	if (this.prefs["relay.check"] && this.prefs["relay.bots"].contains(nick)) {
 		if (/^\* (\S+) (.+)/.test(msg))
 			return this.modMethod("onAction", [RegExp.$2, RegExp.$1.replace(/^\[\w+\]|\/.+/g, ""), dest, conn, nick]);
 		if (/^<([^>]+)> (.+)/.test(msg))
@@ -258,7 +259,7 @@ aucgbot.onMsg = function onMsg(dest, msg, nick, ident, host, conn) {
 	}
 
 	// don't listen to bots
-	if ((/bot[\d_|]*$|Serv|^bot|Op$/i.test(nick) && nick != conn.nick) || (host.indexOf("/bot/") != -1 && !(nick == conn.nick || relay)))
+	if ((/bot[\d_|]*$|Serv|^bot|Op$/i.test(nick) && nick != conn.nick) || (host.contains("/bot/") && !(nick == conn.nick || relay)))
 		return;
 
 	// flood protection
@@ -372,6 +373,12 @@ aucgbot.parseCmd = function parseCmd(dest, cmd, args, nick, ident, host, conn, r
 		if (mods.length)
 			conn.send("NOTICE", nick, ":" + mods.join(", "));
 		break;
+	case "help":
+		if (args) {
+			conn.send("NOTICE", nick, ":Not implemented.");
+			break;
+		}
+		/* fallthrough */
 	case "listcmds": case "cmdlist":
 		var cmds = [];
 		for (var m in this.modules) {
@@ -502,7 +509,7 @@ aucgbot.remoteControl = function rcBot(cmd, args, dest, nick, conn) {
 	case "join":
 		args = args.join(" ").split(",");
 		for (var a = args.length - 1; a >= 0; a--) {
-			if (!/^[#&+!]/.test(args[a]))
+			if (conn.chantypes.contains(args[a]))
 				args[a] = "#" + args[a];
 		}
 		conn.send("JOIN", ":" + args.join(","));
@@ -510,7 +517,7 @@ aucgbot.remoteControl = function rcBot(cmd, args, dest, nick, conn) {
 	case "leave":
 		var chans = args.shift().split(",");
 		for (var i = chans.length - 1; i >= 0; i--) {
-			if (!/^[#&+!]/.test(chans[i]))
+			if (!conn.chantypes.contains(chans[i][0]))
 				chans[i] = "#" + chans[i];
 		}
 		conn.send("PART", chans.join(","), ":" + nick + ":", args.join(" "));
@@ -521,7 +528,7 @@ aucgbot.remoteControl = function rcBot(cmd, args, dest, nick, conn) {
 			conn.reply(dest, nick, "Get me to kick myself, yeah, great idea...");
 			break;
 		}
-		if (/^[^#&+!]/.test(chan))
+		if (!conn.chantypes.contains(chan[0]))
 			chan = "#" + chan;
 		conn.send("KICK", chan, args.shift(), ":" + nick + ":", args.join(" "));
 		break;
@@ -541,7 +548,7 @@ aucgbot.remoteControl = function rcBot(cmd, args, dest, nick, conn) {
 	case "eval": case "js": // Dangerous!
 		args = args.join(" ").replace(/\/\/.*$/, "");
 		// could cause a crash if unhandled
-		if (/(stringify|uneval).+(aucgbot|this|global)/i.test(args)) {
+		if (/(stringify|uneval).+global/i.test(args)) {
 			writeln("[WARNING] Possible abuse! ^^^^^");
 			conn.send("NOTICE", nick, ":Careful there! You don't want to crash me!");
 			break;
@@ -592,7 +599,7 @@ aucgbot.remoteControl = function rcBot(cmd, args, dest, nick, conn) {
  * @return {boolean} Whether the user is a superuser.
  */
 aucgbot.isSU = function isSU(nick, ident, host, dest, relay) {
-	return host.match(this.prefs.suHosts) || this.prefs.suDests.indexOf(dest) != -1;
+	return host.match(this.prefs.suHosts) || this.prefs.suDests.contains(dest);
 };
 /**
  * Load a module.
@@ -651,7 +658,7 @@ aucgbot.modMethod = function modMethod(id, args) {
 Stream.prototype.send = function send(/* ...data */) {
 	if (!arguments.length)
 		throw new TypeError("Stream.prototype.send requires at least 1 argument");
-	return this.writeln(Array.join(arguments, " ").trim());
+	return this.writeln(encodeUTF8(Array.join(arguments, " ").trim()));
 };
 /**
  * Send a PRIVMSG to a specified destination.
@@ -669,6 +676,14 @@ Stream.prototype.msg = function msg() {
 	if (s.length < 2)
 		throw new TypeError("Stream.prototype.msg requires at least 2 arguments");
 	s[1] = ":" + s[1], s.unshift("PRIVMSG");
+	return this.send.apply(this, s);
+};
+Stream.prototype.nmsg = function msg() {
+	var s = Array.slice(arguments);
+	if (s.length < 2)
+		throw new TypeError("Stream.prototype.msg requires at least 2 arguments");
+	s[1] = ":" + s[1];
+	s.unshift(this.chantypes.contains(s[0][0]) ? "NOTICE" : "PRIVMSG");
 	return this.send.apply(this, s);
 };
 /**
@@ -689,7 +704,15 @@ Stream.prototype.reply = function reply(dest, nick) {
 		throw new TypeError("Stream.prototype.reply requires at least 3 arguments");
 	if (dest != nick)
 		msg = nick + ": " + msg;
-	return this.writeln("PRIVMSG " + dest + " :" + msg);
+	return this.writeln(encodeUTF8("PRIVMSG " + dest + " :" + msg));
+};
+Stream.prototype.nreply = function nreply(dest, nick) {
+	var msg = Array.slice(arguments, 2).join(" ").trim();
+	if (!msg)
+		throw new TypeError("Stream.prototype.reply requires at least 3 arguments");
+	if (dest != nick)
+		msg = nick + ": " + msg;
+	return this.writeln(encodeUTF8((this.chantypes.contains(dest[0]) ? "PRIVMSG " : "NOTICE ") + dest + " :" + msg));
 };
 /**
  * Write text to the log file.
@@ -731,5 +754,25 @@ if (typeof Array.prototype.random != "function")
  * @return {*} Random element from array.
  */
 Array.prototype.random = function random() this[Math.floor(Math.random() * this.length)];
+
+if (typeof Array.prototype.contains != "function")
+/**
+ * ES6 shim: Check if an array contains an element.
+ *
+ * @this {Array} The array to check the contents of.
+ * @param {e} An element to check.
+ * @return {Boolean} Whether the string contains the substring.
+ */
+Array.prototype.contains = function contains(e) this.indexOf(e) != -1;
+
+if (typeof String.prototype.contains != "function")
+/**
+ * ES6 shim: Check if a string contains a substring.
+ *
+ * @this {String} The string to check the contents of.
+ * @param {s} The substring to check.
+ * @return {Boolean} Whether the string contains the substring.
+ */
+String.prototype.contains = function contains(s) this.indexOf(s) != -1;
 
 writeln("aucgbot loaded.");

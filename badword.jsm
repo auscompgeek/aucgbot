@@ -8,8 +8,9 @@
 // PLEASE NOTE: if you edit the badwords list using the rc js command, also
 // `this.modules.badword.parseList()` otherwise it will not work
 
-module.version = "5.0.1 (2 Feb 2013)";
+module.version = "5.1.1 (10 Sep 2013)";
 module.db = {}, module.sfwChans = [];
+module.spaceAfterColon = false;
 
 module.parseList = function parseList() {
 	var badwords = [];
@@ -79,7 +80,7 @@ module.getUser = function getUser(nick, create) {
 
 module.badwords = {
 // "Word": "lowercase quoted regex",
-	"Arse": "arse",
+	"Arse": "\\barse\\b",
 	"Asian": "as(?:ia|ai)n",
 	"Ass": "\\ba[s$]{2}(?:holes?|es)?\\b|lmf?ao",
 	"Bastard": "bastard|bofh",
@@ -119,7 +120,7 @@ module.badwords = {
 	"Jerk": "jerk",
 	"Jesus": "jesus",
 	"Jew": "jews?\\b",
-	"Leb": "lebs?\\b",
+	"Leb": "\\blebs?\\b",
 	"LOL": "lol|lawl|lulz|el oh el",
 	"Midget": "midget",
 	"Moron": "moron",
@@ -130,6 +131,7 @@ module.badwords = {
 	"Penis": "penis|\\bp word\\b",
 	"Pirate": "pirate",
 	"Piss": "p[i!*-]ss",
+	"Pleb": "pleb",
 	"Poon": "\\bpoon",
 	"Poo": "poos?\\b",
 	"Poop": "poop",
@@ -149,7 +151,7 @@ module.badwords = {
 	"Stupid": "st(?:u|oo)pid",
 	"Swag": "swag",
 	"Thingy": "thingy",
-	"Tit": "\\b(?:tit|(?:tolo|toftb)\\b)", // quantitative is not a bad word
+	"Tit": "\\b(?:tit(?:tie|)s?|tolo|toftb)\\b",
 	"Torrent": "torrent",
 	"Turd": "turd",
 	"Twat": "twat",
@@ -216,10 +218,10 @@ module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
 					if (word == "nick")
 						name = db.nick;
 					else
-						words.push(word + ": " + db[word]);
+						words.push(word + (this.spaceAfterColon ? ": " : ":") + db[word]);
 				}
 			}
-			conn.reply(dest, name, words.join(" - "));
+			conn.reply(dest, name, words.join(", "));
 		}
 		return true;
 	}

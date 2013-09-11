@@ -7,7 +7,7 @@
 if (!run("calc.js"))
 	throw new Error("Could not load calc functions from calc.js");
 
-module.version = "2.7.1 (28 Apr 2013)";
+module.version = "2.8 (10 Sep 2013)";
 module.prefs = {
 	abuse: {
 		log: true, // when triggered with =
@@ -21,7 +21,7 @@ module.prefs = {
 	},
 	easterEggs: true, // toggle Easter eggs :-)
 	userfriendly: false,
-	actDice: false // output <x>d<y> as /me rolls a d<y> x times: a, b, c; total: d
+	actDice: true // output <x>d<y> as /me rolls a d<y> x times: a, b, c; total: d
 };
 module.abuse = /load|run|java|ecma|op|doc|cli|(?:qui|exi|aler|prin|insul|impor|scrip)t|def|raw|throw|win|nan|open|con|p(?:ro|atch|lug|lay)|inf|my|for|(?:fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|read|this|js|sys|scr|(?:de|loca|unti|rctr|eva)l|glob|[\[{'"}\]]/;
 module.list = "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, ln, pow, sqrt, abs, ceil, max, min, floor, round, random, randint, fact, mean, dice, ftoc, ctof. Constants: e, pi, phi, c. Operators: %, ^, **. Other topics: decimal, trig.";
@@ -63,15 +63,15 @@ module.cmd_base = function cmd_base(dest, msg, nick, ident, host, conn, relay) {
 };
 module.cmd_qe = function cmd_quadraticEqn(dest, msg, nick, ident, host, conn, relay) {
 	var a, b, c, _2a, pron, resInSqrt, resSqrt, res = [];
-	if (!/^(?:([+\-]?\d*(?:\.\d*)) ?\*? ?)?(\w) ?(?:\*\*|\^) ?2 ?(?:([+\-] ?\d*(?:\.\d*)) ?\*? ?\2)? ?([+\-] ?\d+(?:\.\d*))? ?= ?([+\-]?\d+(?:\.\d*))$/.test(msg)) {
+	if (!/^(?:([+\-]?\d*(?:\.\d*)?) ?\*? ?)?([A-Za-z]) ?(?:\*\*|\^) ?2 ?(?:([+\-] ?\d*(?:\.\d*)?) ?\*? ?\2)? ?([+\-] ?\d*(?:\.\d*)?)? ?= ?([+\-]?\d*(?:\.\d*)?)$/.test(msg)) {
 		// not a quadratic equation, bail
 		conn.reply(dest, nick, "qe: Evaluates the value of the pronumeral in a quadratic equation in general form i.e. ax**2 + bx + c = 0");
 		return true;
 	}
 	pron = RegExp.$2, a = RegExp.$1, b = RegExp.$3, c = RegExp.$4;
-	if ("+-".indexOf(a) != -1)
+	if ("+-".contains(a))
 		a += "1";
-	if ("+-".indexOf(b) != -1)
+	if ("+-".contains(b))
 		b += "1";
 	a = a ? +a : 1, _2a = 2 * a;
 	b = b ? +b.replace(/\s+/, "") : 1;
@@ -80,14 +80,21 @@ module.cmd_qe = function cmd_quadraticEqn(dest, msg, nick, ident, host, conn, re
 	if (resInSqrt < 0) {
 		// answer is a complex number, bail
 		// TODO simplify surd
-		conn.reply(dest, nick, pron + " = (" + (-b) + encodeUTF8(" \u00B1 \u221A") + resInSqrt + ") / " + _2a);
+		conn.reply(dest, nick, pron + " = (" + (-b) + " \u00B1 \u221A" + resInSqrt + ") / " + _2a);
 		return true;
 	}
-	res.push("(" + (-b) + encodeUTF8(" \u00B1 \u221A") + resInSqrt + ") / " + _2a);
+	res.push("(" + (-b) + " \u00B1 \u221A" + resInSqrt + ") / " + _2a);
 	resSqrt = Math.sqrt(resInSqrt);
 	res.push((-b + resSqrt) / _2a);
 	res.push((-b - resSqrt) / _2a);
 	conn.reply(dest, nick, pron + " = " + res.join(" or "));
+	return true;
+};
+module.cmd_dice = module.cmd_roll = function cmd_roll(dest, msg, nick, ident, host, conn, relay) {
+	if (/^(\d*)d(\d+)$/.test(msg))
+		conn.msg(dest, this.cmdDice(RegExp.$2, RegExp.$1));
+	else
+		conn.msg(dest, this.cmdDice.apply(this, msg.split(" ")));
 	return true;
 };
 
@@ -126,21 +133,27 @@ module.parseMsg = function parseMsg(msg) {
 	}
 	return msg + ": " + Math.ans;
 };
-// Based on cZ dice plugin.
+// Very loosely based on the cZ dice plugin.
 module.cmdDice = function cmdDice(sides, count) {
-	var ary = [], total = 0, i = 0;
+	var ary = [], total = 0;
 	sides = parseInt(sides) || 6;
 	count = parseInt(count) || 1;
-	if (count > 100)
-		count = 100;
-	for (; i < count; i++) {
-		total += ary[i] = randint(1, sides);
-		if (!isFinite(total))
-			break;
+	if (count < 0)
+		count = -count;
+	if (count > 25 || sides > 25) {
+		i = sides * count;
+		if (!isFinite(i))
+			return "\x01ACTION tried to roll too many dice\x01";
+		total = randint(count, i);
+		return this.prefs.actDice ? "\x01ACTION rolls some dice, totalling " + total + ".\x01" : total;
 	}
-	return this.prefs.actDice ? "\x01ACTION rolls a d" + sides + (
-		count > 1 ? " " + (i + 1) + " times: " + ary.join(", ") + "; total: " + total : ": " + ary[0]
-	) + "\x01" : count > 1 ? ary.join(" + ") + " = " + total : ary[0];
+	for (var i = 0; i < count; i++)
+		total += ary[i] = randint(1, sides);
+	if (this.prefs.easterEggs && isNaN(total))
+		total = "Batman!"
+	if (this.prefs.actDice)
+		return "\x01ACTION rolls a d" + sides + (count > 1 ? " " + count + " times: " + ary.join(", ") + "; total: " : ": ") + total + "\x01";
+	return count > 1 ? ary.join(" + ") + " = " + total : ary[0];
 };
 
 module.help = function calcHelp(e) {

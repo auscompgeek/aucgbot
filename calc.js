@@ -16,7 +16,7 @@ function calc(expr) {
 	           .replace(/math\w*|\?+$|calc(?:ulat(?:e|or)|)|imum|olute|ing|er|the|of/g, "").replace(/(a|)(?:r(?:c|ea|)|)(cos|sin|tan|csc|sec|cot)\w+?(h|)/g, "$1$2$3").replace("#", "0x", "g")
 	           .replace(/(?:square ?|)root|\u221A/g, "sqrt").replace("\u03C0", "pi", "g").replace("\u03C6", "phi", "g").replace("\u00B9"/*<sup>1</sup>*/, "", "g").replace("\u00B2", "**2", "g").replace("\u00B3", "**3", "g")
 	           .replace("\u00D7"/*sign*/, "*", "g").replace("\u00FA"/*dot*/, "*", "g").replace("\u00F7"/*sign*/, "/", "g").replace("\u2215"/*slash*/, "/", "g").replace("\u2044"/*fraction*/, "/", "g").replace("\u2260", "!=", "g").replace("\u2264", "<=", "g").replace("\u2265", ">=", "g")
-	           .replace(/(recip|fact|randint|ra?nd|d|sqrt|(?:co|)sec|(?:sin|cos|csc|cot|tan)h?)[^ ()]*\b/g, "$1").replace(/(\d+|)d(\d+)/g, "d($2,$1)")
+	           .replace(/(recip|fact|randint|ra?nd|dice|sqrt|(?:co|)sec|(?:sin|cos|csc|cot|tan)h?)[^ ()]*\b/g, "$1").replace(/(\d*)d(\d+)/g, "dice($2,$1)")
 	           .replace(/ra?nd ?(?!\()/, "rnd()").replace(/ave\w+|mean/, "ave").replace(/(sqrt|(?:sin|cos|tan|csc|sec|cot)h?|atan2|round|floor|ceil|log|exp|recip) (\d+(?:\.\d+|!*)|\.\d+)/g, "$1($2)")
 	           .replace(/(\d+(?:\.\d+(?:e[+-]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e) ?\*\* ?([+-]?\d+(?:\.\d+(?:e[+-]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e)/g, "pow($1,$2)").replace(/(\d+)!/g, "fact($1)")
 	           .replace(/\b(\d+(?:\.\d+|)|\.\d+) ?([(a-df-wyz])/g, "$1*$2").replace(/\b(ph?i|e|c) ?([^+*\/&|\^<>%),?: -])/g, "$1*$2").replace(/(\(.*?\)) ?([^+*\/&|\^<>%!),?: -])/g, "$1*$2");
@@ -49,14 +49,15 @@ function calc(expr) {
 			sum += arguments[i];
 		return sum / arguments.length;
 	}
-	function d(sides, count, modifier) { // Partially from cZ dice plugin.
+	function dice(sides, count, modifier) { // Partially from cZ dice plugin.
 		var sum = +modifier || 0;
 		sides = parseInt(sides) || 6;
 		count = parseInt(count) || 1;
-		if (count > 100)
-			count = 100;
-		for (var i = 0; i < count; i++)
-			sum += randint(1, sides);
+		if (count > 1000)
+			sum += randint(count, sides * count);
+		else
+			for (var i = 0; i < count; i++)
+				sum += randint(1, sides);
 		return sum;
 	}
 

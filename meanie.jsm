@@ -45,9 +45,10 @@ module.nouns = ["bat toenails", "bug spit", "cat hair", "chicken piss",
 	"cold sores", "anal warts", "IE user"];
 
 // Comes up with a random insult. Copyedited from mozbot.
+// https://mxr.mozilla.org/mozilla/source/webtools/mozbot/BotModules/Insult.bm
 module.cmd_insult = function cmd_insult(dest, args, nick, ident, host, conn, relay) {
 	switch (args.toLowerCase()) {
-	case "yourself":
+	case "yourself": case "self": case conn.nick:
 		conn.reply(dest, nick, "Nice try fool.");
 		return true;
 	case "urself":
@@ -80,7 +81,7 @@ module.cmd_insult = function cmd_insult(dest, args, nick, ident, host, conn, rel
 	}
 	var amnt = this.amnts.random(), noun = this.nouns.random();
 	var an = /^[aeiou]/.test(adj1) ? "an" : "a";
-	conn.reply(dest, args && args != conn.nick && args != "me" ? args : nick,
+	conn.reply(dest, args && args != "me" ? args : nick,
 	           "You are nothing but", an, adj1, amnt, "of", adj2, noun + ".");
 	return true;
 };
