@@ -16,7 +16,7 @@ function cmd_yt(dest, msg, nick, ident, host, conn, relay) {
 	var id = RegExp.$1, data, stream = new Stream("http://gdata.youtube.com/feeds/api/videos/" + id + "?v=2&alt=jsonc", null,
 		{"User-Agent": aucgbot.useragent + " mod_yt/" + this.version});
 	try {
-		data = JSON.parse(stream.readFile()).data;
+		data = JSON.parse(decodeUTF8(stream.readFile())).data;
 	} catch (ex) {}
 	stream.close();
 	if (!data) {

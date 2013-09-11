@@ -4,13 +4,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global Stream: false, module: false */
 
-module.version = 0.5;
+module.version = 0.6;
 
 module.cmd_g = module.cmd_google =
 function cmd_google(dest, msg, nick, ident, host, conn, relay) {
 	var data, stream = new Stream("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q=" + encodeURIComponent(msg));
 	try {
-		data = JSON.parse(stream.readFile());
+		data = JSON.parse(decodeUTF8(stream.readFile()));
 	} catch (ex) {}
 	stream.close();
 	if (!data) {
@@ -24,7 +24,7 @@ function cmd_google(dest, msg, nick, ident, host, conn, relay) {
 	var res0 = data.responseData.results[0];
 	conn.reply(dest, nick, res0 ? (
 			res0.url + " - " + res0.titleNoFormatting + " - " +
-			decodeHTML(decodeUTF8(res0.content)).replace(/<\/?b>/g, "\002").replace(/\s+/g, " ")
+			decodeHTML(res0.content).replace(/<\/?b>/g, "\002").replace(/\s+/g, " ")
 		) : "No results.");
 	return true;
 };
