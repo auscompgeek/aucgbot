@@ -5,7 +5,7 @@
 /*jshint expr: true */
 /*global module: false, randint: false */
 
-module.version = 0.4;
+module.version = 0.5;
 
 module.adjs = ["acidic", "antique", "contemptible", "culturally-unsound",
 	"despicable", "evil", "fermented", "festering", "foul", "fulminating", "humid", "impure",
@@ -48,10 +48,10 @@ module.nouns = ["bat toenails", "bug spit", "cat hair", "chicken piss",
 // https://mxr.mozilla.org/mozilla/source/webtools/mozbot/BotModules/Insult.bm
 module.cmd_insult = function cmd_insult(dest, args, nick, ident, host, conn, relay) {
 	switch (args.toLowerCase()) {
-	case "yourself": case "self": case conn.nick:
+	case "yourself": case "itself": case "himself": case "herself": case "self": case conn.nick:
 		conn.reply(dest, nick, "Nice try fool.");
 		return true;
-	case "urself":
+	case "urself": case "hisself":
 		conn.reply(dest, nick, "At least learn to spell.");
 		return true;
 	case "mozilla": case "firefox":
@@ -95,7 +95,7 @@ module.makeSlaps = function makeSlaps() {
 		me("gets the battering hammer and bashes $nick with it"),
 		me("bashes $nick with a terrifying Windows ME user guide"),
 		me("beats $nick to a pulp"),
-		me("whams $nick into auscompgeek's Nokia"),
+		me("whams auscompgeek's Nokia into $nick"),
 		me("hits $nick with an enormous Compaq laptop"),
 		me("hits $nick with auscompgeek's DER-NSW Lenovo Edge 11"),
 		me("hits $nick with a breath taking Windows ME user guide"),
