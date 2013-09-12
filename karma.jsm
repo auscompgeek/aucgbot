@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global Record: false, aucgbot: false, module: false, system: false */
 
-module.version = 0.3;
+module.version = 0.4;
 module.db = new Record();
 module.db.caseSensitive = false;
 module.db.TABLE_NAME = "Karma";
@@ -16,14 +16,14 @@ module.db.load();
 module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
 	if (!/^(\S+)([-+])\2$/.test(msg))
 		return;
-	var item = RegExp.$1, plus = RegExp.$2 == "+";
+	var item = RegExp.$1, minus = RegExp.$2 == "-";
 	if (item == nick)
-		plus = false;
-	this.db.increment(item, Math.pow(-1, plus));
+		minus = true;
+	this.db.increment(item, Math.pow(-1, minus));
 	this.db.save();
 };
 
 module.cmd_karma = function cmd_karma(dest, args, nick, ident, host, conn, relay) {
-	conn.reply(dest, nick, args, "has", this.db.get(args), "karma.");
+	conn.reply(dest, nick, args, "has", this.db.get(args) || "no", "karma.");
 	return true;
 };
