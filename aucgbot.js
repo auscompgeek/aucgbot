@@ -57,7 +57,7 @@ var aucgbot = aucgbot || {
 	modules: {},
 	conns: []
 };
-aucgbot.version = "4.7 (3 Sep 2013)";
+aucgbot.version = "4.7.1 (12 Sep 2013)";
 aucgbot.useragent = "aucgbot/" + aucgbot.version + " (+https://github.com/auscompgeek/aucgbot; " + system.platform + "; JSDB " + system.release + ")";
 global = this;
 
@@ -121,7 +121,6 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 	} else {
 		writeln("[WARNING] No channels specified! Joining ", channels);
 	}
-	conn.chantypes = "#&+!";
 	for (var i = channels.length, chan; chan = channels[i]; i++)
 		channels[i] = conn.chantypes.contains(chan[0]) ? "#" + chan : chan;
 	while ((ln = conn.readln().trim())) {
@@ -714,6 +713,7 @@ Stream.prototype.nreply = function nreply(dest, nick) {
 		msg = nick + ": " + msg;
 	return this.writeln(encodeUTF8((this.chantypes.contains(dest[0]) ? "PRIVMSG " : "NOTICE ") + dest + " :" + msg));
 };
+Stream.prototype.chantypes = "#&+!";
 /**
  * Write text to the log file.
  *
