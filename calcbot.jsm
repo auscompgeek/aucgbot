@@ -7,7 +7,7 @@
 if (!run("calc.js"))
 	throw new Error("Could not load calc functions from calc.js");
 
-module.version = "2.8 (10 Sep 2013)";
+module.version = "2.9 (11 Sep 2013)";
 module.prefs = {
 	abuse: {
 		log: true, // when triggered with =
@@ -61,6 +61,14 @@ module.cmd_base = function cmd_base(dest, msg, nick, ident, host, conn, relay) {
 		conn.reply(dest, nick, parseInt(args[0], args[1]).toString(parseInt(args[2]) || 10));
 	return true;
 };
+module.cmd_base10 = function cmd_base10(dest, msg, nick, ident, host, conn, relay) {
+	var args = msg.split(" ");
+	if (args.length != 2)
+		conn.reply(dest, nick, "Invalid usage. Usage: base <num> <fromBase> [<toBase>]");
+	else
+		conn.reply(dest, nick, (+args[0]).toString(+args[1]));
+	return true;
+}
 module.cmd_qe = function cmd_quadraticEqn(dest, msg, nick, ident, host, conn, relay) {
 	var a, b, c, _2a, pron, resInSqrt, resSqrt, res = [];
 	if (!/^(?:([+\-]?\d*(?:\.\d*)?) ?\*? ?)?([A-Za-z]) ?(?:\*\*|\^) ?2 ?(?:([+\-] ?\d*(?:\.\d*)?) ?\*? ?\2)? ?([+\-] ?\d*(?:\.\d*)?)? ?= ?([+\-]?\d*(?:\.\d*)?)$/.test(msg)) {
