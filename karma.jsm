@@ -4,13 +4,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global Record: false, aucgbot: false, module: false, system: false */
 
-module.version = 0.2;
+module.version = 0.3;
 module.db = new Record();
 module.db.caseSensitive = false;
 module.db.TABLE_NAME = "Karma";
 module.db.load = function load() this.readINI(system.cwd + "/karma.ini", this.TABLE_NAME);
 module.db.save = function save() this.writeINI(system.cwd + "/karma.ini", this.TABLE_NAME);
-module.db.increment = function increment(x, y) this.set((this.get(x) || 0) + y);
+module.db.increment = function increment(x, y) this.set(x, (+this.get(x) || 0) + y);
 module.db.load();
 
 module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
