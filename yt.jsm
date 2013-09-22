@@ -5,7 +5,7 @@
 /*jshint es5: true, esnext: true, expr: true */
 /*global Stream: false, aucgbot: false, module: false, system: false */
 
-module.version = 2.0;
+module.version = 2.1;
 
 module.cmd_ytid =
 function cmd_ytid(dest, msg, nick, ident, host, conn, relay) {
@@ -16,7 +16,8 @@ function cmd_ytid(dest, msg, nick, ident, host, conn, relay) {
 	var id = RegExp.$1, data, stream = new Stream("http://gdata.youtube.com/feeds/api/videos/" + id + "?v=2&alt=jsonc", null,
 		{"User-Agent": aucgbot.useragent + " mod_yt/" + this.version});
 	try {
-		data = JSON.parse(decodeUTF8(stream.readFile())).data;
+		let s = decodeUTF8(stream.readFile());
+		data = JSON.parse(s).data;
 	} catch (ex) {}
 	stream.close();
 	if (!data) {
@@ -35,7 +36,8 @@ function cmd_yt(dest, msg, nick, ident, host, conn, relay) {
 	var data, stream = new Stream("http://gdata.youtube.com/feeds/api/videos?v=2&alt=jsonc&max-results=1&q=" + encodeURIComponent(msg), null,
 		{"User-Agent": aucgbot.useragent + " mod_yt/" + this.version});
 	try {
-		data = JSON.parse(decodeUTF8(stream.readFile())).data;
+		let s = decodeUTF8(stream.readFile());
+		data = JSON.parse(s).data;
 	} catch (ex) {}
 	stream.close();
 	if (!data) {
