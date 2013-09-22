@@ -4,11 +4,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global Stream: false, module: false */
 
-module.version = 0.8;
+module.version = 0.9;
 
 module.cmd_g = module.cmd_google =
 function cmd_google(dest, msg, nick, ident, host, conn, relay) {
-	var data, stream = new Stream("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q=" + encodeURIComponent(msg));
+	var data, stream = new Stream("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&rsz=1&q=" + encodeURIComponent(msg));
 	try {
 		data = JSON.parse(decodeUTF8(stream.readFile()));
 	} catch (ex) {}
