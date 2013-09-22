@@ -13,6 +13,7 @@ function cmd_ytid(dest, msg, nick, ident, host, conn, relay) {
 		conn.reply(dest, nick, "Get info about a YouTube video. Usage: yt <link|id>");
 		return true;
 	}
+
 	var id = RegExp.$1, data, stream = new Stream("http://gdata.youtube.com/feeds/api/videos/" + id + "?v=2&alt=jsonc", null,
 		{"User-Agent": aucgbot.useragent + " mod_yt/" + this.version});
 	try {
@@ -20,19 +21,27 @@ function cmd_ytid(dest, msg, nick, ident, host, conn, relay) {
 		data = JSON.parse(s).data;
 	} catch (ex) {}
 	stream.close();
+
 	if (!data) {
 		conn.reply(dest, nick, "YouTube returned no data.");
 		return true;
 	}
-	this.ytRes(data, dest, msg, nick, conn);
+
+	var res = this.ytRes(data);
+	if (id == msg)
+		res.push("https://youtu.be/" + id);
+
+	conn.reply(dest, nick, res.join(" - "));
 	return true;
 };
+
 module.cmd_yt = module.cmd_youtube =
 function cmd_yt(dest, msg, nick, ident, host, conn, relay) {
 	if (!msg) {
 		conn.reply(dest, nick, "Get the first result of a YouTube search.");
 		return true;
 	}
+
 	var data, stream = new Stream("http://gdata.youtube.com/feeds/api/videos?v=2&alt=jsonc&max-results=1&q=" + encodeURIComponent(msg), null,
 		{"User-Agent": aucgbot.useragent + " mod_yt/" + this.version});
 	try {
@@ -40,19 +49,25 @@ function cmd_yt(dest, msg, nick, ident, host, conn, relay) {
 		data = JSON.parse(s).data;
 	} catch (ex) {}
 	stream.close();
+
 	if (!data) {
 		conn.reply(dest, nick, "YouTube returned no data.");
 		return true;
 	}
+
 	if (!data.totalItems) {
 		conn.reply(dest, nick, "No results.");
 		return true;
 	}
-	this.ytRes(data.items[0], dest, msg, nick, conn);
+
+	var item = data.items[0], res = this.ytRes(item);
+	res.push("https://youtu.be/" + item.id);
+
+	conn.reply(dest, nick, res.join(" - "));
 	return true;
 };
 
-module.ytRes = function ytRes(data, dest, msg, nick, conn) {
+module.ytRes = function ytRes(data) {
 	var res = [data.title, data.uploader];
 
 	{
@@ -77,8 +92,5 @@ module.ytRes = function ytRes(data, dest, msg, nick, conn) {
 
 	res.push(data.category);
 
-	if (data.id == msg)
-		res.push("https://youtu.be/" + data.id);
-
-	conn.reply(dest, nick, res.join(" - "));
+	return res;
 };
