@@ -5,10 +5,10 @@
 /*jshint es5: true, esnext: true, expr: true */
 /*global Stream: false, aucgbot: false, module: false, system: false */
 
-module.version = 1.5;
+module.version = 2.0;
 
-module.cmd_yt = module.cmd_youtube =
-function cmd_yt(dest, msg, nick, ident, host, conn, relay) {
+module.cmd_ytid =
+function cmd_ytid(dest, msg, nick, ident, host, conn, relay) {
 	if (!/^(?:(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|(?:v|embed)\/)|youtu\.be\/))?([\w\-]+)(?:[?&#].*)?$/i.test(msg)) {
 		conn.reply(dest, nick, "Get info about a YouTube video. Usage: yt <link|id>");
 		return true;
@@ -23,6 +23,34 @@ function cmd_yt(dest, msg, nick, ident, host, conn, relay) {
 		conn.reply(dest, nick, "YouTube returned no data.");
 		return true;
 	}
+	this.ytRes(data, dest, msg, nick, conn);
+	return true;
+};
+module.cmd_yt = module.cmd_youtube =
+function cmd_yt(dest, msg, nick, ident, host, conn, relay) {
+	if (!msg) {
+		conn.reply(dest, nick, "Get the first result of a YouTube search.");
+		return true;
+	}
+	var data, stream = new Stream("http://gdata.youtube.com/feeds/api/videos?v=2&alt=jsonc&max-results=1&q=" + encodeURIComponent(msg), null,
+		{"User-Agent": aucgbot.useragent + " mod_yt/" + this.version});
+	try {
+		data = JSON.parse(decodeUTF8(stream.readFile())).data;
+	} catch (ex) {}
+	stream.close();
+	if (!data) {
+		conn.reply(dest, nick, "YouTube returned no data.");
+		return true;
+	}
+	if (!data.totalItems) {
+		conn.reply(dest, nick, "No results.");
+		return true;
+	}
+	this.ytRes(data.items[0], dest, msg, nick, conn);
+	return true;
+};
+
+module.ytRes = function ytRes(data, dest, msg, nick, conn) {
 	var res = [data.title, data.uploader];
 
 	{
@@ -34,6 +62,9 @@ function cmd_yt(dest, msg, nick, ident, host, conn, relay) {
 		res.push((h ? h + ":" : "") + m + ":" + s);
 	}
 
+	if (data.description)
+		res.push(data.description);
+
 	if (data.rating)
 		res.push(data.rating.toFixed(2) + "/5 (" + data.likeCount + "+ " + (data.ratingCount - data.likeCount) + "-)");
 
@@ -44,9 +75,8 @@ function cmd_yt(dest, msg, nick, ident, host, conn, relay) {
 
 	res.push(data.category);
 
-	if (id == msg)
-		res.push("https://youtu.be/" + id);
+	if (data.id == msg)
+		res.push("https://youtu.be/" + data.id);
 
 	conn.reply(dest, nick, res.join(" - "));
-	return true;
 };
