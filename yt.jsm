@@ -5,7 +5,7 @@
 /*jshint es5: true, esnext: true, expr: true */
 /*global Stream: false, aucgbot: false, module: false, system: false */
 
-module.version = 2.1;
+module.version = 2.2;
 
 module.cmd_ytid =
 function cmd_ytid(dest, msg, nick, ident, host, conn, relay) {
@@ -79,8 +79,12 @@ module.ytRes = function ytRes(data) {
 		res.push((h ? h + ":" : "") + m + ":" + s);
 	}
 
-	if (data.description)
-		res.push(data.description);
+	if (data.description) {
+		let desc = data.description;
+		if (desc.contains("\n"))
+			desc = desc.slice(0, desc.indexOf("\n"));
+		res.push(desc);
+	}
 
 	if (data.rating)
 		res.push(data.rating.toFixed(2) + "/5 (" + data.likeCount + "+ " + (data.ratingCount - data.likeCount) + "-)");
