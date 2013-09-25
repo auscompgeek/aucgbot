@@ -6,7 +6,7 @@
 /*jshint es5: true, esnext: true, nonstandard: true */
 /*global decodeB64: false, decodeHTML: false, decodeURL: false, encodeB64: false, encodeHTML: false, encodeURL: false, module: false */
 
-module.version = 2.4;
+module.version = 2.5;
 module.UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 module.LOWER = "abcdefghijklmnopqrstuvwxyz";
 module.ALPHABET = module.UPPER + module.LOWER;
@@ -15,8 +15,7 @@ module.GOOGLERESE = "ynficwlbkuomxsevzpdrjgthaq";
 
 module.cmd_tr = function cmd_tr(dest, msg, nick, ident, host, conn, relay) {
 	var args = /^"((?:\\")*[^"]+(?:\\"[^"]*)*)" "((?:\\")*[^"]+(?:\\"[^"]*)*)" "((?:\\")*[^"]+(?:\\"[^"]*)*)"$/.exec(msg);
-	args.shift();
-	conn.reply(dest, nick, args ? tr.apply(null, args) : 'Usage: tr "<text>" "<trFromTable>" "<trToTable>"');
+	conn.reply(dest, nick, args ? (args.shift(), tr.apply(null, args)) : 'Usage: tr "<text>" "<trFromTable>" "<trToTable>"');
 	return true;
 };
 module.cmd_rot13 = function cmd_rot13(dest, msg, nick, ident, host, conn, relay) {
@@ -108,7 +107,7 @@ module.cmd_decode = function cmd_decode(dest, msg, nick, ident, host, conn, rela
 		conn.reply(dest, nick, String.fromCodePoint.apply(null, args));
 		return true;
 	case "hex": case "bin":
-		conn.reply(dest, nick, String.fromCodePoint.apply(null, args.map(function (x) parseInt(x, type == "hex" ? 16 : 2))));
+		conn.reply(dest, nick, String.fromCodePoint.apply(null, args.map(function(x) parseInt(x, type == "hex" ? 16 : 2))));
 		return true;
 	case "albhed":
 		conn.reply(dest, nick, tr(msg, this.AL_BHED, this.ALPHABET));
