@@ -4,44 +4,62 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global Stream: false, aucgbot: false, module: false, println: false, randint: false */
 
-module.version = "1.3.2 (21 Jan 2012)";
+module.version = "2.0 (3 Oct 2013)";
 module.prefix = "$";
 module.chan = "##elf";
+module.DB_FILENAME = "elf.csv";
 
-module.initScores = function initScores() {
-	this.scores = { score: {}, coins: {}, materials: {}, reputation: {}, total: {} };
+module.initDB = function initDB() {
+	this.db = new Table();
+	this.db.setTitle(1, "nick");
+	this.db.setTitle(2, "score");
+	this.db.setTitle(3, "coins");
+	this.db.setTitle(4, "materials");
+	this.db.setTitle(5, "reputation");
+	this.db.setTitle(6, "total");
+	this.index = this.db.index("nick");
 	println("[ELF] Initialised scores database.");
 };
-module.initScores();
+module.initDB();
 
-module.loadScores = function loadScores() {
+module.loadDB = function loadDB() {
 	try {
-		var file = new Stream("elfscores.json");
-		this.scores = JSON.parse(file.readFile());
-		file.close();
+		this.db = new Table(this.DB_FILENAME);
+		this.index = this.db.index("nick");
 	} catch (ex) {}
 };
-module.loadScores();
+module.loadDB();
 
-module.saveScores = function saveScores() {
-	var file = new Stream("elfscores.json", "w");
-	file.write(JSON.stringify(this.scores));
-	file.close();
+module.saveDB = function saveDB() {
+	this.db.save(this.DB_FILENAME, ",");
+};
+
+module.getUser = function getUser(nick) {
+	var rowNo = this.index.find(nick);
+	if (rowNo != -1)
+		return this.db.getRow(rowNo);
+};
+
+module.updateUser = function updateUser(nick, data) {
+	var rowNo = this.index.find(nick);
+	if (rowNo == -1) {
+		this.db.add(data);
+		this.index.add(nick);
+	} else
+		this.db.setRow(rowNo, data);
 };
 
 module.parseln = function parseln(ln, conn) {
 	if (!/^:([^\s!@]+)![^\s!@]+@[^\s!@]+ JOIN :?(\S+)\r/.test(ln) || RegExp.$2 != this.chan || RegExp.$1 == conn.nick)
 		return false;
-	var nick = RegExp.$1;
-	if (this.scores.score[nick]) {
+	var nick = RegExp.$1, data = this.getUser(nick);
+	if (data) {
+		data = data.toObject();
 		conn.send("NOTICE", nick, ":[" + this.chan + "] Welcome back", nick + ". You have",
-			this.scores.score[nick], "points,", this.scores.coins[nick], "coins and",
-			this.scores.materials[nick], "materials.");
+			data.score, "points,", data.coins, "coins and", data.materials, "materials.");
 	} else {
-		this.scores.coins[nick] = this.scores.reputation[nick] = this.scores.total[nick] = 0;
-		this.scores.score[nick] = 1;
-		this.scores.materials[nick] = 5;
-		conn.send("NOTICE", nick, ":[" + this.chan + "] Hey! It looks like you are new!",
+		this.updateUser(nick, {coins: 0, reputation: 0, total: 0, score: 1, materials: 5});
+		conn.notice(nick, "[" + this.chan + "] Hey! It looks like you're new!",
 			"You have been given 5 free materials to get you started.",
 			"Type", this.prefix + "rules for more info on the game.",
 			"Start by making some toys with", this.prefix + "make.");
@@ -55,27 +73,33 @@ module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
 	switch (msg[0]) {
 	case "info":
 		nick = msg[1] || nick;
-		if (this.scores.score[nick])
-			conn.reply(dest, nick,
-				this.scores.score[nick], "points,", this.scores.materials[nick], "materials,",
-				this.scores.coins[nick], "coins,", this.scores.reputation[nick], "reputation, made",
-				this.scores.total[nick], "toys.");
-		else
+		var data = this.getUser(nick);
+		if (data) {
+			data = data.toObject();
+			conn.reply(dest, nick, data.score, "points,", data.materials, "materials,",
+				data.coins, "coins,", data.reputation, "reputation, made", data.total, "toys.");
+		} else
 			conn.msg(dest, nick, "has not joined the elf game yet. Try inviting him/her perhaps.");
 		return true;
 	case "buy":
+		var data = this.getUser(nick);
+		if (!data) {
+			conn.notice(nick, "You haven't joined the elf game yet. Join", this.chan, "to get started.");
+			return true;
+		}
+		data = user.toObject();
 		switch (msg[1]) {
 		case "material":
 			var n = parseInt(msg[2]) || 1, cost = n * 2;
-			if (this.scores.coins[nick] >= cost) {
-				this.scores.coins[nick] -= cost;
-				this.scores.materials[nick] += n;
+			if (data.coins >= cost) {
+				user.coins -= cost;
+				data.materials += n;
 				conn.msg(this.chan, nick, "has bought", n, "materials. This has cost", cost, "in total.");
 			}
 			break;
 		case "voice":
-			if (this.scores.coins[nick] >= 800) {
-				this.scores.coins[nick] -= 800;
+			if (data.coins >= 800) {
+				data.coins -= 800;
 				aucgbot.log(conn, "ELF VOICE", nick);
 				//conn.send("CS VOP", this.chan, "ADD", nick);
 				conn.send("CS ACCESS", this.chan, "ADD", nick, "VOP");
@@ -83,8 +107,8 @@ module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
 			}
 			break;
 		case "hop": case "halfop":
-			if (this.scores.coins[nick] >= 7500) {
-				this.scores.coins[nick] -= 7500;
+			if (data.coins >= 7500) {
+				data.coins -= 7500;
 				aucgbot.log(conn, "ELF HOP", nick);
 				//conn.send("CS HOP", this.chan, "ADD", nick);
 				conn.send("CS ACCESS", this.chan, "ADD", nick, "HOP");
@@ -92,8 +116,8 @@ module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
 			}
 			break;
 		case "op":
-			if (this.scores.coins[nick] >= 20000) {
-				this.scores.coins[nick] -= 20000;
+			if (data.coins >= 20000) {
+				data.coins -= 20000;
 				aucgbot.log(conn, "ELF OP", nick);
 				//conn.send("CS AOP", this.chan, "#elf ADD", nick);
 				conn.send("CS", this.chan, "#elf ADD", nick, "AOP");
@@ -103,69 +127,74 @@ module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
 		default:
 			conn.msg(dest, "material [amount]: costs twice the amount, so if you bought 4, you would pay 8 coins.");
 			conn.msg(dest, "voice: costs 800 coins. - hop: costs 7500 coins. - op: costs 20000 coins.");
-			conn.msg(dest, nick, "currently has", this.scores.coins[nick], "coins.");
+			conn.msg(dest, nick, "currently has", data.coins, "coins.");
 		}
-		this.saveScores();
+		this.updateUser(nick, data);
+		this.saveDB();
 		return true;
 	case "make":
-		if (!this.scores.materials[nick])
-			conn.send("NOTICE", nick, ":You don't have enough materials to make a toy.");
+		var data = this.getUser(nick);
+		if (!data) {
+			conn.notice(nick, "You haven't joined the elf game yet. Join", this.chan, "to get started.");
+			return true;
+		}
+		data = data.toObject();
+		if (!data.materials)
+			conn.notice(nick, "You don't have enough materials to make a toy.");
 		else {
-			this.scores.materials[nick]--;
-			this.scores.total[nick]++;
+			data.materials--;
+			data.total++;
 			switch (randint(1, 4)) {
 			case 1:
-				this.scores.score[nick] += 100;
-				this.scores.coins[nick] += 150;
-				this.scores.reputation[nick] += 250;
-				conn.msg(this.chan, nick, "makes a toy car.",
-					"The toy car is fine but is a little scratched.",
-					nick, "gets 100 points and 150 coins.");
+				data.score += 100;
+				data.coins += 150;
+				data.reputation += 250;
+				conn.msg(this.chan, nick, "makes a toy car. The toy car is fine but is a little scratched.",
+						nick, "gets 100 points and 150 coins.");
 				break;
 			case 2:
-				this.scores.score[nick] += 500;
-				this.scores.coins[nick] += 300;
-				this.scores.reputation[nick] += 750;
-				conn.msg(this.chan, nick, "makes a toy car.",
-					"The toy car is perfectly made and Santa is very happy.",
-					nick, "gets 500 points and 300 coins.");
+				data.score += 500;
+				data.coins += 300;
+				data.reputation += 750;
+				conn.msg(this.chan, nick, "makes a toy car. The toy car is perfectly made and Santa is very happy.",
+						nick, "gets 500 points and 300 coins.");
 				break;
 			case 3:
-				this.scores.score[nick] += 50;
-				this.scores.coins[nick] += 50;
-				this.scores.reputation[nick] += 150;
+				data.score += 50;
+				data.coins += 50;
+				data.reputation += 150;
 				conn.msg(this.chan, nick, "makes a teddy bear.",
 					"The teddy bear is poorly made and is nearly falling apart. Santa is not happy.",
 					nick, "gets 50 points and 50 coins.");
 				break;
 			case 4:
-				this.scores.score[nick] += 250;
-				this.scores.coins[nick] += 150;
-				this.scores.reputation[nick] += 500;
-				conn.msg(this.chan, nick, "makes a teddy bear.",
-					"The teddy bear is in good condition and is ready to sell.",
-					nick, "gets 250 points and 150 coins.");
+				data.score += 250;
+				data.coins += 150;
+				data.reputation += 500;
+				conn.msg(this.chan, nick, "makes a teddy bear. The teddy bear is in good condition and is ready to sell.",
+						nick, "gets 250 points and 150 coins.");
 				break;
 			}
 		}
-		this.saveScores();
+		this.updateUser(nick, data);
+		this.saveDB();
 		return true;
 	case "rules":
 		conn.msg(dest, "buy: Buy items to use in the game. - make: Make a toy. - info: Show your current scores.");
 		return true;
 	case "elfreset":
 		if (aucgbot.isSU(nick, ident, host, dest, relay)) {
-			this.initScores();
+			this.initDB();
 			aucgbot.log(conn, "ELF RESET", nick + (dest != nick ? " in " + dest : ""));
-			conn.msg(this.chan, "Variables reset!!!");
+			conn.msg(this.chan, "Database reset!!!");
 		}
 		return true;
 	case "reloadscores":
-		this.loadScores();
+		this.loadDB();
 		conn.msg(this.chan, "Scores reloaded.");
 		return true;
 	case "writescores":
-		this.saveScores();
+		this.saveDB();
 		return true;
 	}
 };
