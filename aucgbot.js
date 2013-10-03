@@ -28,7 +28,7 @@ var aucgbot = aucgbot || {
 	ERR_MSG_SELF: "Get me to talk to myself, yeah, great idea...",
 	prefs: {
 		flood: {
-			lines: 6,
+			lines: 7,
 			secs: 3,
 			check: true,
 			log: true,
@@ -37,7 +37,7 @@ var aucgbot = aucgbot || {
 			warn: false // warn user sending message in PM when flood starts
 		},
 		log: true, // toggle all logging
-		prefix: "\\\\", // command prefix
+		prefix: "]", // command prefix
 		zncBufferHacks: false, // use ZNC buffer timestamps hack
 		autoAcceptInvite: true, // automatically join on invite
 		"relay.check": true, // toggle relay bot checking
@@ -49,6 +49,7 @@ var aucgbot = aucgbot || {
 		// RegExps to not ban/kick nicks/hosts
 		"nokick.nicks": /Tanner|Mardeg|aj00200|ChrisMorgan|JohnTHaller|Bensawsome|juju|Shadow|TMZ|aus?c(ompgeek|g|ow)|Jan|Peng|TFEF|Nightmare/,
 		"nokick.hosts": /bot|spam|staff|dev|math|js|[Jj]ava[Ss]cript/,
+		bots: ["PaperBag"], // bot nicks that don't match the bot regex
 		suDests: [],
 		// regex for allowed hosts to use rc command
 		suHosts: /aucg|auscompgeek|^(?:freenode\/|)(?:staff|dev)|botters|^(?:127\.\d+\.\d+\.\d+|localhost(?:\.localdomain)?)$/
@@ -57,8 +58,9 @@ var aucgbot = aucgbot || {
 	modules: {},
 	conns: []
 };
-aucgbot.version = "4.7.1 (12 Sep 2013)";
-aucgbot.useragent = "aucgbot/" + aucgbot.version + " (+https://github.com/auscompgeek/aucgbot; " + system.platform + "; JSDB " + system.release + ")";
+aucgbot.version = "4.8 (3 Oct 2013)";
+aucgbot.source = "https://github.com/auscompgeek/aucgbot";
+aucgbot.useragent = "aucgbot/" + aucgbot.version + " (+" + aucgbot.source + "; " + system.platform + "; JSDB " + system.release + ")";
 global = this;
 
 /**
@@ -258,7 +260,7 @@ aucgbot.onMsg = function onMsg(dest, msg, nick, ident, host, conn) {
 	}
 
 	// don't listen to bots
-	if ((/bot[\d_|]*$|Serv|^bot|Op$/i.test(nick) && nick != conn.nick) || (host.contains("/bot/") && !(nick == conn.nick || relay)))
+	if (((/bot[\d_|]*$|Serv|^bot|Op$/i.test(nick) || this.prefs.bots.contains(nick)) && nick != conn.nick) || (host.contains("/bot/") && !relay))
 		return;
 
 	// flood protection
@@ -273,7 +275,10 @@ aucgbot.onMsg = function onMsg(dest, msg, nick, ident, host, conn) {
 	if (!relay && msg[0] == "\x01") { // Possible CTCP.
 		if (/^\x01([^\1 ]+)(?: ([^\1]*)|)\x01$/.test(msg)) // TODO parse CTCP \x01 quoting
 			this.onCTCP(RegExp.$1, RegExp.$2, nick, dest, conn);
-	} else if (this.prefs.prefix && msg.slice(0, this.prefs.prefix.length) == this.prefs.prefix) {
+		return;
+	}
+
+	if (this.prefs.prefix && msg.slice(0, this.prefs.prefix.length) == this.prefs.prefix) {
 		msg = msg.slice(this.prefs.prefix.length).replace(/^(\S+) ?/, "");
 		this.parseCmd(dest, RegExp.$1.toLowerCase(), msg, nick, ident, host, conn, relay);
 	} else if (meping.test(msg) || dest == nick) {
@@ -324,7 +329,7 @@ aucgbot.checkFlood = function checkFlood(dest, msg, nick, ident, host, conn, rel
 			if (kb && this.prefs.flood.kick)
 				conn.send("KICK", dest, nick, ":No flooding!");
 			else if (this.prefs.flood.warn && !relay)
-				conn.send("NOTICE", nick, ":Please don't flood.");
+				conn.notice(nick, "Please don't flood.");
 		}
 		if (this.prefs.flood.log)
 			this.log(conn, "Flood", nick + (dest == nick ? "" : " in " + dest), msg);
@@ -355,7 +360,7 @@ aucgbot.parseCmd = function parseCmd(dest, cmd, args, nick, ident, host, conn, r
 		break;
 	case "rc":
 		args = args.split(" ");
-		if (this.isSU(nick, ident, host))
+		if (this.isSU(nick, ident, host, dest, relay))
 			this.remoteControl(args.shift(), args, dest, nick, conn);
 		else
 			this.log(conn, "RC ATTEMPT", nick + (relay && ":" + relay) + "!" + ident + "@" + host + (dest == nick ? "" : " in " + dest), args.join(" "));
@@ -370,26 +375,26 @@ aucgbot.parseCmd = function parseCmd(dest, cmd, args, nick, ident, host, conn, r
 				mods.push(i + " " + this.modules[i].version);
 		}
 		if (mods.length)
-			conn.send("NOTICE", nick, ":" + mods.join(", "));
+			conn.notice(nick, mods.join(", "));
 		break;
 	case "help":
 		if (args) {
-			conn.send("NOTICE", nick, ":Not implemented.");
+			conn.notice(nick, "Not implemented.");
 			break;
 		}
 		/* fallthrough */
 	case "listcmds": case "cmdlist":
-		var cmds = [];
+		var s = [nick];
 		for (var m in this.modules) {
 			if (this.modules.hasOwnProperty(m)) {
 				for (var p in this.modules[m]) {
 					if (this.modules[m].hasOwnProperty(p) && p.slice(0, 4) == "cmd_")
-						cmds.push(p.slice(4));
+						s.push(p.slice(4));
 				}
 			}
 		}
-		if (cmds.length)
-			conn.send("NOTICE", nick, ":" + cmds.join(" "));
+		if (s.length > 1)
+			conn.notice.apply(conn, s);
 		break;
 	default:
 		this.modMethod("parseCmd", arguments) || this.modMethod("cmd_" + cmd, [dest, args, nick, ident, host, conn, relay]);
@@ -422,7 +427,7 @@ aucgbot.onCTCP = function onCTCP(type, msg, nick, dest, conn) {
 	// onCTCP in modules is deprecated in favour of onAction and onUnknownCTCP
 	if (this.modMethod("onCTCP", arguments))
 		return;
-	function nctcp(res) conn.send("NOTICE", nick, ":\x01" + type, res + "\x01");
+	function nctcp(res) conn.notice(nick, "\x01" + type, res + "\x01");
 	switch (type.toUpperCase()) {
 	case "ACTION":
 		this.modMethod("onAction", [msg, nick, dest, conn]);
@@ -434,7 +439,7 @@ aucgbot.onCTCP = function onCTCP(type, msg, nick, dest, conn) {
 		nctcp(Date()); // little known fact: Date returns a string when not called as a constructor
 		break;
 	case "SOURCE": case "URL":
-		nctcp("https://github.com/auscompgeek/aucgbot");
+		nctcp(this.source);
 		break;
 	case "PING":
 		nctcp(msg);
@@ -549,21 +554,21 @@ aucgbot.remoteControl = function rcBot(cmd, args, dest, nick, conn) {
 		// could cause a crash if unhandled
 		if (/(stringify|uneval).+global/i.test(args)) {
 			writeln("[WARNING] Possible abuse! ^^^^^");
-			conn.send("NOTICE", nick, ":Careful there! You don't want to crash me!");
+			conn.notice(nick, "Careful there! You don't want to crash me!");
 			break;
 		}
 		var res;
 		try { res = eval(args); } catch (ex) { res = "exception: " + ex; }
 		if (typeof res == "function")
 			res = "function " + res.name;
-		if (res)
+		if (res != null)
 			conn.reply(dest, nick, res);
 		break;
 	case "gc":
 		system.gc();
 		break;
 	case "pref":
-		this.send("NOTICE", nick, ":This command has not been implemented yet.");
+		this.notice(nick, "Not implemented.");
 		break;
 	case "log":
 		this.log(conn, "LOG", nick + (dest == nick ? "" : " in " + dest), args.join(" "));
@@ -584,7 +589,7 @@ aucgbot.remoteControl = function rcBot(cmd, args, dest, nick, conn) {
 		if (this.modMethod("remoteControl", arguments))
 			break;
 		writeln("[ERROR] Possible abuse attempt! ^^^^^");
-		conn.send("NOTICE", nick, ":Hmm? Didn't quite get that.");
+		conn.notice(nick, "Hmm? Didn't quite get that.");
 	}
 };
 /**
@@ -645,6 +650,21 @@ aucgbot.modMethod = function modMethod(id, args) {
 	return false;
 };
 
+aucgbot.getHTTP = function getHTTP(uri, modname, modver) {
+	var useragent = this.useragent;
+	if (modname) {
+		useragent += " mod_" + modname;
+		if (modver)
+			useragent += "/" + modver;
+	}
+	var stream = new Stream(uri, null, {"User-Agent": useragent}), content = stream.readFile();
+	try {
+		content = decodeUTF8(content);
+	} catch (ex) {}
+	return content;
+};
+aucgbot.getJSON = function getJSON() JSON.parse(this.getHTTP.apply(this, arguments));
+
 /**
  * Send data to an IRC server.
  *
@@ -680,9 +700,16 @@ Stream.prototype.msg = function msg() {
 Stream.prototype.nmsg = function msg() {
 	var s = Array.slice(arguments);
 	if (s.length < 2)
-		throw new TypeError("Stream.prototype.msg requires at least 2 arguments");
+		throw new TypeError("Stream.prototype.nmsg requires at least 2 arguments");
 	s[1] = ":" + s[1];
 	s.unshift(this.chantypes.contains(s[0][0]) ? "NOTICE" : "PRIVMSG");
+	return this.send.apply(this, s);
+};
+Stream.prototype.notice = function notice() {
+	var s = Array.slice(arguments);
+	if (s.length < 2)
+		throw new TypeError("Stream.prototype.notice requires at least 2 arguments");
+	s[1] = ":" + s[1], s.unshift("NOTICE");
 	return this.send.apply(this, s);
 };
 /**
@@ -708,7 +735,7 @@ Stream.prototype.reply = function reply(dest, nick) {
 Stream.prototype.nreply = function nreply(dest, nick) {
 	var msg = Array.slice(arguments, 2).join(" ").trim();
 	if (!msg)
-		throw new TypeError("Stream.prototype.reply requires at least 3 arguments");
+		throw new TypeError("Stream.prototype.nreply requires at least 3 arguments");
 	if (dest != nick)
 		msg = nick + ": " + msg;
 	return this.writeln(encodeUTF8((this.chantypes.contains(dest[0]) ? "PRIVMSG " : "NOTICE ") + dest + " :" + msg));
@@ -726,7 +753,7 @@ aucgbot.log = function _log(conn) {
 	if (arguments.length < 2)
 		throw new TypeError("aucgbot.log requires at least 2 arguments");
 	var file = new Stream("aucgbot.log", "a");
-	file.writeln(conn.hostName, ": ", Date.now(), ": ", Array.slice(arguments, 1).join(": ").trim());
+	file.writeln(conn.hostName, ": ", Date.now(), ": ", encodeUTF8(Array.slice(arguments, 1).join(": ").trim()));
 	file.close();
 };
 
