@@ -58,7 +58,7 @@ var aucgbot = aucgbot || {
 	modules: {},
 	conns: []
 };
-aucgbot.version = "4.8 (3 Oct 2013)";
+aucgbot.version = "4.9 (6 Oct 2013)";
 aucgbot.source = "https://github.com/auscompgeek/aucgbot";
 aucgbot.useragent = "aucgbot/" + aucgbot.version + " (+" + aucgbot.source + "; " + system.platform + "; JSDB " + system.release + ")";
 global = this;
@@ -690,27 +690,23 @@ Stream.prototype.send = function send(/* ...data */) {
  * @link Stream.prototype#reply
  * @return {number} Number of bytes sent.
  */
-Stream.prototype.msg = function msg() {
-	var s = Array.slice(arguments);
-	if (s.length < 2)
+Stream.prototype.msg = function msg(dest) {
+	if (arguments.length < 2)
 		throw new TypeError("Stream.prototype.msg requires at least 2 arguments");
-	s[1] = ":" + s[1], s.unshift("PRIVMSG");
-	return this.send.apply(this, s);
+	var msg = Array.slice(arguments, 1).join(" ").replace(/\s+/g, " ").trim();
+	return this.writeln("PRIVMSG ", encodeUTF8(dest + " :" + msg));
 };
-Stream.prototype.nmsg = function msg() {
-	var s = Array.slice(arguments);
-	if (s.length < 2)
+Stream.prototype.nmsg = function nmsg(dest) {
+	if (arguments.length < 2)
 		throw new TypeError("Stream.prototype.nmsg requires at least 2 arguments");
-	s[1] = ":" + s[1];
-	s.unshift(this.chantypes.contains(s[0][0]) ? "NOTICE" : "PRIVMSG");
-	return this.send.apply(this, s);
+	var msg = Array.slice(arguments, 1).join(" ").replace(/\s+/g, " ").trim();
+	return this.writeln(this.chantypes.contains(s[0][0]) ? "NOTICE " : "PRIVMSG ", encodeUTF8(dest + " :" + msg));
 };
-Stream.prototype.notice = function notice() {
-	var s = Array.slice(arguments);
-	if (s.length < 2)
+Stream.prototype.notice = function notice(dest) {
+	if (arguments.length < 2)
 		throw new TypeError("Stream.prototype.notice requires at least 2 arguments");
-	s[1] = ":" + s[1], s.unshift("NOTICE");
-	return this.send.apply(this, s);
+	var msg = Array.slice(arguments, 1).join(" ").replace(/\s+/g, " ").trim();
+	return this.writeln("NOTICE ", encodeUTF8(dest + " :" + msg));
 };
 /**
  * Reply to a user request.
@@ -725,20 +721,20 @@ Stream.prototype.notice = function notice() {
  * @return {number} Number of bytes sent.
  */
 Stream.prototype.reply = function reply(dest, nick) {
-	var msg = Array.slice(arguments, 2).join(" ").trim();
-	if (!msg)
+	if (arguments.length < 3)
 		throw new TypeError("Stream.prototype.reply requires at least 3 arguments");
+	var msg = Array.slice(arguments, 2).join(" ").replace(/\s+/g, " ").trim();
 	if (dest != nick)
 		msg = nick + ": " + msg;
-	return this.writeln(encodeUTF8("PRIVMSG " + dest + " :" + msg));
+	return this.writeln("PRIVMSG ", encodeUTF8(dest + " :" + msg));
 };
 Stream.prototype.nreply = function nreply(dest, nick) {
-	var msg = Array.slice(arguments, 2).join(" ").trim();
-	if (!msg)
+	if (arguments.length < 3)
 		throw new TypeError("Stream.prototype.nreply requires at least 3 arguments");
+	var msg = Array.slice(arguments, 2).join(" ").replace(/\s+/g, " ").trim();
 	if (dest != nick)
 		msg = nick + ": " + msg;
-	return this.writeln(encodeUTF8((this.chantypes.contains(dest[0]) ? "PRIVMSG " : "NOTICE ") + dest + " :" + msg));
+	return this.writeln(this.chantypes.contains(dest[0]) ? "PRIVMSG " : "NOTICE ", encodeUTF8(dest + " :" + msg));
 };
 Stream.prototype.chantypes = "#&+!";
 /**
@@ -773,6 +769,8 @@ randint = function randint(min, max) {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
+if (typeof Array.random != "function")
+Array.random = function random(a) a[Math.floor(Math.random() * a.length)];
 if (typeof Array.prototype.random != "function")
 /**
  * Get a random element of an array. http://svendtofte.com/code/usefull_prototypes
@@ -782,6 +780,8 @@ if (typeof Array.prototype.random != "function")
  */
 Array.prototype.random = function random() this[Math.floor(Math.random() * this.length)];
 
+if (typeof Array.contains != "function")
+Array.contains = function contains(a, e) a.indexOf(e) != -1;
 if (typeof Array.prototype.contains != "function")
 /**
  * ES6 shim: Check if an array contains an element.
@@ -792,6 +792,8 @@ if (typeof Array.prototype.contains != "function")
  */
 Array.prototype.contains = function contains(e) this.indexOf(e) != -1;
 
+if (typeof String.contains != "function")
+String.contains = function contains(t, s) r.indexOf(s) != -1;
 if (typeof String.prototype.contains != "function")
 /**
  * ES6 shim: Check if a string contains a substring.
@@ -802,4 +804,7 @@ if (typeof String.prototype.contains != "function")
  */
 String.prototype.contains = function contains(s) this.indexOf(s) != -1;
 
-writeln("aucgbot loaded.");
+// https://github.com/tracker1/core-js/blob/master/js-extensions/100-String.format.js
+load("String.format.js");
+
+writeln("aucgbot ", aucgbot.version, " loaded.");
