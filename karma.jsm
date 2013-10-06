@@ -4,12 +4,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global Record: false, aucgbot: false, module: false, system: false */
 
-module.version = 0.4;
+module.version = 0.6;
 module.db = new Record();
 module.db.caseSensitive = false;
+module.db.FILENAME = "karma.ini";
 module.db.TABLE_NAME = "Karma";
-module.db.load = function load() this.readINI(system.cwd + "/karma.ini", this.TABLE_NAME);
-module.db.save = function save() this.writeINI(system.cwd + "/karma.ini", this.TABLE_NAME);
+module.db.load = function load() this.readINI(system.cwd + "/" + this.FILENAME, this.TABLE_NAME);
+module.db.save = function save() this.writeINI(system.cwd + "/" + this.FILENAME, this.TABLE_NAME);
 module.db.increment = function increment(x, y) this.set(x, (+this.get(x) || 0) + y);
 module.db.load();
 
@@ -24,6 +25,7 @@ module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
 };
 
 module.cmd_karma = function cmd_karma(dest, args, nick, ident, host, conn, relay) {
+	args = args || nick;
 	conn.reply(dest, nick, args, "has", this.db.get(args) || "no", "karma.");
 	return true;
 };
