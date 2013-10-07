@@ -58,7 +58,7 @@ var aucgbot = aucgbot || {
 	modules: {},
 	conns: []
 };
-aucgbot.version = "4.9 (6 Oct 2013)";
+aucgbot.version = "4.10 (7 Oct 2013)";
 aucgbot.source = "https://github.com/auscompgeek/aucgbot";
 aucgbot.useragent = "aucgbot/" + aucgbot.version + " (+" + aucgbot.source + "; " + system.platform + "; JSDB " + system.release + ")";
 global = this;
@@ -650,14 +650,16 @@ aucgbot.modMethod = function modMethod(id, args) {
 	return false;
 };
 
-aucgbot.getHTTP = function getHTTP(uri, modname, modver) {
+aucgbot.getHTTP = function getHTTP(uri, modname, modver, headers) {
 	var useragent = this.useragent;
 	if (modname) {
 		useragent += " mod_" + modname;
 		if (modver)
 			useragent += "/" + modver;
 	}
-	var stream = new Stream(uri, null, {"User-Agent": useragent}), content = stream.readFile();
+	headers = headers || {};
+	headers["User-Agent"] = useragent;
+	var stream = new Stream(uri, null, headers), content = stream.readFile();
 	try {
 		content = decodeUTF8(content);
 	} catch (ex) {}
@@ -700,7 +702,7 @@ Stream.prototype.nmsg = function nmsg(dest) {
 	if (arguments.length < 2)
 		throw new TypeError("Stream.prototype.nmsg requires at least 2 arguments");
 	var msg = Array.slice(arguments, 1).join(" ").replace(/\s+/g, " ").trim();
-	return this.writeln(this.chantypes.contains(s[0][0]) ? "NOTICE " : "PRIVMSG ", encodeUTF8(dest + " :" + msg));
+	return this.writeln(this.chantypes.contains(dest[0]) ? "NOTICE " : "PRIVMSG ", encodeUTF8(dest + " :" + msg));
 };
 Stream.prototype.notice = function notice(dest) {
 	if (arguments.length < 2)
