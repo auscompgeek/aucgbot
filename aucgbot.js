@@ -702,7 +702,7 @@ Stream.prototype.nmsg = function nmsg(dest) {
 	if (arguments.length < 2)
 		throw new TypeError("Stream.prototype.nmsg requires at least 2 arguments");
 	var msg = Array.slice(arguments, 1).join(" ").replace(/\s+/g, " ").trim();
-	return this.writeln(this.chantypes.contains(dest[0]) ? "NOTICE " : "PRIVMSG ", encodeUTF8(dest + " :" + msg));
+	return this.writeln(this.chantypes.contains(dest[0]) ? "PRIVMSG " : "NOTICE ", encodeUTF8(dest + " :" + msg));
 };
 Stream.prototype.notice = function notice(dest) {
 	if (arguments.length < 2)
