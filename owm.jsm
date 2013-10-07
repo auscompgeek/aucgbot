@@ -6,13 +6,13 @@
 // Please don't use the included APPID in other applications.
 // The default APPID is for personal/non-commercial use only.
 
-module.version = 0.2;
+module.version = 0.4;
 module.APPID = "5d5102ff6928ac6e647092a502a2370d";
 module.BASE_URL = "http://api.openweathermap.org/data/2.5/";
-module.WEATHER_BASE_URL = module.BASE_URL + "weather?APPID=" + module.APPID + "&units=metric&q=";
-module.FORECAST_BASE_URL = module.BASE_URL + "forecast?APPID=" + module.APPID + "&units=metric&q=";
+module.WEATHER_BASE_URL = module.BASE_URL + "weather?units=metric&q=";
+module.FORECAST_BASE_URL = module.BASE_URL + "forecast?units=metric&q=";
 
-module.cmd_weather = function cmd_weather(dest, args, nick, ident, host, conn, relay) {
+module.cmd_weather = module.cmd_owm = function cmd_owm(dest, args, nick, ident, host, conn, relay) {
 	if (!args) {
 		conn.reply(dest, nick, "Get current weather by city from OpenWeatherMap.");
 		return true;
@@ -20,7 +20,7 @@ module.cmd_weather = function cmd_weather(dest, args, nick, ident, host, conn, r
 
 	var data;
 	try {
-		data = aucgbot.getJSON(this.WEATHER_BASE_URL + encodeURIComponent(args), "weather", this.version);
+		data = aucgbot.getJSON(this.WEATHER_BASE_URL + encodeURIComponent(args), "owm", this.version, {"X-API-Key": module.APPID});
 	} catch (ex) {}
 
 	if (!data) {
@@ -33,7 +33,7 @@ module.cmd_weather = function cmd_weather(dest, args, nick, ident, host, conn, r
 		return true;
 	}
 
-	conn.nmsg(dest, "Current weather in", data.name, "at", new Date(data.dt * 1000), "(from OpenWeatherMap):");
+	conn.nreply(dest, nick, "Current weather for", data.name, "as of", new Date(data.dt * 1000), "(from OpenWeatherMap):");
 
 	var main = data.main, res = [];
 
@@ -44,9 +44,9 @@ module.cmd_weather = function cmd_weather(dest, args, nick, ident, host, conn, r
 			res.push(weather.main);
 	}
 
-	var temp = "Temp: {0} C".format(main.temp);
+	var temp = "Temp: {0}\xB0C".format(main.temp);
 	if (main.temp_min && main.temp_max)
-		temp += " (min: {0} C, max: {1} C)".format(main.temp_min, main.temp_max);
+		temp += " (min: {0}\xB0C, max: {1}\xB0C)".format(main.temp_min, main.temp_max);
 	res.push(temp);
 
 	res.push("Humidity: {0}%".format(main.humidity));
