@@ -4,12 +4,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global Record: false, aucgbot: false, module: false, system: false */
 
-module.version = 1.2;
+module.version = 1.4;
 module.db = new Record();
 module.db.caseSensitive = false;
+module.db.FILENAME = "infobot.ini";
 module.db.TABLE_NAME = "Factoids";
-module.db.load = function load() this.readINI(system.cwd + "/infobot.ini", this.TABLE_NAME);
-module.db.save = function save() this.writeINI(system.cwd + "/infobot.ini", this.TABLE_NAME);
+module.db.load = function load() this.readINI(system.cwd + "/" + this.FILENAME, this.TABLE_NAME);
+module.db.save = function save() this.writeINI(system.cwd + "/" + this.FILENAME, this.TABLE_NAME);
 module.db.load();
 
 module.cmd_def = function cmd_def(dest, args, nick, ident, host, conn, relay) {
@@ -54,10 +55,14 @@ module.cmd_who = module.cmd_what = function cmd_what(dest, args, nick, ident, ho
 	}
 };
 module.cmd_tell = function cmd_tell(dest, args, nick, ident, host, conn, relay) {
+	if (!args) {
+		conn.reply(dest, nick, this.cmd_tell.help);
+		return true;
+	}
 	args = args.split(" ");
 	var to = args.shift();
 	if (!args.length)
-		conn.reply(dest, nick, "Usage: tell <nick> <term>");
+		conn.reply(dest, nick, this.cmd_tell.help);
 	else if (to == conn.nick)
 		conn.reply(dest, nick, aucgbot.ERR_MSG_SELF);
 	else {
@@ -69,11 +74,16 @@ module.cmd_tell = function cmd_tell(dest, args, nick, ident, host, conn, relay) 
 	}
 	return true;
 };
+module.cmd_tell.help = "Send a factoid to a user in PM. Usage: tell <nick> <term>";
 module.cmd_show = function cmd_show(dest, args, nick, ident, host, conn, relay) {
+	if (!args) {
+		conn.reply(dest, nick, this.cmd_show.help);
+		return true;
+	}
 	args = args.split(" ");
 	var to = args.shift();
 	if (!args.length)
-		conn.reply(dest, nick, "Usage: show <nick> <term>");
+		conn.reply(dest, nick, this.cmd_show.help);
 	else if (to == conn.nick)
 		conn.reply(dest, nick, aucgbot.ERR_MSG_SELF);
 	else {
@@ -83,3 +93,4 @@ module.cmd_show = function cmd_show(dest, args, nick, ident, host, conn, relay) 
 	}
 	return true;
 };
+module.cmd_show.help = "Show another user in channel a factoid. Usage: show <nick> <term>";
