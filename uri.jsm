@@ -34,7 +34,6 @@ module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
 	}
 	var match = msg.match(/(\w+?):\/\/((\w+?)\b)?/);
 	if (match) {
-		// :crying_cat_face:
 		var scheme = match[1];
 		var targ = "";
 		if (match.length > 2 && match[2] != undefined && match[2] != null) {
