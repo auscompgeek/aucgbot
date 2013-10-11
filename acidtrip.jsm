@@ -6,38 +6,33 @@
 
 module.version = "0.1 (10 Oct 2013)";
 module.cmd_acidtrip = function cmd_acidtrip(dest, msg, nick, ident, host, conn, relay) {
-	var i,s=''
-	var maxi=Math.ceil(msg.length/60);
-	var last=msg.length%60;
-	var lastIndex=0;
-	println(maxi);
-	for (j=0;j<maxi;j++) {
+	var s = '',
+		maxi = Math.ceil(msg.length/60),
+		last = msg.length % 60,
+		lastIndex = 0;
+	for (var j = 0; j < maxi; j++) {
 		mlen=60;
-		if (j+1==maxi) {
-			mlen=last;
+		if (j + 1 == maxi) {
+			mlen = last;
 		}
-		println(lastIndex);
-		println(mlen);
-		for(i=lastIndex;i<(lastIndex+mlen);i++ ) {
-			print(i + " => " + msg.charAt(i) + ", ");
-			fg=randint(0,15);
-			bg=randint(0,15);
+		for (var i = lastIndex; i < (lastIndex+mlen); i++) {
+			fg =randint(0,15);
+			bg =randint(0,15);
 			if (fg == bg) {
 				fg++;
 				fg %= 15;
 			}
-			if ((""+fg).length == 1) {
+			if (fg < 10) {
 				fg = "0" + fg;
 			}
-			if ((""+bg).length == 1) {
+			if (bg < 10) {
 				bg = "0" + bg;
 			}
-			s +='\003'+fg+','+bg+msg.charAt(i);
+			s += '\003' + fg + ',' + bg + msg[i];
 		}
-		println()
 		conn.msg(dest, s);
-		lastIndex+=mlen;
-		s=''
+		lastIndex += mlen;
+		s = '';
 	}
 	return true; // Say that we've reached a valid command and stop processing the message.
 };
