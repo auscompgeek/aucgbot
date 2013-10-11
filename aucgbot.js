@@ -24,6 +24,10 @@
 /*global Stream: false, decodeUTF8: false, encodeB64: false, readln: false, run: false, sleep: false, system: false, writeln: false,
 	aucgbot: true, global: true, module: true, randint: true */
 
+// https://github.com/tracker1/core-js/blob/master/js-extensions/100-String.format.js
+// loading this here so we can use it to format the useragent
+load("String.format.js");
+
 var aucgbot = aucgbot || {
 	ERR_MSG_SELF: "Get me to talk to myself, yeah, great idea...",
 	prefs: {
@@ -58,9 +62,9 @@ var aucgbot = aucgbot || {
 	modules: {},
 	conns: []
 };
-aucgbot.version = "4.10 (7 Oct 2013)";
+aucgbot.version = "4.11 (11 Oct 2013)";
 aucgbot.source = "https://github.com/auscompgeek/aucgbot";
-aucgbot.useragent = "aucgbot/" + aucgbot.version + " (+" + aucgbot.source + "; " + system.platform + "; JSDB " + system.release + ")";
+aucgbot.useragent = "aucgbot/{0} (+{1}; {2}; JSDB {3})".format(aucgbot.version, aucgbot.source, system.platform, system.release);
 global = this;
 
 /**
@@ -249,7 +253,7 @@ aucgbot.onMsg = function onMsg(dest, msg, nick, ident, host, conn) {
 		}
 	}
 
-	var meping = RegExp("^@?" + conn.nick.replace(/\W/g, "\\$&") + "([:,!.] ?| |$)", "i"), relay = "";
+	var meping = RegExp("^@?" + conn.nick.replace(/\W/g, "\\$&") + "[:,] ?", "i"), relay = "";
 
 	// fix for message relay bots
 	if (this.prefs["relay.check"] && this.prefs["relay.bots"].contains(nick)) {
@@ -269,8 +273,12 @@ aucgbot.onMsg = function onMsg(dest, msg, nick, ident, host, conn) {
 
 	msg = msg.replace(/\s+/g, " ");
 
-	if (this.modMethod("onMsg", [dest, msg, nick, ident, host, conn, relay]))
-		return;
+	try {
+		if (this.modMethod("onMsg", [dest, msg, nick, ident, host, conn, relay]))
+			return;
+	} catch (ex) {
+		aucgbot.log(conn, "MSG ERROR", nick + (dest == nick ? "" : " in " + dest), msg, ex);
+	}
 
 	if (!relay && msg[0] == "\x01") { // Possible CTCP.
 		if (/^\x01([^\1 ]+)(?: ([^\1]*)|)\x01$/.test(msg)) // TODO parse CTCP \x01 quoting
@@ -284,6 +292,12 @@ aucgbot.onMsg = function onMsg(dest, msg, nick, ident, host, conn) {
 	} else if (meping.test(msg) || dest == nick) {
 		msg = msg.replace(meping, "").replace(/^(\S+) ?/, "");
 		this.parseCmd(dest, RegExp.$1.toLowerCase(), msg, nick, ident, host, conn, relay);
+	} else {
+		try {
+			this.modMethod("onUnknownMsg", [dest, msg, nick, ident, host, conn, relay]);
+		} catch (ex) {
+			aucgbot.log(conn, "UNKNOWN MSG ERROR", nick + (dest == nick ? "" : " in " + dest), msg, ex);
+		}
 	}
 };
 /**
@@ -397,7 +411,12 @@ aucgbot.parseCmd = function parseCmd(dest, cmd, args, nick, ident, host, conn, r
 			conn.notice.apply(conn, s);
 		break;
 	default:
-		this.modMethod("parseCmd", arguments) || this.modMethod("cmd_" + cmd, [dest, args, nick, ident, host, conn, relay]);
+		try {
+			this.modMethod("parseCmd", arguments) || this.modMethod("cmd_" + cmd, [dest, args, nick, ident, host, conn, relay]);
+		} catch (ex) {
+			conn.notice(nick, "Oops, I encountered an error.", ex);
+			aucgbot.log(conn, "CMD ERROR", nick + (dest == nick ? "" : " in " + dest), cmd, args, ex);
+		}
 	}
 };
 /**
@@ -425,15 +444,23 @@ aucgbot.up = function uptime() {
  */
 aucgbot.onCTCP = function onCTCP(type, msg, nick, dest, conn) {
 	// onCTCP in modules is deprecated in favour of onAction and onUnknownCTCP
-	if (this.modMethod("onCTCP", arguments))
-		return;
+	try {
+		if (this.modMethod("onCTCP", arguments))
+			return;
+	} catch (ex) {
+		aucgbot.log(conn, "CTCP ERROR", nick + (dest == nick ? "" : " in " + dest), type, msg, ex.fileName + ":" + ex.lineNumber, ex);
+	}
 	function nctcp(res) conn.notice(nick, "\x01" + type, res + "\x01");
 	switch (type.toUpperCase()) {
 	case "ACTION":
-		this.modMethod("onAction", [msg, nick, dest, conn]);
+		try {
+			this.modMethod("onAction", [msg, nick, dest, conn]);
+		} catch (ex) {
+			aucgbot.log(conn, "ACTION ERROR", nick + (dest == nick ? "" : " in " + dest), msg, ex.fileName + ":" + ex.lineNumber, ex);
+		}
 		break;
 	case "VERSION":
-		nctcp("aucgbot " + this.version + " (JSDB " + system.release + ", JS " + (system.version / 100) + ")");
+		nctcp("aucgbot {0} (JSDB {1}, JS {2})".format(this.version, system.release, system.version / 100));
 		break;
 	case "TIME":
 		nctcp(Date()); // little known fact: Date returns a string when not called as a constructor
@@ -466,8 +493,12 @@ aucgbot.onCTCP = function onCTCP(type, msg, nick, dest, conn) {
 		nctcp("JS,en");
 		break;
 	default:
-		if (this.modMethod("onUnknownCTCP", arguments))
-			break;
+		try {
+			if (this.modMethod("onUnknownCTCP", arguments))
+				break;
+		} catch (ex) {
+			aucgbot.log(conn, "CTCP? ERROR", ex.fileName + ":" + ex.lineNumber, ex);
+		}
 		writeln("[ERROR] Unknown CTCP! ^^^^^");
 		this.log(conn, "CTCP", nick + (nick == dest ? "" : " in " + dest), type, msg);
 	}
@@ -489,11 +520,9 @@ aucgbot.remoteControl = function rcBot(cmd, args, dest, nick, conn) {
 	case "self-destruct": // Hehe, I had to put this in :D
 	case "explode":
 		conn.send("QUIT :" + nick + ": 10... 9... 8... 7... 6... 5... 4... 3... 2... 1... 0... *boom*", args.join(" "));
-		sleep(500), conn.close();
 		break;
 	case "die":
 		conn.send("QUIT :" + nick + ":", args.join(" "));
-		sleep(500), conn.close();
 		break;
 	case "connect":
 		args = /^(?:irc:\/\/|)(\w[\w.-]+\w)(?::([1-5]\d{0,4}|[6-9]\d{0,3}|6[0-4]\d{3}|65[0-4]\d\d|655[0-2]\d))?(?:|\/([^?]*))(?:\?pass=(.+))?$/.exec(args.join(" "));
@@ -511,12 +540,12 @@ aucgbot.remoteControl = function rcBot(cmd, args, dest, nick, conn) {
 		}
 		break;
 	case "join":
-		args = args.join(" ").split(",");
-		for (var a = args.length - 1; a >= 0; a--) {
-			if (conn.chantypes.contains(args[a]))
-				args[a] = "#" + args[a];
+		var chans = args.shift().split(",");
+		for (var i = chans.length - 1; i >= 0; i--) {
+			if (!conn.chantypes.contains(chans[i][0]))
+				chans[i] = "#" + chans[i];
 		}
-		conn.send("JOIN", ":" + args.join(","));
+		conn.send("JOIN", chans.join(","), args.join(" "));
 		break;
 	case "leave":
 		var chans = args.shift().split(",");
@@ -550,22 +579,13 @@ aucgbot.remoteControl = function rcBot(cmd, args, dest, nick, conn) {
 		conn.send(args.join(" "));
 		break;
 	case "eval": case "js": // Dangerous!
-		args = args.join(" ").replace(/\/\/.*$/, "");
-		// could cause a crash if unhandled
-		if (/(stringify|uneval).+global/i.test(args)) {
-			writeln("[WARNING] Possible abuse! ^^^^^");
-			conn.notice(nick, "Careful there! You don't want to crash me!");
-			break;
-		}
+		args = args.join(" ");
 		var res;
 		try { res = eval(args); } catch (ex) { res = "exception: " + ex; }
 		if (typeof res == "function")
 			res = "function " + res.name;
 		if (res != null)
 			conn.reply(dest, nick, res);
-		break;
-	case "gc":
-		system.gc();
 		break;
 	case "pref":
 		this.notice(nick, "Not implemented.");
@@ -577,7 +597,9 @@ aucgbot.remoteControl = function rcBot(cmd, args, dest, nick, conn) {
 		try {
 			for (args = args.join(" ").split(","); args.length;)
 				this.loadModule(args.shift());
-		} catch (ex) { conn.reply(dest, nick, ex.fileName + ":" + ex.lineNumber, ex); }
+		} catch (ex) {
+			conn.reply(dest, nick, ex.fileName + ":" + ex.lineNumber, ex);
+		}
 		break;
 	case "reload":
 		if (!run("aucgbot.js")) {
@@ -603,7 +625,18 @@ aucgbot.remoteControl = function rcBot(cmd, args, dest, nick, conn) {
  * @return {boolean} Whether the user is a superuser.
  */
 aucgbot.isSU = function isSU(nick, ident, host, dest, relay) {
-	return host.match(this.prefs.suHosts) || this.prefs.suDests.contains(dest);
+	if (this.prefs.suDests.contains(dest))
+		return true;
+	var suHosts = this.prefs.suHosts;
+	if (suHosts instanceof RegExp) {
+		if (suHosts.test(host))
+			return true;
+	}
+	if (suHosts instanceof Array) {
+		if (suHosts.contains(host))
+			return true;
+	}
+	return false;
 };
 /**
  * Load a module.
@@ -651,15 +684,17 @@ aucgbot.modMethod = function modMethod(id, args) {
 };
 
 aucgbot.getHTTP = function getHTTP(uri, modname, modver, headers) {
+	headers = headers || {};
 	var useragent = this.useragent;
 	if (modname) {
 		useragent += " mod_" + modname;
 		if (modver)
 			useragent += "/" + modver;
 	}
-	headers = headers || {};
 	headers["User-Agent"] = useragent;
-	var stream = new Stream(uri, null, headers), content = stream.readFile();
+	var stream = new Stream(uri, null, headers), content;
+	sleep(10);  // wait a tick so that the entire file actually comes through
+	content = stream.readFile();
 	try {
 		content = decodeUTF8(content);
 	} catch (ex) {}
@@ -795,7 +830,7 @@ if (typeof Array.prototype.contains != "function")
 Array.prototype.contains = function contains(e) this.indexOf(e) != -1;
 
 if (typeof String.contains != "function")
-String.contains = function contains(t, s) r.indexOf(s) != -1;
+String.contains = function contains(t, s) t.indexOf(s) != -1;
 if (typeof String.prototype.contains != "function")
 /**
  * ES6 shim: Check if a string contains a substring.
@@ -806,7 +841,12 @@ if (typeof String.prototype.contains != "function")
  */
 String.prototype.contains = function contains(s) this.indexOf(s) != -1;
 
-// https://github.com/tracker1/core-js/blob/master/js-extensions/100-String.format.js
-load("String.format.js");
+if (typeof Object.keys != "function")
+Object.keys = function keys(o) {
+	var a = [];
+	for (var i in o)
+		a.push(i);
+	return a;
+};
 
 writeln("aucgbot ", aucgbot.version, " loaded.");
