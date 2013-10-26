@@ -7,7 +7,7 @@
 if (!run("calc.js"))
 	throw new Error("Could not load calc functions from calc.js");
 
-module.version = "2.9 (11 Sep 2013)";
+module.version = "2.10 (2013-10-26)";
 module.prefs = {
 	abuse: {
 		log: true, // when triggered with =
@@ -26,8 +26,8 @@ module.prefs = {
 module.abuse = /load|run|java|ecma|op|doc|cli|(?:qui|exi|aler|prin|insul|impor|scrip)t|def|raw|throw|win|nan|open|con|p(?:ro|atch|lug|lay)|inf|my|for|(?:fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|read|this|js|sys|scr|(?:de|loca|unti|rctr|eva)l|glob|[\[{'"}\]]/;
 module.list = "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, ln, pow, sqrt, abs, ceil, max, min, floor, round, random, randint, fact, mean, dice, ftoc, ctof. Constants: e, pi, phi, c. Operators: %, ^, **. Other topics: decimal, trig.";
 
-module["cmd_="] = module.cmd_calc = module.cmd_math = function cmd_calc(dest, msg, nick, ident, host, conn, relay) {
-	msg = msg.replace(/(?:\/\/|@).*$/, "").toLowerCase();
+module["cmd_="] = module.cmd_calc = module.cmd_math = function cmd_calc(e) {
+	var dest = e.dest, msg = e.args.replace(/(?:\/\/|@).*/, "").toLowerCase(), nick = e.nick, conn = e.conn;
 	if (msg.match(this.abuse)) {
 		if (this.prefs.abuse.warn && !relay)
 			conn.send("NOTICE", nick, ":Whoa! Careful dude!");
@@ -53,30 +53,31 @@ module["cmd_="] = module.cmd_calc = module.cmd_math = function cmd_calc(dest, ms
 	}
 	return true;
 };
-module.cmd_base = function cmd_base(dest, msg, nick, ident, host, conn, relay) {
-	var args = msg.split(" ");
+module.cmd_base = function cmd_base(e) {
+	var dest = e.dest, args = e.args.split(" "), nick = e.nick, conn = e.conn;
 	if (args.length < 2 || args.length > 3)
 		conn.reply(dest, nick, "Invalid usage. Usage: base <num> <fromBase> [<toBase>]");
 	else
 		conn.reply(dest, nick, parseInt(args[0], args[1]).toString(parseInt(args[2]) || 10));
 	return true;
 };
-module.cmd_base10 = function cmd_base10(dest, msg, nick, ident, host, conn, relay) {
-	var args = msg.split(" ");
+module.cmd_base10 = function cmd_base10(e) {
+	var dest = e.dest, args = e.args.split(" "), nick = e.nick, conn = e.conn;
 	if (args.length != 2)
-		conn.reply(dest, nick, "Invalid usage. Usage: base <num> <fromBase> [<toBase>]");
+		conn.reply(dest, nick, this.cmd_base10.help);
 	else
 		conn.reply(dest, nick, (+args[0]).toString(+args[1]));
 	return true;
 }
-module.cmd_qe = function cmd_quadraticEqn(dest, msg, nick, ident, host, conn, relay) {
-	var a, b, c, _2a, pron, resInSqrt, resSqrt, res = [];
-	if (!/^(?:([+\-]?\d*(?:\.\d*)?) ?\*? ?)?([A-Za-z]) ?(?:\*\*|\^) ?2 ?(?:([+\-] ?\d*(?:\.\d*)?) ?\*? ?\2)? ?([+\-] ?\d*(?:\.\d*)?)? ?= ?([+\-]?\d*(?:\.\d*)?)$/.test(msg)) {
+module.cmd_base10.help = "Convert a decimal number to another base. Usage: base10 <num> <toBase>";
+module.cmd_qe = function cmd_quadraticEqn(e) {
+	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
+	if (!/^(?:([+\-]?\d*(?:\.\d*)?) ?\*? ?)?([A-Za-z]) ?(?:\*\*|\^) ?2 ?(?:([+\-] ?\d*(?:\.\d*)?) ?\*? ?\2)? ?([+\-] ?\d*(?:\.\d*)?)? ?= ?([+\-]?\d*(?:\.\d*)?)$/.test(args)) {
 		// not a quadratic equation, bail
-		conn.reply(dest, nick, "qe: Evaluates the value of the pronumeral in a quadratic equation in general form i.e. ax**2 + bx + c = 0");
+		conn.reply(dest, nick, this.cmd_qe.help);
 		return true;
 	}
-	pron = RegExp.$2, a = RegExp.$1, b = RegExp.$3, c = RegExp.$4;
+	var pron = RegExp.$2, a = RegExp.$1, b = RegExp.$3, c = RegExp.$4, _2a, resInSqrt, resSqrt, res = [];
 	if ("+-".contains(a))
 		a += "1";
 	if ("+-".contains(b))
@@ -98,11 +99,13 @@ module.cmd_qe = function cmd_quadraticEqn(dest, msg, nick, ident, host, conn, re
 	conn.reply(dest, nick, pron + " = " + res.join(" or "));
 	return true;
 };
-module.cmd_dice = module.cmd_roll = function cmd_roll(dest, msg, nick, ident, host, conn, relay) {
-	if (/^(\d*)d(\d+)$/.test(msg))
+module.cmd_qe.help = "qe: Evaluates the value of the pronumeral in a quadratic equation in general form i.e. ax**2 + bx + c = 0";
+module.cmd_dice = module.cmd_roll = function cmd_roll(e) {
+	var dest = e.dest, conn = e.conn, args = e.args;
+	if (/^(\d*)d(\d+)$/.test(args))
 		conn.msg(dest, this.cmdDice(RegExp.$2, RegExp.$1));
 	else
-		conn.msg(dest, this.cmdDice.apply(this, msg.split(" ")));
+		conn.msg(dest, this.cmdDice.apply(this, args.split(" ")));
 	return true;
 };
 
@@ -111,11 +114,11 @@ module.parseMsg = function parseMsg(msg) {
 		return this.help(msg);
 	if (this.prefs.easterEggs) { // Time for some Easter Eggs! *dance*
 		if (/^6 ?\* ?9$/.test(msg)) // 'The Hitchhiker's Guide to the Galaxy' (trilogy of 6)!
-			return "42... Jokes, 54 ;)";
+			return "42. Wait, what?";
 		if (msg == "9001")
 			return "IT'S OVER 9000!!!1";
 		if (msg == "404")
-			return "404 Not Found";
+			return "HTTP/1.1 404 Not Found";
 		if (/\/ ?0([^\d.!]|$)/.test(msg))
 			return "division by zero";
 		if (/pie/.test(msg))
@@ -139,7 +142,7 @@ module.parseMsg = function parseMsg(msg) {
 		if (Math.ans == -Infinity)
 			return "That's a number that's too negative for me.";
 	}
-	return msg + ": " + Math.ans;
+	return msg + ": " + Math.ans.toLocaleString();
 };
 // Very loosely based on the cZ dice plugin.
 module.cmdDice = function cmdDice(sides, count) {

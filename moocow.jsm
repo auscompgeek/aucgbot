@@ -5,7 +5,7 @@
 /*jshint es5: true, esnext: true, expr: true */
 /*global module: false */
 
-module.version = "0.8 (4 Sep 2013)";
+module.version = "0.10 (2013-10-26)";
 module.res = [
 	"Mooooooooooo!", "MOO!", "Moo.", "Moo. Moo.", "Moo Moo Moo, Moo Moo.", "fish go m00!",
 	"\x01ACTION nibbles on some grass\x01",
@@ -30,18 +30,18 @@ module.res = [
  * @param {string} [relay] If sent by a relay bot, the relay bot's nick.
  * @returns {boolean} true if the bot should stop processing the action.
  */
-module.onAction = function onAction(msg, nick, dest, conn, relay) {
-	if (!msg.match("(hit|kick|slap|eat|prod|stab|kill|whack|insult|teabag|(punch|bash|touch|pok)e)s " + conn.nick.replace(/\W/g, "\\$&") + "\\b", "i"))
+module.onAction = function onAction(e) {
+	if (!e.msg.match("(hit|kick|slap|eat|prod|stab|kill|whack|insult|teabag|(punch|bash|touch|pok)e)s " + conn.nick.replace(/\W/g, "\\$&") + "\\b", "i"))
 		return false;
 	function me(msg) "\x01ACTION " + msg + "\x01";
 	var res = this.res;
 	if (aucgbot.modules.meanie)
 		res = res.concat(aucgbot.modules.meanie.slaps);
-	conn.msg(dest, res.random().replace("$dest", dest, "g").replace("$nick", nick, "g"));
+	conn.msg(dest, res.random().replace("$dest", e.dest, "g").replace("$nick", e.nick, "g"));
 	return true;
 };
 /**
- * Parse a PRIVMSG.
+ * Parse a PRIVMSG not directed at us.
  *
  * @param {string} dest Channel or nick to send messages back.
  * @param {string} msg The message.
@@ -51,9 +51,10 @@ module.onAction = function onAction(msg, nick, dest, conn, relay) {
  * @param {Stream} conn Server connection.
  * @param {string} relay If sent by a relay bot, the relay bot's nick, else "".
  */
-module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
+module.onUnknownMsg = function onUnknownMsg(e) {
+	var nick = e.nick, msg = e.msg;
 	if (/(ham|cheese) ?burger|big mac|beef/i.test(msg) && !/^au/.test(nick))
 		conn.msg(dest, "\x01ACTION eats", nick + "\x01");
 	else if (/moo|cow/i.test(msg))
-		conn.msg(dest, this.res.random().replace("$dest", dest, "g").replace("$nick", nick, "g"));
+		conn.msg(dest, this.res.random().replace("$dest", e.dest, "g").replace("$nick", nick, "g"));
 };

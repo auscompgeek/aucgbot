@@ -17,9 +17,9 @@ if (!this.aucgbot) {
 }
 
 print("\nLoad modules: ");
-for (let m = readln().trim().split(","); m.length;) {
+for (let s = readln().trim().split(","); m=s.shift();) {
 	try {
-		aucgbot.loadModule(m.shift());
+		aucgbot.loadModule(m);
 	} catch (ex) {
 		println(ex);
 		println(ex.stack);
@@ -39,6 +39,7 @@ for (let s = true, server; s;) {
 	servers.push(server);
 	print("Add another server? ");
 	s = readln()[0] == "y";
+	println();
 }
 aucgbot.start.apply(aucgbot, servers);
 }

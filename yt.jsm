@@ -5,22 +5,20 @@
 /*jshint es5: true, esnext: true, expr: true */
 /*global Stream: false, aucgbot: false, module: false, system: false */
 
-module.version = 2.2;
+module.version = 2.5;
 
-module.cmd_ytid =
-function cmd_ytid(dest, msg, nick, ident, host, conn, relay) {
-	if (!/^(?:(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|(?:v|embed)\/)|youtu\.be\/))?([\w\-]+)(?:[?&#].*)?$/i.test(msg)) {
-		conn.reply(dest, nick, "Get info about a YouTube video. Usage: yt <link|id>");
+module.cmd_ytv = module.cmd_ytid =
+function cmd_ytv(e) {
+	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
+	if (!/^(?:(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|(?:v|embed)\/)|youtu\.be\/))?([\w\-]+)(?:[?&#].*)?$/i.test(args)) {
+		conn.reply(dest, nick, "Get info about a YouTube video. Usage: ytv <link|id>");
 		return true;
 	}
 
-	var id = RegExp.$1, data, stream = new Stream("http://gdata.youtube.com/feeds/api/videos/" + id + "?v=2&alt=jsonc", null,
-		{"User-Agent": aucgbot.useragent + " mod_yt/" + this.version});
+	var id = RegExp.$1, data;
 	try {
-		let s = decodeUTF8(stream.readFile());
-		data = JSON.parse(s).data;
+		data = aucgbot.getJSON("http://gdata.youtube.com/feeds/api/videos/" + id + "?v=2&alt=jsonc", "yt", this.version).data;
 	} catch (ex) {}
-	stream.close();
 
 	if (!data) {
 		conn.reply(dest, nick, "YouTube returned no data.");
@@ -28,7 +26,7 @@ function cmd_ytid(dest, msg, nick, ident, host, conn, relay) {
 	}
 
 	var res = this.ytRes(data);
-	if (id == msg)
+	if (id === args)
 		res.push("https://youtu.be/" + id);
 
 	conn.reply(dest, nick, res.join(" - "));
@@ -36,19 +34,17 @@ function cmd_ytid(dest, msg, nick, ident, host, conn, relay) {
 };
 
 module.cmd_yt = module.cmd_youtube =
-function cmd_yt(dest, msg, nick, ident, host, conn, relay) {
-	if (!msg) {
+function cmd_yt(e) {
+	var dest = e.dest, q = e.args, nick = e.nick, conn = e.conn;
+	if (!q) {
 		conn.reply(dest, nick, "Get the first result of a YouTube search.");
 		return true;
 	}
 
-	var data, stream = new Stream("http://gdata.youtube.com/feeds/api/videos?v=2&alt=jsonc&max-results=1&q=" + encodeURIComponent(msg), null,
-		{"User-Agent": aucgbot.useragent + " mod_yt/" + this.version});
+	var data;
 	try {
-		let s = decodeUTF8(stream.readFile());
-		data = JSON.parse(s).data;
+		data = aucgbot.getJSON("http://gdata.youtube.com/feeds/api/videos?v=2&alt=jsonc&max-results=1&q=" + encodeURIComponent(q), "yt", this.version);
 	} catch (ex) {}
-	stream.close();
 
 	if (!data) {
 		conn.reply(dest, nick, "YouTube returned no data.");
@@ -80,9 +76,9 @@ module.ytRes = function ytRes(data) {
 	}
 
 	if (data.description) {
-		let desc = data.description;
-		if (desc.contains("\n"))
-			desc = desc.slice(0, desc.indexOf("\n"));
+		let desc = data.description, i = desc.indexOf("\n");
+		if (i !== -1)
+			desc = desc.slice(0, i);
 		res.push(desc);
 	}
 

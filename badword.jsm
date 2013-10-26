@@ -8,14 +8,15 @@
 // PLEASE NOTE: if you edit the badwords list using the rc js command, also
 // `this.modules.badword.parseList()` otherwise it will not work
 
-module.version = "5.1.1 (10 Sep 2013)";
+module.version = "5.3 (2013-10-26)";
 module.db = {}, module.sfwChans = [];
+module.DB_FILENAME = "badword.json";
 module.spaceAfterColon = false;
 
 module.parseList = function parseList() {
 	var badwords = [];
 	for (var word in this.badwords) {
-		if (this.badwords.hasOwnProperty(word) && typeof this.badwords[word] == "string")
+		if (this.badwords.hasOwnProperty(word) && typeof this.badwords[word] === "string")
 			badwords.push(this.badwords[word]);
 	}
 	this.badwordList = RegExp(badwords.join("|"));
@@ -23,10 +24,10 @@ module.parseList = function parseList() {
 module.loadDB = function loadDB() {
 	var file;
 	try {
-		file = new Stream("badword.json");
+		file = new Stream(this.DB_FILENAME);
 		this.db = JSON.parse(file.readFile());
 	} catch (ex) {}
-	if (file && typeof file.close == "function")
+	if (file && typeof file.close === "function")
 		file.close();
 	/* hasOwnProperty __proto__ hack: __proto__ === null => hasOwnProperty returns false
 	 *
@@ -45,11 +46,11 @@ module.loadDB = function loadDB() {
 	 *                                            wat^
 	 * v8: Object.hasOwnProperty(obj, x): TypeError: Cannot convert object to primitive value
 	 */
-	//if (this.db.__proto__ == Object.prototype && Object.prototype.hasOwnProperty.call({}, "__proto__"))
+	//if (this.db.__proto__ === Object.prototype && Object.prototype.hasOwnProperty.call({}, "__proto__"))
 		//this.db.__proto__ = null;
 };
 module.saveDB = function saveDB() {
-	var file = new Stream("badword.json", "w");
+	var file = new Stream(this.DB_FILENAME, "w");
 	file.write(JSON.stringify(this.db));
 	file.close();
 };
@@ -58,21 +59,22 @@ module.saveDB = function saveDB() {
  *
  * @param {string} nick User's nickname.
  * @param {boolean} [create] Whether the entry should be created if it does not exist.
+ * @param {boolean} [noAlts] Whether to not recursively get alternate nicks.
  * @return {Object} The database entry.
  */
-module.getUser = function getUser(nick, create) {
+module.getUser = function getUser(nick, create, noAlts) {
 	const name = nick.toLowerCase();
 	var db;
 	// We shall forever marvel at the wonders of __proto__... </sarcasm>
-	if ((Object.prototype.hasOwnProperty.call(this.db, name) || name == "__proto__") && // hasOwnProperty("__proto__") always returns false in newer SpiderMonkeys
-			(name != "__proto__" || (this.db[name] && this.db[name] != Object.prototype)) && // check if __proto__ has been changed
-			typeof this.db[name] == "object" && this.db[name]) {
+	if ((Object.prototype.hasOwnProperty.call(this.db, name) || name === "__proto__") && // hasOwnProperty("__proto__") always returns false in newer SpiderMonkeys
+			(name !== "__proto__" || (this.db[name] && this.db[name] !== Object.prototype)) && // check if __proto__ has been changed
+			typeof this.db[name] === "object" && this.db[name]) {
 		db = this.db[name];
-		if (db.nick && db.nick.toLowerCase() != name)
+		if (!noAlts && db.nick && db.nick.toLowerCase() !== name)
 			return this.getUser(db.nick, create) || db;
 	} else if (create) {
 		db = this.db[name] = {};
-		if (nick != name)
+		if (nick !== name)
 			db.nick = nick;
 	}
 	return db;
@@ -108,7 +110,7 @@ module.badwords = {
 	"Faggot": "fagg[oe]t",
 	"Fart": "fart",
 	"Fap": "\\bfap",
-	"Fuck": "f(?:u+a*|oo|[*-])[crw*-]?[kq*-]|\\bfk|f(?:cu|sc)kin|wh?[au]t [dt][aeh]+ f|wtf|fml|cbf|omfg|stfu|gtfo|lmfao|fubar|idgaf|\\bf word\\b",
+	"Fuck": "f(?:u+a*|oo|[*-])[crw*-]?[kq*-]|d(?:a|er)faq|\\bfk|f(?:cu|sc)kin|wh?[au]t [dt][aeh]+ f|wtf|fml|cbf|omfg|stfu|gtfo|lmfao|fubar|idgaf|\\bf word\\b",
 	"Gay": "g(?:a+|he+)y",
 	"God": "g(?:[o*-]|er|aw)d|omf?g|oh em gee",
 	"Hack": "hack",
@@ -121,7 +123,7 @@ module.badwords = {
 	"Jesus": "jesus",
 	"Jew": "jews?\\b",
 	"Leb": "\\blebs?\\b",
-	"LOL": "lol|lawl|lulz|el oh el",
+	"LOL": "lol|\\b(?:l[ea]l|kek)\\b|lawl|lulz|el oh el",
 	"Midget": "midget",
 	"Moron": "moron",
 	"Nerd": "nerd",
@@ -149,7 +151,7 @@ module.badwords = {
 	"Spastic": "spastic",
 	"Stuff": "stuff",
 	"Stupid": "st(?:u|oo)pid",
-	"Swag": "swag",
+	"Swag": "sw[ae]g",
 	"Thingy": "thingy",
 	"Tit": "\\b(?:tit(?:tie|)s?|tolo|toftb)\\b",
 	"Torrent": "torrent",
@@ -168,39 +170,43 @@ module.badwords = {
 module.parseList();
 module.loadDB();
 
-module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
-	if (dest != nick && this.sfwChans.indexOf(dest) != -1)
+module.onMsg = function onMsg(e) {
+	var dest = e.dest, msg = e.msg, nick = e.nick, conn = e.conn;
+	if (dest !== nick && this.sfwChans.indexOf(dest) !== -1)
 		dest = nick;
 	var db, word, words;
 	if (/^!badwords?\b/.test(msg)) {
-		msg = msg.split(" ").slice(1);
-		var name = (msg.shift() || nick).split("|")[0];
-		db = this.getUser(name), word = msg.shift(), msg = msg.join(" ");
+		msg = msg.split(" "), msg.shift();
+		var name = msg.shift() || nick;
+		name = name.slice(0, name.indexOf("|")), db = this.getUser(name), word = msg.shift(), msg = msg.join(" ");
 		if (!db && !(word && msg && aucgbot.isSU(nick, ident, host)))
 			conn.msg(dest, name, "hasn't said any bad words...yet...");
 		else if (word) {
-			if (word == "nick") {
+			if (word === "nick") {
 				if (msg && aucgbot.isSU(nick, ident, host, dest, relay)) {
 					if (!db)
 						db = this.getUser(name, true);
 					db.nick = msg;
 				} else {
+					if (!db.nick)
+						db = this.getUser(name, false, true);
 					conn.msg(dest, "Umm, the nick in the database is", db.nick, "but why are you asking?");
 				}
-			} else if (word.toLowerCase() == "total") {
+			} else if (word.toLowerCase() === "total") {
 				var sum = 0;
 				for (word in db) {
 					if (db.hasOwnProperty(word)) {
-						if (word == "nick")
-							name = db.nick;
-						else
-							sum += db[word];
+						var val = db[word];
+						if (word === "nick")
+							name = val;
+						else if (typeof val === "number")
+							sum += val;
 					}
 				}
 				conn.msg(dest, name, "said a total of", sum, "bad words!");
 			// Is it a valid badword? Take pity if the user didn't capitalise.
-			} else if ((this.badwords.hasOwnProperty(word) || this.badwords.hasOwnProperty(word = word[0].toUpperCase() + word.slice(1))) && typeof this.badwords[word] == "string") {
-				if (msg && aucgbot.isSU(nick, ident, host, dest, relay)) {
+			} else if ((this.badwords.hasOwnProperty(word) || this.badwords.hasOwnProperty(word = word[0].toUpperCase() + word.slice(1))) && typeof this.badwords[word] === "string") {
+				if (msg && aucgbot.isSU(e)) {
 					if (!db)
 						db = this.getUser(name, true);
 					if (!db[word])
@@ -208,17 +214,18 @@ module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
 					db[word] += parseInt(msg); // missing radix intended
 					this.saveDB();
 				} else {
-					conn.msg(dest, db.nick || name, "said `" + word + "'", db[word] || 0, "times!");
+					conn.msg(dest, db.nick || name, "said '" + word + "'", db[word] || 0, "times!");
 				}
 			}
 		} else {
 			words = [];
 			for (word in db) {
 				if (db.hasOwnProperty(word)) {
-					if (word == "nick")
-						name = db.nick;
-					else
-						words.push(word + (this.spaceAfterColon ? ": " : ":") + db[word]);
+					var val = db[word];
+					if (word === "nick")
+						name = val;
+					else if (typeof val === "number")
+						words.push(word + (this.spaceAfterColon ? ": " : ":") + val);
 				}
 			}
 			conn.reply(dest, name, words.join(", "));
@@ -228,9 +235,9 @@ module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
 	msg = msg.toLowerCase();
 	if (!this.badwordList.test(msg))
 		return;
-	db = this.getUser(nick.split("|")[0], true);
+	db = this.getUser(nick.slice(0, nick.indexOf("|")), true);
 	for (word in this.badwords) {
-		if (this.badwords.hasOwnProperty(word) && typeof this.badwords[word] == "string" && (words = msg.match(this.badwords[word], "g"))) {
+		if (this.badwords.hasOwnProperty(word) && typeof this.badwords[word] === "string" && (words = msg.match(this.badwords[word], "g"))) {
 			if (!db[word])
 				db[word] = 0;
 			db[word] += words.length;

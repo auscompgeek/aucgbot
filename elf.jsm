@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global Stream: false, aucgbot: false, module: false, println: false, randint: false */
 
-module.version = "2.0 (3 Oct 2013)";
+module.version = "2.1 (2013-10-26)";
 module.prefix = "$";
 module.chan = "##elf";
 module.DB_FILENAME = "elf.csv";
@@ -45,8 +45,9 @@ module.updateUser = function updateUser(nick, data) {
 	if (rowNo == -1) {
 		this.db.add(data);
 		this.index.add(nick);
-	} else
+	} else {
 		this.db.setRow(rowNo, data);
+	}
 };
 
 module.parseln = function parseln(ln, conn) {
@@ -66,7 +67,8 @@ module.parseln = function parseln(ln, conn) {
 	}
 	return true;
 };
-module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
+module.onMsg = function onMsg(e) {
+	var dest = e.dest, msg = e.msg, nick = e.nick, conn = e.conn;
 	if (this.prefix && msg.slice(0, this.prefix.length) != this.prefix)
 		return false;
 	msg = msg.slice(this.prefix.length).toLowerCase().split(" ");
@@ -78,8 +80,9 @@ module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
 			data = data.toObject();
 			conn.reply(dest, nick, data.score, "points,", data.materials, "materials,",
 				data.coins, "coins,", data.reputation, "reputation, made", data.total, "toys.");
-		} else
+		} else {
 			conn.msg(dest, nick, "has not joined the elf game yet. Try inviting him/her perhaps.");
+		}
 		return true;
 	case "buy":
 		var data = this.getUser(nick);
@@ -183,7 +186,7 @@ module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
 		conn.msg(dest, "buy: Buy items to use in the game. - make: Make a toy. - info: Show your current scores.");
 		return true;
 	case "elfreset":
-		if (aucgbot.isSU(nick, ident, host, dest, relay)) {
+		if (aucgbot.isSU(e)) {
 			this.initDB();
 			aucgbot.log(conn, "ELF RESET", nick + (dest != nick ? " in " + dest : ""));
 			conn.msg(this.chan, "Database reset!!!");

@@ -6,7 +6,7 @@
 
 // Load this by sending the bot: rc loadmod helloworld
 
-module.version = "0.5.1 (20 Dec 2012)";
+module.version = "0.6 (2013-10-26)";
 // Do NOT do this! Use onMsg() or cmd_*() instead so that the flood protection is triggered.
 /*module.parseln = function parseln(ln, conn) {
 	if ((lnary = /^:(\S+)!(\S+)@(\S+) PRIVMSG (\S+) :(.*)/.exec(ln))) {
@@ -32,13 +32,13 @@ module.version = "0.5.1 (20 Dec 2012)";
  * @param {string} relay If sent by a relay bot, the relay bot's nick, else "".
  * @returns {boolean} true if the bot should stop processing the message.
  */
-module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
-	if (msg.match("hello bot")) {
+module.onMsg = function onMsg(e) {
+	if (e.msg.match("hello bot")) {
 		conn.msg(dest, "Hello, World!");
 		return true; // Stop processing of message.
 	}
 };
-module.cmd_hello = function cmd_hello(dest, msg, nick, ident, host, conn, relay) {
+module.cmd_hello = function cmd_hello(e) {
 	conn.reply(dest, nick, "Hello, World!");
 	return true; // Say that we've reached a valid command and stop processing the message.
 };

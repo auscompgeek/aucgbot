@@ -4,9 +4,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global Stream: false, module: false */
 
-module.version = 0.1;
+module.version = 0.2;
 
-module.cmd_bofh = function cmd_bofh(dest, args, nick, ident, host, conn, relay) {
+module.cmd_bofh = function cmd_bofh(e) {
 	var excuses;
 	try {
 		var file = new Stream("excuses.txt");
@@ -24,6 +24,6 @@ module.cmd_bofh = function cmd_bofh(dest, args, nick, ident, host, conn, relay) 
 			"operation failed because: there is no message for this error (#1014)"
 		];
 	}
-	conn.reply(dest, nick, excuses.random());
+	e.conn.reply(e.dest, e.nick, excuses.random());
 	return true;
 };

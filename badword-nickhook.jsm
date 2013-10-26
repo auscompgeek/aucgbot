@@ -8,15 +8,15 @@
 if (!aucgbot.modules.badword)
 	throw new Error("badword module not loaded");
 
-module.version = "1.1 (2 Feb 2013)";
+module.version = "1.2 (2013-10-26)";
 
-module.onNick = function onNick(conn, oldNick, newNick, ident, host) {
+module.onNick = function onNick(e) {
 	const mod_badword = aucgbot.modules.badword;
 	if (!mod_badword) {
 		writeln("[WARNING] badword module not loaded");
 		return false;
 	}
-	const oldNickDB = mod_badword.getUser(oldNick);
+	const oldNickDB = mod_badword.getUser(e.oldNick), newNick = e.newNick;
 	if (oldNickDB && !mod_badword.getUser(newNick))
 		mod_badword.getUser(newNick, true).nick = oldNickDB.nick || oldNick;
 };

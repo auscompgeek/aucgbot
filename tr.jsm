@@ -6,19 +6,22 @@
 /*jshint es5: true, esnext: true, nonstandard: true */
 /*global decodeB64: false, decodeHTML: false, decodeURL: false, encodeB64: false, encodeHTML: false, encodeURL: false, module: false */
 
-module.version = 2.6;
+module.version = 2.9;
 module.UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 module.LOWER = "abcdefghijklmnopqrstuvwxyz";
 module.ALPHABET = module.UPPER + module.LOWER;
 module.AL_BHED = "YPLTAVKREZGMSHUBXNCDIJFQOWypltavkrezgmshubxncdijfqow";
 module.GOOGLERESE = "ynficwlbkuomxsevzpdrjgthaq";
+module.DIGITS = "0123456789";
 
 module.cmd_tr = function cmd_tr(dest, msg, nick, ident, host, conn, relay) {
-	var args = /^"((?:\\")*[^"]+(?:\\"[^"]*)*)" "((?:\\")*[^"]+(?:\\"[^"]*)*)" "((?:\\")*[^"]+(?:\\"[^"]*)*)"$/.exec(msg);
-	conn.reply(dest, nick, args ? (args.shift(), tr.apply(null, args)) : 'Like the UNIX tr utility. Usage: tr "<text>" "<trFromTable>" "<trToTable>"');
+	var args = /^"((?:\\")*[^"]+(?:\\"[^"]*)*)" "((?:\\")*[^"]+(?:\\"[^"]*)*)" "((?:\\")*[^"]+(?:\\"[^"]*)*)"$/.exec(e.args);
+	e.conn.reply(e.dest, e.nick, args ? (args.shift(), tr.apply(null, args)) : this.cmd_tr.help);
 	return true;
 };
-module.cmd_rot13 = function cmd_rot13(dest, msg, nick, ident, host, conn, relay) {
+module.cmd_tr.help = 'Like the UNIX tr utility. Usage: tr "<text>" "<trFromTable>" "<trToTable>"';
+module.cmd_rot13 = function cmd_rot13(e) {
+	var dest = e.dest, msg = e.args, nick = e.nick, conn = e.conn;
 	if (!msg) {
 		conn.reply(dest, nick, this.cmd_rot13.help);
 		return true;
@@ -26,8 +29,9 @@ module.cmd_rot13 = function cmd_rot13(dest, msg, nick, ident, host, conn, relay)
 	conn.reply(dest, nick, tr(msg, this.ALPHABET, "NOPQRSTUVWXYZABCDEFGHIJKLMnopqrstuvwxyzabcdefghijklm"));
 	return true;
 };
-module.cmd_rot13.help = "Rot13 text. Usage: rot13 <text>";
-module.cmd_rot47 = function cmd_rot47(dest, msg, nick, ident, host, conn, relay) {
+module.cmd_rot13.help = "ROT13 text. Usage: rot13 <text>";
+module.cmd_rot47 = function cmd_rot47(e) {
+	var dest = e.dest, msg = e.args, nick = e.nick, conn = e.conn;
 	if (!msg) {
 		conn.reply(dest, nick, this.cmd_rot47.help);
 		return true;
@@ -35,8 +39,9 @@ module.cmd_rot47 = function cmd_rot47(dest, msg, nick, ident, host, conn, relay)
 	conn.reply(dest, nick, tr(msg, "!\"#$%&\'()*+,-./0123456789:;<=>?@" + this.UPPER + "[\\]^_`" + this.LOWER + "{|}~", "PQRSTUVWXYZ[\\]^_`" + this.LOWER + "{|}~!\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNO"));
 	return true;
 };
-module.cmd_rot47.help = "Rot47 text. Usage: rot47 <text>";
-module.cmd_revtr = function cmd_revtr(dest, msg, nick, ident, host, conn, relay) {
+module.cmd_rot47.help = "ROT47 text. Usage: rot47 <text>";
+module.cmd_revtr = function cmd_revtr(e) {
+	var dest = e.dest, msg = e.args, nick = e.nick, conn = e.conn;
 	if (!msg) {
 		conn.reply(dest, nick, this.cmd_revtr.help);
 		return true;
@@ -45,7 +50,8 @@ module.cmd_revtr = function cmd_revtr(dest, msg, nick, ident, host, conn, relay)
 	return true;
 };
 module.cmd_revtr.help = "A reversed alphabet Caesar cyphar. Usage: revtr <text>";
-module.cmd_rev = function cmd_rev(dest, msg, nick, ident, host, conn, relay) {
+module.cmd_rev = function cmd_rev(e) {
+	var dest = e.dest, msg = e.args, nick = e.nick, conn = e.conn;
 	if (!msg) {
 		conn.reply(dest, nick, this.cmd_rev.help);
 		return true;
@@ -54,7 +60,8 @@ module.cmd_rev = function cmd_rev(dest, msg, nick, ident, host, conn, relay) {
 	return true;
 };
 module.cmd_rev.help = "Reverse text. Usage: rev <text>";
-module.cmd_revword = function cmd_revword(dest, msg, nick, ident, host, conn, relay) {
+module.cmd_revword = function cmd_revword(e) {
+	var dest = e.dest, msg = e.args, nick = e.nick, conn = e.conn;
 	if (!msg) {
 		conn.reply(dest, nick, this.cmd_revword.help);
 		return true;
@@ -63,13 +70,14 @@ module.cmd_revword = function cmd_revword(dest, msg, nick, ident, host, conn, re
 	return true;
 };
 module.cmd_revword.help = "Reverse words. Usage: revword <text>";
-module.cmd_encode = function cmd_encode(dest, msg, nick, ident, host, conn, relay) {
-	if (!msg) {
+module.cmd_encode = function cmd_encode(e) {
+	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
+	if (!args) {
 		conn.reply(dest, nick, this.cmd_encode.help);
 		return true;
 	}
-	var args = msg.split(" "), type = args.shift().toLowerCase();
-	msg = args.join(" ");
+	args = args.split(" ");
+	var type = args.shift().toLowerCase(), msg = args.join(" ");
 	switch (type) {
 	case "base64": case "b64":
 		conn.reply(dest, nick, encodeB64(msg));
@@ -108,13 +116,14 @@ module.cmd_encode = function cmd_encode(dest, msg, nick, ident, host, conn, rela
 	}
 };
 module.cmd_encode.help = "Encode stuff. Usage: encode <type> <text>";
-module.cmd_decode = function cmd_decode(dest, msg, nick, ident, host, conn, relay) {
-	if (!msg) {
+module.cmd_decode = function cmd_decode(e) {
+	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
+	if (!args) {
 		conn.reply(dest, nick, this.cmd_decode.help);
 		return true;
 	}
-	var args = msg.split(" "), type = args.shift().toLowerCase();
-	msg = args.join(" ");
+	args = args.split(" ");
+	var type = args.shift().toLowerCase(), msg = args.join(" ");
 	switch (type) {
 	case "base64": case "b64":
 		conn.reply(dest, nick, decodeB64(msg));
@@ -152,15 +161,20 @@ module.cmd_decode = function cmd_decode(dest, msg, nick, ident, host, conn, rela
 	}
 };
 module.cmd_decode.help = "Decode stuff. Usage: decode <type> <text>";
-module.cmd_rainbow = function cmd_rainbow(dest, msg, nick, ident, host, conn, relay) {
+module.cmd_rainbow = function cmd_rainbow(e) {
+	var dest = e.dest, msg = e.args, nick = e.nick, conn = e.conn;
 	if (!msg) {
 		conn.reply(dest, nick, this.cmd_rainbow.help);
 		return true;
 	}
 	function f(n) n < 10 ? "0" + n : n;
 	var s = "";
-	for (var i = 0; i < msg.length; i++)
-		s += "\003" + f(randint(0, 15)) + msg[i];
+	for (var i = 0, chr; chr = msg[i]; i++) {
+		if (this.DIGITS.contains(chr))
+			s += "\003" + f(randint(0, 15)) + chr;
+		else
+			s += "\003" + randint(0, 15) + chr;
+	}
 	conn.nmsg(dest, s);
 	return true;
 };

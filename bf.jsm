@@ -2,12 +2,18 @@
 /*jshint expr: true, es5: true, esnext: true */
 /*global module: false */
 
-module.version = 1.5;
+module.version = 1.6;
 module.MAX_LOOP_TIMES = 1000;
 module.input = "You know it's rude to stare, right?";
 
 // http://code.google.com/p/jslibs/wiki/JavascriptTips#Brainfuck_interpreter
-module.cmd_bf = function cmd_bf(dest, code, nick, ident, host, conn, relay) {
+module.cmd_bf = function cmd_bf(e) {
+	var dest = e.dest, code = e.args, nick = e.nick, conn = e.conn;
+	if (!code) {
+		conn.reply(dest, nick, "Interpret some Brainfuck. bf <code>");
+		return true;
+	}
+
 	var out = "", loopIn = [], loopOut = [];
 
 	for (var i = 0, arr = []; i < code.length; i++) {

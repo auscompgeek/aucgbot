@@ -6,13 +6,14 @@
 // Please don't use the included APPID in other applications.
 // The default APPID is for personal/non-commercial use only.
 
-module.version = 0.4;
+module.version = 0.5;
 module.APPID = "5d5102ff6928ac6e647092a502a2370d";
 module.BASE_URL = "http://api.openweathermap.org/data/2.5/";
 module.WEATHER_BASE_URL = module.BASE_URL + "weather?units=metric&q=";
 module.FORECAST_BASE_URL = module.BASE_URL + "forecast?units=metric&q=";
 
-module.cmd_weather = module.cmd_owm = function cmd_owm(dest, args, nick, ident, host, conn, relay) {
+module.cmd_weather = module.cmd_owm = function cmd_owm(e) {
+	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
 	if (!args) {
 		conn.reply(dest, nick, "Get current weather by city from OpenWeatherMap.");
 		return true;
@@ -33,7 +34,7 @@ module.cmd_weather = module.cmd_owm = function cmd_owm(dest, args, nick, ident, 
 		return true;
 	}
 
-	conn.nreply(dest, nick, "Current weather for", data.name, "as of", new Date(data.dt * 1000), "(from OpenWeatherMap):");
+	conn.nreply(dest, nick, "Current weather for", data.name, "from OpenWeatherMap (as of", new Date(data.dt * 1000) + "):");
 
 	var main = data.main, res = [];
 
