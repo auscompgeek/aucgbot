@@ -14,7 +14,7 @@ module.db.save = function save() this.writeINI(system.cwd + "/" + this.FILENAME,
 module.db.increment = function increment(x, y) this.set(x, (+this.get(x) || 0) + y);
 try { module.db.load(); } catch (ex) {}
 
-module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
+module.onMsg = function onMsg(e) {
 	if (!/^(\S+)([-+])\2$/.test(e.msg))
 		return;
 	var item = RegExp.$1, minus = RegExp.$2 == "-";
@@ -24,7 +24,7 @@ module.onMsg = function onMsg(dest, msg, nick, ident, host, conn, relay) {
 	this.db.save();
 };
 
-module.cmd_karma = function cmd_karma(dest, args, nick, ident, host, conn, relay) {
+module.cmd_karma = function cmd_karma(e) {
 	var nick = e.nick, args = e.args || nick;
 	e.conn.reply(e.dest, nick, args, "has", this.db.get(args) || "no", "karma.");
 	return true;
