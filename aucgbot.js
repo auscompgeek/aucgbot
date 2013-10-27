@@ -62,7 +62,7 @@ var aucgbot = aucgbot || {
 	modules: {},
 	conns: []
 };
-aucgbot.version = "5.0 (2013-10-26)";
+aucgbot.version = "5.1 (2013-10-27)";
 aucgbot.source = "https://github.com/auscompgeek/aucgbot";
 aucgbot.useragent = "aucgbot/{0} (+{1}; {2}; JSDB {3})".format(aucgbot.version, aucgbot.source, system.platform, system.release);
 global = this;
@@ -300,7 +300,7 @@ aucgbot.onMsg = function onMsg(e) {
 		if (this.modMethod("onMsg", [e]))
 			return;
 	} catch (ex) {
-		aucgbot.log(conn, "MSG ERROR", nick + (dest === nick ? "" : " in " + dest), msg, ex);
+		this.logError(conn, "onMsg", ex, nick + (dest === nick ? "" : " in " + dest), msg);
 	}
 
 	if (!e.relay && msg[0] === "\x01") {
@@ -325,7 +325,7 @@ aucgbot.onMsg = function onMsg(e) {
 		try {
 			this.modMethod("onUnknownMsg", [e]);
 		} catch (ex) {
-			aucgbot.log(conn, "UNKNOWN MSG ERROR", nick + (dest === nick ? "" : " in " + dest), msg, ex);
+			this.logError(conn, "onUnknownMsg", ex, nick + (dest === nick ? "" : " in " + dest), msg);
 		}
 	}
 };
@@ -447,7 +447,7 @@ aucgbot.parseCmd = function parseCmd(e) {
 			this.modMethod("parseCmd", arguments) || this.modMethod("cmd_" + cmd, arguments);
 		} catch (ex) {
 			conn.notice(nick, "Oops, I encountered an error.", ex);
-			aucgbot.log(conn, "CMD ERROR", nick + (dest === nick ? "" : " in " + dest), cmd, args, ex);
+			this.logError(conn, "command", ex, nick + (dest === nick ? "" : " in " + dest), cmd, args);
 		}
 	}
 };
@@ -481,7 +481,7 @@ aucgbot.onCTCP = function onCTCP(e) {
 		if (this.modMethod("onCTCP", arguments))
 			return;
 	} catch (ex) {
-		aucgbot.log(conn, "CTCP ERROR", nick + (dest === nick ? "" : " in " + dest), type, msg, ex.fileName + ":" + ex.lineNumber, ex);
+		this.logError(conn, "onCTCP", ex, nick + (dest === nick ? "" : " in " + dest), type, msg);
 	}
 	function nctcp(res) conn.notice(nick, "\x01" + type, res + "\x01");
 	switch (type.toUpperCase()) {
@@ -489,7 +489,7 @@ aucgbot.onCTCP = function onCTCP(e) {
 		try {
 			this.modMethod("onAction", arguments);
 		} catch (ex) {
-			aucgbot.log(conn, "ACTION ERROR", nick + (dest === nick ? "" : " in " + dest), msg, ex.fileName + ":" + ex.lineNumber, ex);
+			this.logError(conn, "onAction", ex, nick + (dest === nick ? "" : " in " + dest), type, msg);
 		}
 		break;
 	case "VERSION":
@@ -530,7 +530,7 @@ aucgbot.onCTCP = function onCTCP(e) {
 			if (this.modMethod("onUnknownCTCP", arguments))
 				break;
 		} catch (ex) {
-			aucgbot.log(conn, "CTCP? ERROR", ex.fileName + ":" + ex.lineNumber, ex);
+			this.logError(conn, "onUnknownCTCP", ex, nick + (dest === nick ? "" : " in " + dest), type, msg);
 		}
 		writeln("[WARNING] Unknown CTCP! ^^^^^");
 		this.log(conn, "CTCP", nick + (nick === dest ? "" : " in " + dest), type, msg);
@@ -856,6 +856,14 @@ aucgbot.log = function _log(conn) {
 	var file = new Stream("aucgbot.log", "a");
 	file.writeln(conn.addr, ": ", Date.now(), ": ", encodeUTF8(Array.slice(arguments, 1).join(": ").trim()));
 	file.close();
+};
+aucgbot.logError = function logError(conn, errorType, ex) {
+	var a = [conn, "ERROR", errorType], b = Array.slice(arguments, 2);
+	if (ex.fileName && ex.lineNumber != null) {
+		a.push(ex.fileName + ":" + ex.lineNumber);
+	}
+	writeln("[ERROR] ", ex);
+	this.log.apply(this, a.concat(b));
 };
 
 if (typeof randint !== "function")
