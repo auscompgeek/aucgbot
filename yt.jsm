@@ -5,7 +5,7 @@
 /*jshint es5: true, esnext: true, expr: true */
 /*global Stream: false, aucgbot: false, module: false, system: false */
 
-module.version = 2.5;
+module.version = 2.6;
 
 module.cmd_ytv = module.cmd_ytid =
 function cmd_ytv(e) {
@@ -43,7 +43,7 @@ function cmd_yt(e) {
 
 	var data;
 	try {
-		data = aucgbot.getJSON("http://gdata.youtube.com/feeds/api/videos?v=2&alt=jsonc&max-results=1&q=" + encodeURIComponent(q), "yt", this.version);
+		data = aucgbot.getJSON("http://gdata.youtube.com/feeds/api/videos?v=2&alt=jsonc&max-results=1&q=" + encodeURIComponent(q), "yt", this.version).data;
 	} catch (ex) {}
 
 	if (!data) {
@@ -68,27 +68,30 @@ module.ytRes = function ytRes(data) {
 
 	{
 		let dura = data.duration,
-			f = function(n) n < 10 ? "0" + n : n,
+			f = function f(n) n < 10 ? "0" + n : n,
 			m = f(Math.floor((dura % 3600) / 60)),
 			s = f(dura % 60),
 			h = Math.floor(dura / 3600);
 		res.push((h ? h + ":" : "") + m + ":" + s);
 	}
 
-	if (data.description) {
-		let desc = data.description, i = desc.indexOf("\n");
+	var desc = data.description;
+	if (desc) {
+		let i = desc.indexOf("\n");
 		if (i !== -1)
 			desc = desc.slice(0, i);
 		res.push(desc);
 	}
 
-	if (data.rating)
-		res.push(data.rating.toFixed(2) + "/5 (" + data.likeCount + "+ " + (data.ratingCount - data.likeCount) + "-)");
+	var rating = data.rating;
+	if (rating)
+		res.push("{0}/5 ({1}+ {2}-)".format(+rating.toFixed(2), data.likeCount, data.ratingCount - data.likeCount));
 
 	res.push(data.viewCount + " views");
 
-	if (data.commentCount)
-		res.push(data.commentCount + " comments");
+	var commentCount = data.commentCount;
+	if (commentCount)
+		res.push(commentCount + " comments");
 
 	res.push(data.category);
 
