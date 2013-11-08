@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global Stream: false, aucgbot: false, module: false, println: false, randint: false */
 
-module.version = "2.1 (2013-10-26)";
+module.version = "2.2 (2013-11-08)";
 module.prefix = "$";
 module.chan = "##elf";
 module.DB_FILENAME = "elf.csv";
@@ -51,7 +51,7 @@ module.updateUser = function updateUser(nick, data) {
 };
 
 module.parseln = function parseln(ln, conn) {
-	if (!/^:([^\s!@]+)![^\s!@]+@[^\s!@]+ JOIN :?(\S+)\r/.test(ln) || RegExp.$2 != this.chan || RegExp.$1 == conn.nick)
+	if (!/^:([^\s!@]+)![^\s!@]+@[^\s!@]+ JOIN :?(\S+)/.test(ln) || RegExp.$2 != this.chan || RegExp.$1 == conn.nick)
 		return false;
 	var nick = RegExp.$1, data = this.getUser(nick);
 	if (data) {
