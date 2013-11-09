@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global Stream: false, aucgbot: false, module: false, println: false, randint: false */
 
-module.version = "2.2 (2013-11-08)";
+module.version = "2.3 (2013-11-09)";
 module.prefix = "$";
 module.chan = "##elf";
 module.DB_FILENAME = "elf.csv";
@@ -14,8 +14,8 @@ module.initDB = function initDB() {
 	this.db.setTitle(1, "nick");
 	this.db.setTitle(2, "score");
 	this.db.setTitle(3, "coins");
-	this.db.setTitle(4, "materials");
-	this.db.setTitle(5, "reputation");
+	this.db.setTitle(4, "material");
+	this.db.setTitle(5, "rep");
 	this.db.setTitle(6, "total");
 	this.index = this.db.index("nick");
 	println("[ELF] Initialised scores database.");
@@ -56,7 +56,7 @@ module.parseln = function parseln(ln, conn) {
 	var nick = RegExp.$1, data = this.getUser(nick);
 	if (data) {
 		data = data.toObject();
-		conn.send("NOTICE", nick, ":[" + this.chan + "] Welcome back", nick + ". You have",
+		conn.notice(nick, "[" + this.chan + "] Welcome back", nick + ". You have",
 			data.score, "points,", data.coins, "coins and", data.materials, "materials.");
 	} else {
 		this.updateUser(nick, {coins: 0, reputation: 0, total: 0, score: 1, materials: 5});
@@ -78,8 +78,8 @@ module.onMsg = function onMsg(e) {
 		var data = this.getUser(nick);
 		if (data) {
 			data = data.toObject();
-			conn.reply(dest, nick, data.score, "points,", data.materials, "materials,",
-				data.coins, "coins,", data.reputation, "reputation, made", data.total, "toys.");
+			conn.reply(dest, nick, data.score, "points,", data.material, "material,",
+				data.coins, "coins,", data.rep, "reputation, made", data.total, "toys.");
 		} else {
 			conn.msg(dest, nick, "has not joined the elf game yet. Try inviting him/her perhaps.");
 		}
@@ -95,9 +95,9 @@ module.onMsg = function onMsg(e) {
 		case "material":
 			var n = parseInt(msg[2]) || 1, cost = n * 2;
 			if (data.coins >= cost) {
-				user.coins -= cost;
-				data.materials += n;
-				conn.msg(this.chan, nick, "has bought", n, "materials. This has cost", cost, "in total.");
+				data.coins -= cost;
+				data.material = +data.material + n;
+				conn.msg(this.chan, nick, "has bought", n, "material. This has cost", cost, "in total.");
 			}
 			break;
 		case "voice":
@@ -131,6 +131,7 @@ module.onMsg = function onMsg(e) {
 			conn.msg(dest, "material [amount]: costs twice the amount, so if you bought 4, you would pay 8 coins.");
 			conn.msg(dest, "voice: costs 800 coins. - hop: costs 7500 coins. - op: costs 20000 coins.");
 			conn.msg(dest, nick, "currently has", data.coins, "coins.");
+			return true;
 		}
 		this.updateUser(nick, data);
 		this.saveDB();
@@ -142,30 +143,31 @@ module.onMsg = function onMsg(e) {
 			return true;
 		}
 		data = data.toObject();
-		if (!data.materials)
-			conn.notice(nick, "You don't have enough materials to make a toy.");
+		data.score = +data.score, data.coins = +data.coins, data.rep = +data.rep;
+		if (data.material <= 0)
+			conn.notice(nick, "You don't have enough material to make a toy.");
 		else {
-			data.materials--;
+			data.material--;
 			data.total++;
 			switch (randint(1, 4)) {
 			case 1:
 				data.score += 100;
 				data.coins += 150;
-				data.reputation += 250;
+				data.rep += 250;
 				conn.msg(this.chan, nick, "makes a toy car. The toy car is fine but is a little scratched.",
 						nick, "gets 100 points and 150 coins.");
 				break;
 			case 2:
 				data.score += 500;
 				data.coins += 300;
-				data.reputation += 750;
+				data.rep += 750;
 				conn.msg(this.chan, nick, "makes a toy car. The toy car is perfectly made and Santa is very happy.",
 						nick, "gets 500 points and 300 coins.");
 				break;
 			case 3:
 				data.score += 50;
 				data.coins += 50;
-				data.reputation += 150;
+				data.rep += 150;
 				conn.msg(this.chan, nick, "makes a teddy bear.",
 					"The teddy bear is poorly made and is nearly falling apart. Santa is not happy.",
 					nick, "gets 50 points and 50 coins.");
@@ -173,7 +175,7 @@ module.onMsg = function onMsg(e) {
 			case 4:
 				data.score += 250;
 				data.coins += 150;
-				data.reputation += 500;
+				data.rep += 500;
 				conn.msg(this.chan, nick, "makes a teddy bear. The teddy bear is in good condition and is ready to sell.",
 						nick, "gets 250 points and 150 coins.");
 				break;
