@@ -4,7 +4,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 /**
- * @fileoverview Designed to be run by <a href="http://jsdb.org">JSDB</a>.
+ * @fileoverview
+ * aucgbot: an IRC bot written in JS.
+ * Designed to be run using <a href="http://jsdb.org">JSDB</a>.
+ *
  * Features:
  * <ul>
  * <li>General flood protection.</li>
@@ -32,7 +35,7 @@ var aucgbot = aucgbot || {
 	ERR_MSG_SELF: "Get me to talk to myself, yeah, great idea...",
 	prefs: {
 		flood: {
-			lines: 7,
+			lines: 8,
 			secs: 3,
 			check: true,
 			log: true,
@@ -40,14 +43,17 @@ var aucgbot = aucgbot || {
 			ban: false, // during flood
 			warn: false // warn user sending message in PM when flood starts
 		},
+		readDelay: 150, // delay on readURI()
 		log: true, // toggle all logging
 		prefix: "]", // command prefix
-		zncBufferHacks: false, // use ZNC buffer timestamps hack
+		zncBufferHacks: true, // use ZNC buffer hacks
+		zncBufferTSHack: false, // use ZNC buffer timestamps hack
 		autoAcceptInvite: true, // automatically join on invite
 		"relay.check": true, // toggle relay bot checking
 		"relay.bots": ["iRelayer", "janus", "Mingbeast", "irfail", "rbot"],
 		/** @deprecated */ "keyboard.sendInput": false, // keyboard.dieOnInput must be false
-		"keyboard.dieOnInput": false, // overrides keyboard.sendInput
+		"keyboard.evalInput": false, // keyboard.dieOnInput must be false
+		"keyboard.dieOnInput": false, // overrides keyboard.sendInput and keyboard.evalInput
 		"kick.rejoin": false,
 		"kick.log": true, // on bot kicked
 		// RegExps to not ban/kick nicks/hosts
@@ -62,7 +68,7 @@ var aucgbot = aucgbot || {
 	modules: {},
 	conns: []
 };
-aucgbot.version = "5.1 (2013-10-27)";
+aucgbot.version = "5.3.1 (2013-12-22)";
 aucgbot.source = "https://github.com/auscompgeek/aucgbot";
 aucgbot.useragent = "aucgbot/{0} (+{1}; {2}; JSDB {3})".format(aucgbot.version, aucgbot.source, system.platform, system.release);
 global = this;
@@ -96,15 +102,21 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 		conn, ln;
 
 	// Let's make them use strings if they want SSL! Yes, that's what I'll do.
+	// Note: SSL support has been commented out due to its instability until I decide what to do.
+	/*
 	if (typeof port === "string" && port[0] === "+") {
 		conn = new Stream("exec://openssl s_client -quiet -connect " + addr);
 	} else {
 		conn = new Stream("net://" + addr);
 	}
+	*/
+	conn = new Stream("net://" + addr);
 	conn.addr = addr;
 
-	if (pass)
+	if (pass) {
 		conn.send("PASS", pass);
+		pass = null;
+	}
 
 	if (sasluser && saslpass) {
 		conn.send("CAP REQ sasl");
@@ -127,7 +139,7 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 	}
 
 	conn.send("NICK", conn.nick = nick || "aucgbot");
-	conn.send("USER", (ident || "aucgbot"), "8 * :\x033\x0fauscompgeek's JS bot");
+	conn.send("USER", ident || "aucgbot", "8 * :\x033\x0fauscompgeek's JS bot");
 
 	if (chans) {
 		if (chans instanceof Array)
@@ -139,6 +151,7 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 	} else {
 		writeln("[WARNING] No channels specified! Joining ", channels);
 	}
+	chans = null;
 
 	while ((ln = conn.readln().trim())) {
 		writeln(conn.addr, ": ", ln);
@@ -147,8 +160,10 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 		else if (/^:\S+ 433 ./.test(ln))
 			conn.send("NICK", conn.nick += "_");
 		else if (/^:\S+ 003 ./.test(ln)) {
-			if (channels)
+			if (channels) {
 				conn.send("JOIN", ":" + channels.map(function (chan) conn.chantypes.contains(chan[0]) ? chan : "#" + chan).join(","));
+				channels = null;
+			}
 			break;
 		}
 	}
@@ -172,6 +187,8 @@ aucgbot.startLoop = function startLoop() {
 				if (system.kbhit()) {
 					if (this.prefs["keyboard.dieOnInput"])
 						conn.send("QUIT :Keyboard input.");
+					else if (this.prefs["keyboard.evalInput"])
+						eval(readln());
 					else if (this.prefs["keyboard.sendInput"])
 						conn.send(readln());
 				}
@@ -214,19 +231,19 @@ aucgbot.parseln = function parseln(ln, conn) { // TODO parse IRC quoting
 	if (this.modMethod("parseln", arguments))
 		return;
 
-	var lnary = /^:([^\s!@]+)!([^\s!@]+)@([^\s!@]+) PRIVMSG (\S+) :(.*)/.exec(ln);
-	if (lnary) {
-		lnary.shift();
-		this.onMsg({
-			dest: lnary[3] === conn.nick ? lnary[0] : lnary[3], msg: lnary[4],
-			nick: lnary[0], ident: lnary[1], host: lnary[2], conn: conn, ln: ln});
-		lnary = null;
+	var msgary = /^:([^\s!@]+)!([^\s!@]+)@([^\s!@]+) PRIVMSG (\S+) :(.*)/.exec(ln);
+	if (msgary) {
+		let e = new this.Message(conn, msgary);
+		msgary = null;
+		this.onMsg(e);
+		e = null;
 		system.gc();
 	} else if (/^PING (.+)/.test(ln)) {
 		conn.send("PONG", RegExp.$1);
-	} else if (/^:([^\s!@]+)!([^\s!@]+)@([^\s!@]+) INVITE (\S+) :(\S+)/.test(ln)) {
+	} else if (/^:([^\s!@]+![^\s!@]+@[^\s!@]+) INVITE \S+ :(\S+)/.test(ln)) {
+		this.log(conn, "INVITE", RegExp.$1, RegExp.$2);
 		if (this.prefs.autoAcceptInvite)
-			conn.send("JOIN", RegExp.$5);
+			conn.send("JOIN", RegExp.$2);
 	} else if (/^:([^\s!@]+)!([^\s!@]+)@([^\s!@]+) NICK :(\S+)/.test(ln)) {
 		if (RegExp.$1 === conn.nick)
 			conn.nick = RegExp.$4;
@@ -260,7 +277,7 @@ aucgbot.onMsg = function onMsg(e) {
 
 	// fix for buffer playback on ZNC
 	if (this.prefs.zncBufferHacks) {
-		if (conn.zncBuffer)
+		if (conn.zncBuffer && this.prefs.zncBufferTSHack)
 			e.msg = e.msg.replace(/^\[[0-2]?\d:[0-5]\d(?::[0-5]\d|)\] /, "");
 		else if (nick === "***") {
 			if (e.msg === "Buffer playback...")
@@ -394,12 +411,15 @@ aucgbot.checkFlood = function checkFlood(e) {
  */
 aucgbot.parseCmd = function parseCmd(e) {
 	var dest = e.dest, cmd = e.cmd, args = e.args, nick = e.nick, host = e.host, conn = e.conn, relay = e.relay;
-	switch (e.cmd) {
+	switch (cmd) {
 	case "ping":
 		conn.reply(dest, nick, "pong", args);
 		break;
 	case "version":
 		conn.reply(dest, nick, "aucgbot", this.version);
+		break;
+	case "source":
+		conn.reply(dest, nick, this.source);
 		break;
 	case "rc":
 		args = args.split(" ");
@@ -425,7 +445,20 @@ aucgbot.parseCmd = function parseCmd(e) {
 		break;
 	case "help":
 		if (args) {
-			conn.notice(nick, "Not implemented.");
+			var c = args, k = "cmd_" + c;
+			for (var m in this.modules) {
+				if (this.modules.hasOwnProperty(m)) {
+					var module = this.modules[m];
+					if (module.hasOwnProperty(k)) {
+						var h = module[k].help;
+						if (h)
+							conn.reply(dest, nick, c, "(" + m + "):", h);
+						else
+							conn.reply(dest, nick, c, "(" + m + ") has no help.");
+						break;
+					}
+				}
+			}
 			break;
 		}
 		/* fallthrough */
@@ -485,6 +518,9 @@ aucgbot.onCTCP = function onCTCP(e) {
 	}
 	function nctcp(res) conn.notice(nick, "\x01" + type, res + "\x01");
 	switch (type.toUpperCase()) {
+	case "PING":
+		nctcp(msg);
+		break;
 	case "ACTION":
 		try {
 			this.modMethod("onAction", arguments);
@@ -500,9 +536,6 @@ aucgbot.onCTCP = function onCTCP(e) {
 		break;
 	case "SOURCE": case "URL":
 		nctcp(this.source);
-		break;
-	case "PING":
-		nctcp(msg);
 		break;
 	case "PREFIX":
 		nctcp(this.prefs.prefix);
@@ -558,21 +591,6 @@ aucgbot.remoteControl = function rcBot(e) {
 	case "die":
 		conn.send("QUIT :" + nick + ":", args.join(" "));
 		break;
-	case "connect":
-		args = /^(?:irc:\/\/|)(\w[\w.-]+\w)(?::([1-5]\d{0,4}|[6-9]\d{0,3}|6[0-4]\d{3}|65[0-4]\d\d|655[0-2]\d))?(?:|\/([^?]*))(?:\?pass=(.+))?$/.exec(args.join(" "));
-		if (!args) { // Invalid URL?!?!?
-			writeln("[ERROR] Invalid URL! ^^^^^");
-			break;
-		}
-		args.shift();
-		try {
-			this.connect(args[0], args[1], conn.nick, "", args[3], args[2]);
-		} catch (ex) {
-			writeln("[ERROR] ", ex);
-			conn.reply(dest, nick, "Error while connecting:", ex);
-			this.log(conn, "CONNECT FAIL", args[0], ex);
-		}
-		break;
 	case "join":
 		var chans = args.shift().split(",");
 		for (var i = chans.length - 1; i >= 0; i--) {
@@ -590,14 +608,14 @@ aucgbot.remoteControl = function rcBot(e) {
 		conn.send("PART", chans.join(","), ":" + nick + ":", args.join(" "));
 		break;
 	case "kick":
-		var chan = args.shift();
-		if (args[0] === conn.nick) {
+		var chan = args.shift(), user = args.shift();
+		if (user === conn.nick) {
 			conn.reply(dest, nick, "Get me to kick myself, yeah, great idea...");
 			break;
 		}
 		if (!conn.chantypes.contains(chan[0]))
 			chan = "#" + chan;
-		conn.send("KICK", chan, args.shift(), ":" + nick + ":", args.join(" "));
+		conn.send("KICK", chan, user, ":" + nick + ":", args.join(" "));
 		break;
 	case "msg": case "privmsg": case "message":
 		if (args[0] === conn.nick) {
@@ -618,11 +636,11 @@ aucgbot.remoteControl = function rcBot(e) {
 		try { res = eval(args); } catch (ex) { res = "exception: " + ex; }
 		if (typeof res === "function")
 			res = "function " + res.name;
-		if (res !== null)
+		if (res != null)
 			conn.reply(dest, nick, res);
 		break;
 	case "pref":
-		this.notice(nick, "Not implemented.");
+		conn.notice(nick, "Not implemented.");
 		break;
 	case "log":
 		this.log(conn, "LOG", nick + (dest === nick ? "" : " in " + dest), args.join(" "));
@@ -713,7 +731,7 @@ aucgbot.loadModule = function loadModule(id) {
 		writeln("Loaded mod_", id, " v", module.version);
 		return module;
 	} finally {
-		delete global.module;
+		delete module;
 	}
 };
 /**
@@ -724,6 +742,8 @@ aucgbot.loadModule = function loadModule(id) {
  * @return {boolean} Whether to stop processing the event.
  */
 aucgbot.modMethod = function modMethod(id, args) {
+	if (typeof args.length !== "number")
+		args = Array.slice(arguments, 1);
 	try {
 		for (var m in this.modules) {
 			if (this.modules.hasOwnProperty(m)) {
@@ -736,7 +756,7 @@ aucgbot.modMethod = function modMethod(id, args) {
 			}
 		}
 	} finally {
-		delete global.module;
+		delete module;
 	}
 	return false;
 };
@@ -754,14 +774,93 @@ aucgbot.getHTTP = function getHTTP(uri, modname, modver, headers) {
 };
 aucgbot.readURI = function readURI(uri, headers) {
 	var stream = new Stream(uri, null, headers), content;
-	sleep(10);  // wait a tick so that the entire file actually comes through
-	content = stream.readFile(stream.header && stream.header["Content-Length"]);
+	sleep(this.prefs.readDelay);  // wait a tick so that the entire file actually comes through
+	if (stream.header) {
+		var record = new Record(stream.header);
+		record.caseSensitive = false;
+		var len = record.get("Content-Length") | 0;
+		if (len) {
+			content = stream.read(len);
+		} else {
+			content = stream.readFile();
+		}
+	} else {
+		content = stream.readFile();
+	}
+	stream.close();
 	try {
 		content = decodeUTF8(content);
 	} catch (ex) {}
+	if (stream.status && stream.status >= 300) {
+		throw new this.HTTPError(stream, content);
+	}
 	return content;
 };
 aucgbot.getJSON = function getJSON() JSON.parse(this.getHTTP.apply(this, arguments));
+aucgbot.getXML = function getXML() new XML(this.getHTTP.apply(this, arguments).replace(/^<\?xml\s+[^?]*\?>/, ""));
+
+/** @constructor */
+aucgbot.HTTPError = function HTTPError(stream, content) {
+	this.message = "HTTP {0} {1}".format(stream.status, stream.statusText);
+	this.stream = stream;
+	this.status = stream.status;
+	this.statusText = stream.statusText;
+	this.content = content;
+	this.stack = new Error().stack;
+};
+aucgbot.HTTPError.prototype.name = "HTTPError";
+aucgbot.HTTPError.prototype.toString = function toString() {
+	return this.name + ": " + this.message;
+};
+
+/** @constructor */
+aucgbot.Message = function Message(conn, msgary) {
+	var ln = msgary[0], nick = msgary[1], ident = msgary[2], host = msgary[3], dest = msgary[4], msg = msgary[5];
+	this.msg = msg, this.nick = nick, this.ident = ident, this.host = host, this.conn = conn, this.ln = ln, this.sentTo = dest;
+	this.dest = dest === conn.nick ? nick : dest;
+	return self;
+};
+aucgbot.Message.prototype = {
+	bot: aucgbot,
+	send: function send() {
+		var args = Array.slice(arguments), conn = this.conn;
+		args.unshift(this.dest);
+		return conn.msg.apply(conn, args);
+	},
+	nmsg: function nmsg() {
+		var args = Array.slice(arguments), conn = this.conn;
+		args.unshift(this.dest);
+		return conn.nmsg.apply(conn, args);
+	},
+	notice: function notice() {
+		var args = Array.slice(arguments), conn = this.conn;
+		args.unshift(this.nick);
+		return conn.notice.apply(conn, args);
+	},
+	reply: function reply() {
+		// don't use Array.concat, it doesn't work with the arguments object
+		var args = Array.slice(arguments), conn = this.conn;
+		args.unshift(this.nick), args.unshift(this.dest);
+		return conn.reply.apply(conn, args);
+	},
+	nreply: function nreply() {
+		var args = Array.slice(arguments), conn = this.conn;
+		args.unshift(this.nick), args.unshift(this.dest);
+		return conn.nreply.apply(conn, args);
+	},
+	log: function _log() {
+		var args = Array.slice(arguments), bot = this.bot;
+		args.unshift(this.conn);
+		bot.log.apply(bot, args);
+	},
+	logError: function logError() {
+		var args = Array.slice(arguments), bot = this.bot;
+		args.unshift(this.conn);
+		bot.logError.apply(bot, args);
+	},
+	isSU: function isSU() this.bot.isSU(this),
+	okToKick: function okToKick() this.bot.okToKick(this),
+};
 
 /**
  * Send data to an IRC server.
@@ -793,24 +892,24 @@ Stream.prototype.send = function send(/* ...data */) {
 Stream.prototype.msg = function msg(dest) {
 	if (arguments.length < 2)
 		throw new TypeError("Stream.prototype.msg requires at least 2 arguments");
-	var msg = Array.slice(arguments, 1).join(" ").replace(/\s+/g, " ").trim();
+	var msg = Array.slice(arguments, 1).join(" ").trim().replace(/\s+/g, " ");
 	if (msg)
 		return this.writeln("PRIVMSG ", encodeUTF8(dest + " :" + msg));
 };
 Stream.prototype.nmsg = function nmsg(dest) {
 	if (arguments.length < 2)
 		throw new TypeError("Stream.prototype.nmsg requires at least 2 arguments");
-	var msg = Array.slice(arguments, 1).join(" ").replace(/\s+/g, " ").trim();
+	var msg = Array.slice(arguments, 1).join(" ").trim().replace(/\s+/g, " ");
 	if (msg)
 		return this.writeln(this.chantypes.contains(dest[0]) ? "PRIVMSG " : "NOTICE ", encodeUTF8(dest + " :" + msg));
 };
 Stream.prototype.notice = function notice(dest) {
 	if (arguments.length < 2)
 		throw new TypeError("Stream.prototype.notice requires at least 2 arguments");
-	var msg = Array.slice(arguments, 1).join(" ").replace(/\s+/g, " ").trim();
+	var msg = Array.slice(arguments, 1).join(" ").trim().replace(/\s+/g, " ");
 	if (msg)
 		return this.writeln("NOTICE ", encodeUTF8(dest + " :" + msg));
-};
+}; 
 /**
  * Reply to a user request.
  *
@@ -826,7 +925,7 @@ Stream.prototype.notice = function notice(dest) {
 Stream.prototype.reply = function reply(dest, nick) {
 	if (arguments.length < 3)
 		throw new TypeError("Stream.prototype.reply requires at least 3 arguments");
-	var msg = Array.slice(arguments, 2).join(" ").replace(/\s+/g, " ").trim();
+	var msg = Array.slice(arguments, 2).join(" ").trim().replace(/\s+/g, " ");
 	if (dest !== nick)
 		msg = nick + ": " + msg;
 	if (msg)
@@ -835,7 +934,7 @@ Stream.prototype.reply = function reply(dest, nick) {
 Stream.prototype.nreply = function nreply(dest, nick) {
 	if (arguments.length < 3)
 		throw new TypeError("Stream.prototype.nreply requires at least 3 arguments");
-	var msg = Array.slice(arguments, 2).join(" ").replace(/\s+/g, " ").trim();
+	var msg = Array.slice(arguments, 2).join(" ").trim().replace(/\s+/g, " ");
 	if (dest !== nick)
 		msg = nick + ": " + msg;
 	if (msg)
@@ -858,6 +957,8 @@ aucgbot.log = function _log(conn) {
 	file.close();
 };
 aucgbot.logError = function logError(conn, errorType, ex) {
+	if (ex == null)
+		throw new TypeError("aucgbot.logError requires at least 3 arguments");
 	var a = [conn, "ERROR", errorType], b = Array.slice(arguments, 2);
 	if (ex.fileName && ex.lineNumber != null) {
 		a.push(ex.fileName + ":" + ex.lineNumber);
@@ -900,7 +1001,7 @@ if (typeof Array.prototype.contains !== "function")
  * ES6 shim: Check if an array contains an element.
  *
  * @this {Array} The array to check the contents of.
- * @param {e} An element to check.
+ * @param {*} e An element to check.
  * @return {Boolean} Whether the string contains the substring.
  */
 Array.prototype.contains = function contains(e) this.indexOf(e) !== -1;
@@ -912,7 +1013,7 @@ if (typeof String.prototype.contains !== "function")
  * ES6 shim: Check if a string contains a substring.
  *
  * @this {String} The string to check the contents of.
- * @param {s} The substring to check.
+ * @param {String} s The substring to check.
  * @return {Boolean} Whether the string contains the substring.
  */
 String.prototype.contains = function contains(s) this.indexOf(s) !== -1;
