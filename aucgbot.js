@@ -733,7 +733,7 @@ aucgbot.loadModule = function loadModule(id) {
  * @return {boolean} Whether to stop processing the event.
  */
 aucgbot.modMethod = function modMethod(id, args) {
-	if (typeof args.length !== "number")
+	if (args != null && typeof args.length !== "number")
 		args = Array.slice(arguments, 1);
 	try {
 		for (var m in this.modules) {
@@ -881,13 +881,13 @@ aucgbot.IRCStream.prototype.__proto__ = Stream.prototype;
 /**
  * Send data to an IRC server.
  *
- * @this {IRCStream} IRC server connection
+ * @this {aucgbot.IRCStream} IRC server connection
  * @usage conn.send(data...)
  * @link IRCStream.prototype#msg
  * @link IRCStream.prototype#reply
  * @return {number} Number of bytes sent.
  */
-IRCStream.prototype.send = function send(/* ...data */) {
+aucgbot.IRCStream.prototype.send = function send(/* ...data */) {
 	if (!arguments.length)
 		throw new TypeError("IRCStream.prototype.send requires at least 1 argument");
 	var data = encodeUTF8(Array.join(arguments, " ").trim());
@@ -905,21 +905,21 @@ IRCStream.prototype.send = function send(/* ...data */) {
  * @link IRCStream.prototype#reply
  * @return {number} Number of bytes sent.
  */
-IRCStream.prototype.msg = function msg(dest) {
+aucgbot.IRCStream.prototype.msg = function msg(dest) {
 	if (arguments.length < 2)
 		throw new TypeError("IRCStream.prototype.msg requires at least 2 arguments");
 	var msg = Array.slice(arguments, 1).join(" ").trim().replace(/\s+/g, " ");
 	if (msg)
 		return this.writeln("PRIVMSG ", encodeUTF8(dest + " :" + msg));
 };
-IRCStream.prototype.nmsg = function nmsg(dest) {
+aucgbot.IRCStream.prototype.nmsg = function nmsg(dest) {
 	if (arguments.length < 2)
 		throw new TypeError("IRCStream.prototype.nmsg requires at least 2 arguments");
 	var msg = Array.slice(arguments, 1).join(" ").trim().replace(/\s+/g, " ");
 	if (msg)
 		return this.writeln(this.chantypes.contains(dest[0]) ? "PRIVMSG " : "NOTICE ", encodeUTF8(dest + " :" + msg));
 };
-IRCStream.prototype.notice = function notice(dest) {
+aucgbot.IRCStream.prototype.notice = function notice(dest) {
 	if (arguments.length < 2)
 		throw new TypeError("IRCStream.prototype.notice requires at least 2 arguments");
 	var msg = Array.slice(arguments, 1).join(" ").trim().replace(/\s+/g, " ");
@@ -938,7 +938,7 @@ IRCStream.prototype.notice = function notice(dest) {
  * @link IRCStream.prototype#msg
  * @return {number} Number of bytes sent.
  */
-IRCStream.prototype.reply = function reply(dest, nick) {
+aucgbot.IRCStream.prototype.reply = function reply(dest, nick) {
 	if (arguments.length < 3)
 		throw new TypeError("IRCStream.prototype.reply requires at least 3 arguments");
 	var msg = Array.slice(arguments, 2).join(" ").trim().replace(/\s+/g, " ");
@@ -947,7 +947,7 @@ IRCStream.prototype.reply = function reply(dest, nick) {
 	if (msg)
 		return this.writeln("PRIVMSG ", encodeUTF8(dest + " :" + msg));
 };
-IRCStream.prototype.nreply = function nreply(dest, nick) {
+aucgbot.IRCStream.prototype.nreply = function nreply(dest, nick) {
 	if (arguments.length < 3)
 		throw new TypeError("IRCStream.prototype.nreply requires at least 3 arguments");
 	var msg = Array.slice(arguments, 2).join(" ").trim().replace(/\s+/g, " ");
@@ -956,7 +956,7 @@ IRCStream.prototype.nreply = function nreply(dest, nick) {
 	if (msg)
 		return this.writeln(this.chantypes.contains(dest[0]) ? "PRIVMSG " : "NOTICE ", encodeUTF8(dest + " :" + msg));
 };
-IRCStream.prototype.chantypes = "#&+!";
+aucgbot.IRCStream.prototype.chantypes = "#&+!";
 /**
  * Write text to the log file.
  *
