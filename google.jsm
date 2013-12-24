@@ -2,36 +2,68 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global Stream: false, aucgbot: false, module: false */
+/*global module: false */
 
-module.version = 1.1;
+module.version = 2.2;
+module.SEARCH_API_BASE = "http://ajax.googleapis.com/ajax/services/search/web?v=1.0&rsz=1&q=";
+module.HUMAN_NOJS_SEARCH_BASE = "http://www.google.com/search?gbv=1&q=";
+// yes, I'm scraping HTML with regex. get over it.
+// regex stolen from jenni, a fellow bot: https://github.com/myano/jenni/blob/master/modules/calc.py
+// This regex is Copyright 2009-2013, Michael Yanovich (yanovich.net). Licensed under the Eiffel Forum License 2.
+module.CALC_REGEX = /<(?:h2 class="r"|div id="aoba")[^>]*>(.+?)<\/(?:h2|div)>/;
 
 module.cmd_g = module.cmd_google =
-function cmd_google(dest, msg, nick, ident, host, conn, relay) {
-	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
+function cmd_google(e) {
+	var args = e.args;
 	if (!args) {
-		conn.reply(dest, nick, "Search Google. Usage: g <query>");
+		e.reply(this.cmd_g.help);
 		return true;
 	}
 
 	var data;
 	try {
-		data = aucgbot.getJSON("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&rsz=1&q=" + encodeURIComponent(args), "google", this.version);
+		data = e.bot.getJSON(this.SEARCH_API_BASE + encodeURIComponent(args), "google", this.version);
 	} catch (ex) {}
 
 	if (!data) {
-		conn.reply(dest, nick, "Google returned no data.");
+		e.reply("Google returned no data.");
 		return true;
 	}
 	if (data.responseStatus != 200) {
-		conn.reply(dest, nick, data.responseStatus, data.responseDetails);
+		e.reply(data.responseStatus, data.responseDetails);
 		return true;
 	}
 
 	var res0 = data.responseData.results[0];
-	conn.reply(dest, nick, res0 ? (
-			unescape(res0.url) + " - " + decodeHTML(res0.titleNoFormatting) + " - " +
-			decodeHTML(res0.content).replace(/<\/?b>/g, "\002").replace(/\s+/g, " ")
-		) : "No results.");
+	if (res0) {
+		e.reply(
+			unescape(res0.url), "-", decodeHTML(res0.titleNoFormatting), "-",
+			decodeHTML(res0.content).replace(/<\/?b>/g, "\002")
+		);
+	} else {
+		e.reply("No results.");
+	}
 	return true;
+};
+module.cmd_g.help = "Grab the first Google search result. Usage: g <query>";
+
+module.cmd_gcalc = function cmd_gcalc(e) {
+	var args = e.args;
+	if (!args) {
+		e.reply(this.cmd_gcalc.help);
+		return true;
+	}
+
+	var page = e.bot.getHTTP(this.HUMAN_NOJS_SEARCH_BASE + encodeURIComponent(args), "google", this.version);
+	if (this.CALC_REGEX.test(page)) {
+		e.reply(this.cleanCalc(RegExp.$1));
+	} else {
+		e.reply("Couldn't grab a calculator result.");
+	}
+	return true;
+};
+module.cmd_gcalc.help = "Attempt to grab a Google Calculator result (from the no-JS results page). Usage: gcalc <query>";
+
+module.cleanCalc = function cleanCalc(expr) {
+	return decodeHTML(expr).replace("<sup>", "^(", "g").replace("</sup>", ")", "g");
 };
