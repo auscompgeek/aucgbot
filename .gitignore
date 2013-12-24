@@ -1,6 +1,7 @@
 *.log
 *.json
 *.ini
+*.csv
 *.sqlite
 *.db
 .settings
