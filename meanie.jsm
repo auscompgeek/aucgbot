@@ -5,7 +5,7 @@
 /*jshint expr: true */
 /*global module: false, randint: false */
 
-module.version = 0.6;
+module.version = 0.7;
 
 module.adjs = ["acidic", "antique", "contemptible", "culturally-unsound",
 	"despicable", "evil", "fermented", "festering", "foul", "fulminating", "humid", "impure",
@@ -46,7 +46,7 @@ module.nouns = ["bat toenails", "bug spit", "cat hair", "chicken piss",
 
 // Comes up with a random insult. Copyedited from mozbot.
 // https://mxr.mozilla.org/mozilla/source/webtools/mozbot/BotModules/Insult.bm
-module.cmd_insult = function cmd_insult(dest, args, nick, ident, host, conn, relay) {
+module.cmd_insult = function cmd_insult(e) {
 	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
 	switch (args.toLowerCase()) {
 	case "yourself": case "itself": case "himself": case "herself": case "self": case conn.nick:
@@ -125,7 +125,7 @@ module.makeSlaps = function makeSlaps() {
 };
 module.slaps = module.makeSlaps();
 
-module.cmd_slap = function cmd_slap(dest, args, nick, ident, host, conn, relay) {
+module.cmd_slap = function cmd_slap(e) {
 	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
 	conn.msg(dest, this.slaps.random().replace("$nick", args && args != conn.nick && args != "me" ? args : nick));
 	return true;
