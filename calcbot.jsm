@@ -7,7 +7,7 @@
 if (!run("calc.js"))
 	throw new Error("Could not load calc functions from calc.js");
 
-module.version = "2.10 (2013-10-26)";
+module.version = "3.0 (2013-12-23)";
 module.prefs = {
 	abuse: {
 		log: true, // when triggered with =
@@ -23,24 +23,34 @@ module.prefs = {
 	userfriendly: false,
 	actDice: true // output <x>d<y> as /me rolls a d<y> x times: a, b, c; total: d
 };
-module.abuse = /load|run|java|ecma|op|doc|cli|(?:qui|exi|aler|prin|insul|impor|scrip)t|def|raw|throw|win|nan|open|con|p(?:ro|atch|lug|lay)|inf|my|for|(?:fals|minimi[sz]|dat|los|whil|writ|tru|typ)e|read|this|js|sys|scr|(?:de|loca|unti|rctr|eva)l|glob|[\[{'"}\]]/;
+module.abuse = /[\[{'"}\]]|alert|ass|cli|con|date|def|del|doc|ecma|eval|exit|false|for|glob|import|in[fs]|java|js|lo(?:ad|cal|se)|minimi|my|nan|op|p(?:ro|atch|lug|lay|rint)|quit|raw|rctrl|read|rite|run|scr|sys|this|throw|true|until|voice|while|win|yp/;
 module.list = "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, ln, pow, sqrt, abs, ceil, max, min, floor, round, random, randint, fact, mean, dice, ftoc, ctof. Constants: e, pi, phi, c. Operators: %, ^, **. Other topics: decimal, trig.";
+module.calcs = {};
+
+module.onNick = function onNick(e) {
+	const calcs = this.calcs, oldNick = e.oldNick.split("|")[0], oldNickCalc = calcs[oldNick], newNick = e.newNick.split("|")[0];
+	if (oldNickCalc && !calcs[newNick])
+		calcs[newNick] = oldNickCalc;
+};
 
 module["cmd_="] = module.cmd_calc = module.cmd_math = function cmd_calc(e) {
-	var dest = e.dest, msg = e.args.replace(/(?:\/\/|@).*/, "").toLowerCase(), nick = e.nick, conn = e.conn;
+	var dest = e.dest, msg = e.args.replace(/(?:\/\/|@).*/, "").toLowerCase(), nick = e.nick, name = e.nick.split("|")[0], conn = e.conn;
 	if (msg.match(this.abuse)) {
-		if (this.prefs.abuse.warn && !relay)
-			conn.send("NOTICE", nick, ":Whoa! Careful dude!");
+		if (this.prefs.abuse.warn && !e.relay)
+			conn.notice(nick, "Whoa! Careful dude!");
 		writeln("[WARNING] Abuse detected! ^^^^^");
 		if (this.prefs.abuse.log)
 			aucgbot.log(conn, "CALC ABUSE", nick + (dest != nick ? " in " + dest : ""), msg);
 		return true;
 	}
+	var calc = this.calcs[name];
+	if (!(calc && typeof calc.calc === "function"))
+		calc = this.calcs[name] = new Calculator();
 	try {
 		var s;
 		if (/^(\d*)d(\d+)$/.test(msg))
 			conn.msg(dest, this.cmdDice(RegExp.$2, RegExp.$1));
-		else if ((s = this.parseMsg(msg)))
+		else if ((s = this.parseMsg(msg, calc)))
 			conn.reply(dest, nick, s);
 	} catch (ex) {
 		writeln("[ERROR] ", ex);
@@ -77,7 +87,7 @@ module.cmd_qe = function cmd_quadraticEqn(e) {
 		conn.reply(dest, nick, this.cmd_qe.help);
 		return true;
 	}
-	var pron = RegExp.$2, a = RegExp.$1, b = RegExp.$3, c = RegExp.$4, _2a, resInSqrt, resSqrt, res = [];
+	var pron = RegExp.$2, a = RegExp.$1, b = RegExp.$3, c = RegExp.$4, _2a, resInSqrt, resSqrt;
 	if ("+-".contains(a))
 		a += "1";
 	if ("+-".contains(b))
@@ -87,16 +97,13 @@ module.cmd_qe = function cmd_quadraticEqn(e) {
 	c = (c ? +c.replace(/\s+/, "") : 0) - RegExp.$5;
 	resInSqrt = b * b - 4 * a * c; // inside our sqrt sign
 	if (resInSqrt < 0) {
-		// answer is a complex number, bail
+		// answer is complex, bail
 		// TODO simplify surd
-		conn.reply(dest, nick, pron + " = (" + (-b) + " \u00B1 \u221A" + resInSqrt + ") / " + _2a);
+		conn.reply(dest, nick, pron, "= ({0} \u00B1 \u221A{1})/{2}".format(-b, resInSqrt, _2a));
 		return true;
 	}
-	res.push("(" + (-b) + " \u00B1 \u221A" + resInSqrt + ") / " + _2a);
 	resSqrt = Math.sqrt(resInSqrt);
-	res.push((-b + resSqrt) / _2a);
-	res.push((-b - resSqrt) / _2a);
-	conn.reply(dest, nick, pron + " = " + res.join(" or "));
+	conn.reply(dest, nick, pron, "= ({0} \u00B1 \u221A{1})/{2} = {3} or {4}".format(-b, resInSqrt, _2a, (-b + resSqrt)/_2a, (-b - resSqrt)/_2a));
 	return true;
 };
 module.cmd_qe.help = "qe: Evaluates the value of the pronumeral in a quadratic equation in general form i.e. ax**2 + bx + c = 0";
@@ -109,7 +116,7 @@ module.cmd_dice = module.cmd_roll = function cmd_roll(e) {
 	return true;
 };
 
-module.parseMsg = function parseMsg(msg) {
+module.parseMsg = function parseMsg(msg, calc) {
 	if (/help|list|^\?[^?]/.test(msg))
 		return this.help(msg);
 	if (this.prefs.easterEggs) { // Time for some Easter Eggs! *dance*
@@ -129,24 +136,24 @@ module.parseMsg = function parseMsg(msg) {
 	if (/[jkz]|\b\d*i\b/.test(msg))
 		return "I don't support algebra. Sorry for any inconvenience.";
 	if (/^([+\-]?(\d+(?:\.\d+|)|\.\d+))[\u00b0 ]?f$/.test(msg))
-		return ftoc(RegExp.$1) + "C";
+		return Calculator.funcs.ftoc(RegExp.$1) + "C";
 	if (/^([+\-]?(\d+(?:\.\d+|)|\.\d+))[\u00b0 ]?c$/.test(msg))
-		return ctof(RegExp.$1) + "F";
+		return Calculator.funcs.ctof(RegExp.$1) + "F";
 	// calculate & return result
-	msg = calc(msg);
+	msg = calc.calc(msg);
 	if (this.prefs.userfriendly) {
-		if (isNaN(Math.ans))
+		if (isNaN(calc.vars.ans))
 			return "That isn't a real number.";
-		if (Math.ans == Infinity)
+		if (calc.vars.ans == Infinity)
 			return this.prefs.easterEggs ? "IT'S OVER 9000!!!1" : "That's a number that's too big for me.";
-		if (Math.ans == -Infinity)
+		if (calc.vars.ans == -Infinity)
 			return "That's a number that's too negative for me.";
 	}
-	return msg + ": " + Math.ans.toLocaleString();
+	return msg + ": " + calc.vars.ans.toLocaleString();
 };
 // Very loosely based on the cZ dice plugin.
 module.cmdDice = function cmdDice(sides, count) {
-	var ary = [], total = 0;
+	var ary = [], total = 0, i;
 	sides = parseInt(sides) || 6;
 	count = parseInt(count) || 1;
 	if (count < 0)
@@ -158,12 +165,12 @@ module.cmdDice = function cmdDice(sides, count) {
 		total = randint(count, i);
 		return this.prefs.actDice ? "\x01ACTION rolls some dice, totalling " + total + ".\x01" : total;
 	}
-	for (var i = 0; i < count; i++)
+	for (i = 0; i < count; i++)
 		total += ary[i] = randint(1, sides);
 	if (this.prefs.easterEggs && isNaN(total))
 		total = "Batman!"
 	if (this.prefs.actDice)
-		return "\x01ACTION rolls a d" + sides + (count > 1 ? " " + count + " times: " + ary.join(", ") + "; total: " : ": ") + total + "\x01";
+		return "\x01ACTION rolls a d{0}{1}: {2}\x01".format(sides, count > 1 ? " " + count + " times: " + ary.join(", ") + "; total" : "", total);
 	return count > 1 ? ary.join(" + ") + " = " + total : ary[0];
 };
 
@@ -178,9 +185,9 @@ module.help = function calcHelp(e) {
 	case "atan2":
 		return "atan2(y,x): Get atan(y/x). -pi < atan2(y,x) < pi. " +
 			"The vector in the plane from (0,0) to (x,y) makes the angle " +
-			"with the + X axis. This is so the signs of x & y are known " +
+			"with the +x axis. This is so the signs of (x,y) are known " +
 			"so the correct quadrant for the angle can be computed. e.g. " +
-			"atan(1) = atan2(1,1) = pi/4, but atan2(-1,-1) = -3*pi/4. See also: atan, tan";
+			"atan(1) = atan2(1,1) = pi/4, but atan2(-1,-1) = -3pi/4. See also: atan, tan";
 	case "sine": case "sin":
 		return "sin(z): Get the sine of z radians, opp/hyp. See also: asin, cos, tan";
 	case "cosine": case "cosin": case "cos":
@@ -220,11 +227,10 @@ module.help = function calcHelp(e) {
 		return "rand(): Get a random decimal e.g. floor(rand()*(max-min+1))+min. See also: dice, floor, randint";
 	case "randomi": // random integer
 	case "randomr": // randomRange (ChatZilla)
-	case "getrand": // getRandomInt https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Math/random#Example:_Using_Math.random
 	case "randint": // like Python's random module
 		return "randint([min,[max]]): Get a random integer between min & max, default = 1 & 10. See also: dice, rand, floor, round";
 	case "factori": case "fact": case "!":
-		return "fact(x), x!: Get the factorial of the positive integer x where x < 170 due to technical " +
+		return "fact(x), x!: Get the factorial of the positive integer x, where x < 170 due to technical " +
 			"restrictions. x can't be an expression with 'x!', but x can be in the format of fact(y).";
 	case "recipro": case "recip":
 		return "recip(x), 1/x, pow(x,-1), x**-1: Get the reciprocal of x. See also: pow";
