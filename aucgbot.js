@@ -68,7 +68,7 @@ var aucgbot = aucgbot || {
 	modules: {},
 	conns: []
 };
-aucgbot.version = "5.4 (2013-12-24)";
+aucgbot.version = "5.3.2 (2013-12-24)";
 aucgbot.source = "https://github.com/auscompgeek/aucgbot";
 aucgbot.useragent = "aucgbot/{0} (+{1}; {2}; JSDB {3})".format(aucgbot.version, aucgbot.source, system.platform, system.release);
 global = this;
@@ -98,7 +98,20 @@ aucgbot.start = function startBot() {
  * @see aucgbot#start
  */
 aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasluser, saslpass) {
-	var channels = ["#bots"], conn = new this.IRCStream(host, port), ln;
+	var channels = ["#bots"], addr = (host || "127.0.0.1") + ":" + (parseInt(port) || 6667),
+		conn, ln;
+
+	// Let's make them use strings if they want SSL! Yes, that's what I'll do.
+	// Note: SSL support has been commented out due to its instability until I decide what to do.
+	/*
+	if (typeof port === "string" && port[0] === "+") {
+		conn = new Stream("exec://openssl s_client -quiet -connect " + addr);
+	} else {
+		conn = new Stream("net://" + addr);
+	}
+	*/
+	conn = new Stream("net://" + addr);
+	conn.addr = addr;
 
 	if (pass) {
 		conn.send("PASS", pass);
@@ -861,35 +874,18 @@ aucgbot.Message.prototype = {
 	},
 };
 
-/** @constructor */
-aucgbot.IRCStream = function IRCStream(host, port) {
-	var addr = (host || "127.0.0.1") + ":" + (parseInt(port) || 6667);
-	// Let's make them use strings if they want SSL! Yes, that's what I'll do.
-	// Note: SSL support has been commented out due to its instability until I decide what to do.
-	/*
-	if (typeof port === "string" && port[0] === "+") {
-		Stream.call(this, "exec://openssl s_client -quiet -connect " + addr);
-	} else {
-		Stream.call(this, "net://" + addr);
-	}
-	*/
-	Stream.call(this, "net://" + addr);
-	this.addr = addr;
-};
-aucgbot.IRCStream.prototype.__proto__ = Stream.prototype;
-
 /**
  * Send data to an IRC server.
  *
- * @this {aucgbot.IRCStream} IRC server connection
+ * @this {Stream} IRC server connection
  * @usage conn.send(data...)
- * @link IRCStream.prototype#msg
- * @link IRCStream.prototype#reply
+ * @link Stream.prototype#msg
+ * @link Stream.prototype#reply
  * @return {number} Number of bytes sent.
  */
-aucgbot.IRCStream.prototype.send = function send(/* ...data */) {
+Stream.prototype.send = function send(/* ...data */) {
 	if (!arguments.length)
-		throw new TypeError("IRCStream.prototype.send requires at least 1 argument");
+		throw new TypeError("Stream.prototype.send requires at least 1 argument");
 	var data = encodeUTF8(Array.join(arguments, " ").trim());
 	if (data)
 		return this.writeln(data);
@@ -897,31 +893,31 @@ aucgbot.IRCStream.prototype.send = function send(/* ...data */) {
 /**
  * Send a PRIVMSG to a specified destination.
  *
- * @this {IRCStream} IRC server connection
+ * @this {Stream} IRC server connection
  * @usage conn.msg(dest, msg...)
  * @param {string} dest Channel or nick to send message to.
  * @param {string} msg Message to send.
- * @link IRCStream.prototype#send
- * @link IRCStream.prototype#reply
+ * @link Stream.prototype#send
+ * @link Stream.prototype#reply
  * @return {number} Number of bytes sent.
  */
-aucgbot.IRCStream.prototype.msg = function msg(dest) {
+Stream.prototype.msg = function msg(dest) {
 	if (arguments.length < 2)
-		throw new TypeError("IRCStream.prototype.msg requires at least 2 arguments");
+		throw new TypeError("Stream.prototype.msg requires at least 2 arguments");
 	var msg = Array.slice(arguments, 1).join(" ").trim().replace(/\s+/g, " ");
 	if (msg)
 		return this.writeln("PRIVMSG ", encodeUTF8(dest + " :" + msg));
 };
-aucgbot.IRCStream.prototype.nmsg = function nmsg(dest) {
+Stream.prototype.nmsg = function nmsg(dest) {
 	if (arguments.length < 2)
-		throw new TypeError("IRCStream.prototype.nmsg requires at least 2 arguments");
+		throw new TypeError("Stream.prototype.nmsg requires at least 2 arguments");
 	var msg = Array.slice(arguments, 1).join(" ").trim().replace(/\s+/g, " ");
 	if (msg)
 		return this.writeln(this.chantypes.contains(dest[0]) ? "PRIVMSG " : "NOTICE ", encodeUTF8(dest + " :" + msg));
 };
-aucgbot.IRCStream.prototype.notice = function notice(dest) {
+Stream.prototype.notice = function notice(dest) {
 	if (arguments.length < 2)
-		throw new TypeError("IRCStream.prototype.notice requires at least 2 arguments");
+		throw new TypeError("Stream.prototype.notice requires at least 2 arguments");
 	var msg = Array.slice(arguments, 1).join(" ").trim().replace(/\s+/g, " ");
 	if (msg)
 		return this.writeln("NOTICE ", encodeUTF8(dest + " :" + msg));
@@ -929,39 +925,39 @@ aucgbot.IRCStream.prototype.notice = function notice(dest) {
 /**
  * Reply to a user request.
  *
- * @this {IRCStream} IRC server connection
+ * @this {Stream} IRC server connection
  * @usage conn.reply(dest, nick, msg...)
  * @param {string} dest Channel or nick to send message to.
  * @param {string} nick Nick to direct message at.
  * @param {string} msg Message to send to user.
- * @link IRCStream.prototype#send
- * @link IRCStream.prototype#msg
+ * @link Stream.prototype#send
+ * @link Stream.prototype#msg
  * @return {number} Number of bytes sent.
  */
-aucgbot.IRCStream.prototype.reply = function reply(dest, nick) {
+Stream.prototype.reply = function reply(dest, nick) {
 	if (arguments.length < 3)
-		throw new TypeError("IRCStream.prototype.reply requires at least 3 arguments");
+		throw new TypeError("Stream.prototype.reply requires at least 3 arguments");
 	var msg = Array.slice(arguments, 2).join(" ").trim().replace(/\s+/g, " ");
 	if (dest !== nick)
 		msg = nick + ": " + msg;
 	if (msg)
 		return this.writeln("PRIVMSG ", encodeUTF8(dest + " :" + msg));
 };
-aucgbot.IRCStream.prototype.nreply = function nreply(dest, nick) {
+Stream.prototype.nreply = function nreply(dest, nick) {
 	if (arguments.length < 3)
-		throw new TypeError("IRCStream.prototype.nreply requires at least 3 arguments");
+		throw new TypeError("Stream.prototype.nreply requires at least 3 arguments");
 	var msg = Array.slice(arguments, 2).join(" ").trim().replace(/\s+/g, " ");
 	if (dest !== nick)
 		msg = nick + ": " + msg;
 	if (msg)
 		return this.writeln(this.chantypes.contains(dest[0]) ? "PRIVMSG " : "NOTICE ", encodeUTF8(dest + " :" + msg));
 };
-aucgbot.IRCStream.prototype.chantypes = "#&+!";
+Stream.prototype.chantypes = "#&+!";
 /**
  * Write text to the log file.
  *
  * @usage aucgbot.log(conn, data...)
- * @param {IRCStream} conn Server connection.
+ * @param {Stream} conn Server connection.
  */
 aucgbot.log = function _log(conn) {
 	if (!this.prefs.log)
