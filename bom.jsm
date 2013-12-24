@@ -2,9 +2,9 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global Record: false, aucgbot: false, module: false, system: false */
+/*global Record: false, aucgbot: false, module: false */
 
-module.version = 0.7;
+module.version = "0.9.1 (2013-12-22)";
 
 module.loadStateNames = function loadStateNames(state) {
 	var names = new Record();
@@ -14,7 +14,7 @@ module.loadStateNames = function loadStateNames(state) {
 
 module.idToFwoJsonUrl = function idToFwoJsonUrl(id) {
 	// BoM's JSON seems to be a bit much for JSDB to handle correctly, i.e. not load entirely
-	var regionId = id.slice(id.indexOf(".") + 1);
+	var regionId = id.slice(0, id.indexOf("."));
 	return "http://www.bom.gov.au/fwo/ID{0}/ID{1}.json".format(regionId, id);
 };
 
@@ -47,7 +47,7 @@ module.cmd_bom_name2id = function cmd_bom_name2id(e) {
 module.cmd_bom = function cmd_bom(e) {
 	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
 	if (!args) {
-		conn.reply(dest, nick, "Get current weather conditions from the Bureau of Meteorology.");
+		conn.reply(dest, nick, this.cmd_bom.help);
 		return true;
 	}
 
@@ -71,7 +71,7 @@ module.cmd_bom = function cmd_bom(e) {
 
 	conn.nreply(dest, nick, "Current weather for", data.name + ",", state.toUpperCase(), "from the Bureau of Meteorology (as of", data.local_date_time + "):");
 
-	var res = [], temp = data.air_temp, hum = data.rel_hum, rain = data.rain_trace, wind = data.wind_spd_kmh;
+	var res = [], temp = data.air_temp, hum = data.rel_hum, cloud = data.cloud, rain = data.rain_trace, wind = data.wind_spd_kmh, gust = data.gust_kmh;
 
 	if (temp != null) {
 		temp = "Temp: {0}\xB0C".format(temp);
@@ -84,19 +84,24 @@ module.cmd_bom = function cmd_bom(e) {
 	if (hum)
 		res.push("Humidity: {0}%".format(hum));
 
+	if (cloud != "-")
+		res.push("Cloud: " + cloud);
+
 	if (+rain)
 		res.push("Rain (since 9am): {0} mm".format(rain));
 
 	if (wind) {
 		wind = "Wind: {0} km/h ({1} kt)".format(wind, data.wind_spd_kt);
-		var windDir = data.wind_dir, gustKmh = data.gust_kmh;
+		var windDir = data.wind_dir;
 		if (windDir != "-")
 			wind += " " + windDir;
-		if (gustKmh)
-			wind += ", Gust: {0} km/h ({1} kt)".format(gustKmh, data.gust_kt);
 		res.push(wind);
 	}
+
+	if (gust)
+		res.push("Gust: {0} km/h ({1} kt)".format(gust, data.gust_kt));
 
 	conn.nmsg(dest, res.join(" - "));
 	return true;
 };
+module.cmd_bom.help = "Get current weather conditions from the Bureau of Meteorology. Usage: bom <station> <state>";
