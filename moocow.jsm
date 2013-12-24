@@ -5,7 +5,7 @@
 /*jshint es5: true, esnext: true, expr: true */
 /*global module: false */
 
-module.version = "0.10 (2013-10-26)";
+module.version = "0.11.1 (2013-12-21)";
 module.res = [
 	"Mooooooooooo!", "MOO!", "Moo.", "Moo. Moo.", "Moo Moo Moo, Moo Moo.", "fish go m00!",
 	"\x01ACTION nibbles on some grass\x01",
@@ -31,13 +31,13 @@ module.res = [
  * @returns {boolean} true if the bot should stop processing the action.
  */
 module.onAction = function onAction(e) {
-	if (!e.msg.match("(hit|kick|slap|eat|prod|stab|kill|whack|insult|teabag|(punch|bash|touch|pok)e)s " + conn.nick.replace(/\W/g, "\\$&") + "\\b", "i"))
+	if (!e.msg.match("(hit|kick|slap|eat|prod|stab|kill|whack|insult|teabag|(punch|bash|touch|pok)e)s " + e.conn.nick.replace(/\W/g, "\\$&") + "\\b", "i"))
 		return false;
 	function me(msg) "\x01ACTION " + msg + "\x01";
 	var res = this.res;
 	if (aucgbot.modules.meanie)
 		res = res.concat(aucgbot.modules.meanie.slaps);
-	conn.msg(dest, res.random().replace("$dest", e.dest, "g").replace("$nick", e.nick, "g"));
+	e.send(res.random().replace("$dest", e.dest, "g").replace("$nick", e.nick, "g"));
 	return true;
 };
 /**
@@ -54,7 +54,7 @@ module.onAction = function onAction(e) {
 module.onUnknownMsg = function onUnknownMsg(e) {
 	var nick = e.nick, msg = e.msg;
 	if (/(ham|cheese) ?burger|big mac|beef/i.test(msg) && !/^au/.test(nick))
-		conn.msg(dest, "\x01ACTION eats", nick + "\x01");
-	else if (/moo|cow/i.test(msg))
-		conn.msg(dest, this.res.random().replace("$dest", e.dest, "g").replace("$nick", nick, "g"));
+		e.send("\x01ACTION eats", nick + "\x01");
+	else if (/\bmoo|cow/i.test(msg))
+		e.send(this.res.random().replace("$dest", e.dest, "g").replace("$nick", nick, "g"));
 };
