@@ -155,8 +155,8 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 
 	while ((ln = conn.readln().trim())) {
 		writeln(conn.addr, ": ", ln);
-		if (/^PING (.+)/.test(ln))
-			conn.send("PONG", RegExp.$1);
+		if (ln.startsWith("PING "))
+			conn.send("PONG", ln.slice(5));
 		else if (/^:\S+ 433 ./.test(ln))
 			conn.send("NICK", conn.nick += "_");
 		else if (/^:\S+ 003 ./.test(ln)) {
@@ -238,8 +238,8 @@ aucgbot.parseln = function parseln(ln, conn) { // TODO parse IRC quoting
 		this.onMsg(e);
 		e = null;
 		system.gc();
-	} else if (/^PING (.+)/.test(ln)) {
-		conn.send("PONG", RegExp.$1);
+	} else if (ln.startsWith("PING ")) {
+		conn.send("PONG", ln.slice(5));
 	} else if (/^:([^\s!@]+![^\s!@]+@[^\s!@]+) INVITE \S+ :(\S+)/.test(ln)) {
 		this.log(conn, "INVITE", RegExp.$1, RegExp.$2);
 		if (this.prefs.autoAcceptInvite)
@@ -332,7 +332,7 @@ aucgbot.onMsg = function onMsg(e) {
 	}
 
 	var prefix = this.prefs.prefix;
-	if (prefix && msg.slice(0, prefix.length) === prefix) {
+	if (prefix && msg.startsWith(prefix)) {
 		e.args = msg.slice(prefix.length).replace(/^(\S+) ?/, "");
 		e.cmd = RegExp.$1.toLowerCase();
 		this.parseCmd(e);

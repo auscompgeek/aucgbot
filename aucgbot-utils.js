@@ -13,7 +13,7 @@ if (typeof randint !== "function")
  */
 randint = function randint(min, max) {
 	min = min != null ? +min : 1;
-	max = max != null ? max : 10;
+	max = max != null ? +max : 10;
 	if (min >= max)
 		return NaN;
 	return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -50,36 +50,39 @@ Array.prototype.contains = function contains(e) {
 	return this.indexOf(e) !== -1;
 };
 
-if (typeof String.contains !== "function")
-String.contains = function contains(t, s) {
-	return String.indexOf(t, s) !== -1;
-};
 if (typeof String.prototype.contains !== "function")
 /**
  * ES6 shim: Check if a string contains a substring.
  *
  * @this {String} The string to check the contents of.
  * @param {String} s The substring to check.
+ * @param {Number} [pos] Where to start searching.
  * @return {Boolean} Whether the string contains the substring.
  */
-String.prototype.contains = function contains(s) {
-	return this.indexOf(s) !== -1;
+String.prototype.contains = function contains(s, pos) {
+	"use asm";
+	s = s + "";
+	pos = pos | 0;
+	var S = this + "";
+	return S.indexOf(s, pos) !== -1;
 };
 
-if (typeof String.startsWith !== "function")
-String.startsWith = function startsWith(t, s) {
-	return String.slice(t, 0, s.length) === s;
-};
 if (typeof String.prototype.startsWith !== "function")
 /**
  * ES6 shim: Check if a string starts with a substring.
  *
  * @this {String} The string to check the contents of.
  * @param {String} s The substring to check.
+ * @param {Number} [pos] Where to start searching.
  * @return {Boolean} Whether the string starts with the substring.
  */
-String.prototype.startsWith = function startsWith(s) {
-	return this.slice(0, s.length) === s;
+String.prototype.startsWith = function startsWith(s, pos) {
+	"use asm";
+	s = s + "";
+	pos = pos | 0;
+	var S = this + "";
+	//return S.indexOf(s, pos) === pos;
+	return S.substr(pos, s.length) === s;
 };
 
 if (typeof Object.keys !== "function")
