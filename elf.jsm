@@ -59,7 +59,7 @@ module.parseln = function parseln(ln, conn) {
 		conn.notice(nick, "[" + this.chan + "] Welcome back", nick + ". You have",
 			data.score, "points,", data.coins, "coins and", data.materials, "materials.");
 	} else {
-		this.updateUser(nick, {coins: 0, reputation: 0, total: 0, score: 1, materials: 5});
+		this.updateUser(nick, {nick: nick, coins: 0, rep: 0, total: 0, score: 1, material: 5});
 		conn.notice(nick, "[" + this.chan + "] Hey! It looks like you're new!",
 			"You have been given 5 free materials to get you started.",
 			"Type", this.prefix + "rules for more info on the game.",
