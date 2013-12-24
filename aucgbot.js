@@ -68,7 +68,7 @@ var aucgbot = aucgbot || {
 	modules: {},
 	conns: []
 };
-aucgbot.version = "5.3.1 (2013-12-22)";
+aucgbot.version = "5.4 (2013-12-24)";
 aucgbot.source = "https://github.com/auscompgeek/aucgbot";
 aucgbot.useragent = "aucgbot/{0} (+{1}; {2}; JSDB {3})".format(aucgbot.version, aucgbot.source, system.platform, system.release);
 global = this;
@@ -98,20 +98,7 @@ aucgbot.start = function startBot() {
  * @see aucgbot#start
  */
 aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasluser, saslpass) {
-	var channels = ["#bots"], addr = (host || "127.0.0.1") + ":" + (parseInt(port) || 6667),
-		conn, ln;
-
-	// Let's make them use strings if they want SSL! Yes, that's what I'll do.
-	// Note: SSL support has been commented out due to its instability until I decide what to do.
-	/*
-	if (typeof port === "string" && port[0] === "+") {
-		conn = new Stream("exec://openssl s_client -quiet -connect " + addr);
-	} else {
-		conn = new Stream("net://" + addr);
-	}
-	*/
-	conn = new Stream("net://" + addr);
-	conn.addr = addr;
+	var channels = ["#bots"], conn = new this.IRCStream(host, port), ln;
 
 	if (pass) {
 		conn.send("PASS", pass);
@@ -291,16 +278,17 @@ aucgbot.onMsg = function onMsg(e) {
 	var meping = RegExp("^@?" + conn.nick.replace(/\W/g, "\\$&") + "[:,] ?", "i"), dest = e.dest, host = e.host;
 
 	// fix for message relay bots
-	e.relay = "";
 	if (this.prefs["relay.check"] && this.prefs["relay.bots"].contains(nick)) {
 		if (/^\* (\S+) (.+)/.test(msg)) {
-			e.relay = e.nick, nick = e.nick = RegExp.$1.replace(/^\[\w+\]|\/.+/g, ""), e.msg = RegExp.$2;
+			e.relay = e.nick, nick = e.nick = RegExp.$1.replace(/^(?:\[\w+\]|\w+:)|\/.+/g, ""), e.msg = RegExp.$2;
+			if (!e.nick && /^(\S+) (.+)/.test(e.msg))
+				e.nick = RegExp.$1, e.msg = RegExp.$2;
 			if (!this.checkFlood(e))
 				this.modMethod("onAction", [e]);
 			return;
 		}
 		if (/^<([^>]+)> (.+)/.test(msg))
-			e.msg = RegExp.$2, e.relay = nick, nick = e.nick = RegExp.$1.replace(/^\[\w+\]\s*|\/.+/g, "");
+			e.msg = RegExp.$2, e.relay = nick, nick = e.nick = RegExp.$1.replace(/^(?:\[\w+\]\s*|\w+:)|\/.+/g, "");
 	}
 
 	// don't listen to bots
@@ -317,7 +305,7 @@ aucgbot.onMsg = function onMsg(e) {
 		if (this.modMethod("onMsg", [e]))
 			return;
 	} catch (ex) {
-		this.logError(conn, "onMsg", ex, nick + (dest === nick ? "" : " in " + dest), msg);
+		e.logError("onMsg", ex, nick + (dest === nick ? "" : " in " + dest), msg);
 	}
 
 	if (!e.relay && msg[0] === "\x01") {
@@ -330,8 +318,9 @@ aucgbot.onMsg = function onMsg(e) {
 		return;
 	}
 
-	if (this.prefs.prefix && msg.slice(0, this.prefs.prefix.length) === this.prefs.prefix) {
-		e.args = msg.slice(this.prefs.prefix.length).replace(/^(\S+) ?/, "");
+	var prefix = this.prefs.prefix;
+	if (prefix && msg.slice(0, prefix.length) === prefix) {
+		e.args = msg.slice(prefix.length).replace(/^(\S+) ?/, "");
 		e.cmd = RegExp.$1.toLowerCase();
 		this.parseCmd(e);
 	} else if (meping.test(msg) || dest === nick) {
@@ -342,7 +331,7 @@ aucgbot.onMsg = function onMsg(e) {
 		try {
 			this.modMethod("onUnknownMsg", [e]);
 		} catch (ex) {
-			this.logError(conn, "onUnknownMsg", ex, nick + (dest === nick ? "" : " in " + dest), msg);
+			e.logError("onUnknownMsg", ex, nick + (dest === nick ? "" : " in " + dest), msg);
 		}
 	}
 };
@@ -391,7 +380,7 @@ aucgbot.checkFlood = function checkFlood(e) {
 				conn.notice(nick, "Please don't flood.");
 		}
 		if (this.prefs.flood.log)
-			this.log(conn, "Flood", nick + (dest === nick ? "" : " in " + dest), msg);
+			e.log("Flood", nick + (dest === nick ? "" : " in " + dest), msg);
 		return true;
 	}
 	conn.flood_in = false, conn.flood_lastTime = now, conn.flood_lines++;
@@ -413,13 +402,13 @@ aucgbot.parseCmd = function parseCmd(e) {
 	var dest = e.dest, cmd = e.cmd, args = e.args, nick = e.nick, host = e.host, conn = e.conn, relay = e.relay;
 	switch (cmd) {
 	case "ping":
-		conn.reply(dest, nick, "pong", args);
+		e.reply("pong", args);
 		break;
 	case "version":
-		conn.reply(dest, nick, "aucgbot", this.version);
+		e.reply("aucgbot", this.version);
 		break;
 	case "source":
-		conn.reply(dest, nick, this.source);
+		e.reply(this.source);
 		break;
 	case "rc":
 		args = args.split(" ");
@@ -428,11 +417,11 @@ aucgbot.parseCmd = function parseCmd(e) {
 			e.args = args;
 			this.remoteControl(e);
 		} else {
-			this.log(conn, "RC ATTEMPT", nick + (relay && ":" + relay) + "!" + e.ident + "@" + host + (dest === nick ? "" : " in " + dest), args.join(" "));
+			e.log("RC ATTEMPT", nick + (relay && ":" + relay) + "!" + e.ident + "@" + host + (dest === nick ? "" : " in " + dest), args.join(" "));
 		}
 		break;
 	case "status": case "uptime":
-		conn.reply(dest, nick, "Uptime:", this.up());
+		e.reply("Uptime:", this.up());
 		break;
 	case "listmods": case "modlist":
 		var mods = [];
@@ -441,7 +430,7 @@ aucgbot.parseCmd = function parseCmd(e) {
 				mods.push(i + " " + this.modules[i].version);
 		}
 		if (mods.length)
-			conn.notice(nick, mods.join(", "));
+			e.notice(mods.join(", "));
 		break;
 	case "help":
 		if (args) {
@@ -452,9 +441,9 @@ aucgbot.parseCmd = function parseCmd(e) {
 					if (module.hasOwnProperty(k)) {
 						var h = module[k].help;
 						if (h)
-							conn.reply(dest, nick, c, "(" + m + "):", h);
+							e.reply(c, "(" + m + "):", h);
 						else
-							conn.reply(dest, nick, c, "(" + m + ") has no help.");
+							e.reply(c, "(" + m + ") has no help.");
 						break;
 					}
 				}
@@ -463,7 +452,7 @@ aucgbot.parseCmd = function parseCmd(e) {
 		}
 		/* fallthrough */
 	case "listcmds": case "cmdlist":
-		var s = [nick];
+		var s = [];
 		for (var m in this.modules) {
 			if (this.modules.hasOwnProperty(m)) {
 				for (var p in this.modules[m]) {
@@ -473,14 +462,14 @@ aucgbot.parseCmd = function parseCmd(e) {
 			}
 		}
 		if (s.length > 1)
-			conn.notice.apply(conn, s);
+			e.notice(s.join(" "));
 		break;
 	default:
 		try {
 			this.modMethod("parseCmd", arguments) || this.modMethod("cmd_" + cmd, arguments);
 		} catch (ex) {
-			conn.notice(nick, "Oops, I encountered an error.", ex);
-			this.logError(conn, "command", ex, nick + (dest === nick ? "" : " in " + dest), cmd, args);
+			e.notice("Oops, I encountered an error.", ex);
+			e.logError("command", ex, nick + (dest === nick ? "" : " in " + dest), cmd, args);
 		}
 	}
 };
@@ -514,9 +503,11 @@ aucgbot.onCTCP = function onCTCP(e) {
 		if (this.modMethod("onCTCP", arguments))
 			return;
 	} catch (ex) {
-		this.logError(conn, "onCTCP", ex, nick + (dest === nick ? "" : " in " + dest), type, msg);
+		e.logError("onCTCP", ex, nick + (dest === nick ? "" : " in " + dest), type, msg);
 	}
-	function nctcp(res) conn.notice(nick, "\x01" + type, res + "\x01");
+	function nctcp(res) {
+		e.notice("\x01" + type, res + "\x01");
+	}
 	switch (type.toUpperCase()) {
 	case "PING":
 		nctcp(msg);
@@ -525,7 +516,7 @@ aucgbot.onCTCP = function onCTCP(e) {
 		try {
 			this.modMethod("onAction", arguments);
 		} catch (ex) {
-			this.logError(conn, "onAction", ex, nick + (dest === nick ? "" : " in " + dest), type, msg);
+			e.logError("onAction", ex, nick + (dest === nick ? "" : " in " + dest), type, msg);
 		}
 		break;
 	case "VERSION":
@@ -563,10 +554,10 @@ aucgbot.onCTCP = function onCTCP(e) {
 			if (this.modMethod("onUnknownCTCP", arguments))
 				break;
 		} catch (ex) {
-			this.logError(conn, "onUnknownCTCP", ex, nick + (dest === nick ? "" : " in " + dest), type, msg);
+			e.logError("onUnknownCTCP", ex, nick + (dest === nick ? "" : " in " + dest), type, msg);
 		}
 		writeln("[WARNING] Unknown CTCP! ^^^^^");
-		this.log(conn, "CTCP", nick + (nick === dest ? "" : " in " + dest), type, msg);
+		e.log("CTCP", nick + (nick === dest ? "" : " in " + dest), type, msg);
 	}
 };
 /**
@@ -582,7 +573,7 @@ aucgbot.onCTCP = function onCTCP(e) {
 aucgbot.remoteControl = function rcBot(e) {
 	var cmd = e.rcCmd, args = e.args, dest = e.dest, nick = e.nick, conn = e.conn;
 	if (cmd !== "log")
-		this.log(conn, "RC", nick + (dest === nick ? "" : " in " + dest), cmd, args.join(" "));
+		e.log("RC", nick + (dest === nick ? "" : " in " + dest), cmd, args.join(" "));
 	switch (cmd) {
 	case "self-destruct": // Hehe, I had to put this in :D
 	case "explode":
@@ -610,7 +601,7 @@ aucgbot.remoteControl = function rcBot(e) {
 	case "kick":
 		var chan = args.shift(), user = args.shift();
 		if (user === conn.nick) {
-			conn.reply(dest, nick, "Get me to kick myself, yeah, great idea...");
+			e.reply("Get me to kick myself, yeah, great idea...");
 			break;
 		}
 		if (!conn.chantypes.contains(chan[0]))
@@ -619,13 +610,13 @@ aucgbot.remoteControl = function rcBot(e) {
 		break;
 	case "msg": case "privmsg": case "message":
 		if (args[0] === conn.nick) {
-			conn.reply(dest, nick, this.ERR_MSG_SELF);
+			e.reply(this.ERR_MSG_SELF);
 			break;
 		}
 		conn.msg.apply(conn, args);
 		break;
 	case "echo": case "say":
-		conn.msg(dest, args.join(" "));
+		e.send(args.join(" "));
 		break;
 	case "quote": case "raw":
 		conn.send(args.join(" "));
@@ -637,32 +628,32 @@ aucgbot.remoteControl = function rcBot(e) {
 		if (typeof res === "function")
 			res = "function " + res.name;
 		if (res != null)
-			conn.reply(dest, nick, res);
+			e.reply(res);
 		break;
 	case "pref":
-		conn.notice(nick, "Not implemented.");
+		e.notice("Not implemented.");
 		break;
 	case "log":
-		this.log(conn, "LOG", nick + (dest === nick ? "" : " in " + dest), args.join(" "));
+		e.log("LOG", nick + (dest === nick ? "" : " in " + dest), args.join(" "));
 		break;
 	case "modload": case "loadmod":
 		try {
 			for (args = args.join(" ").split(","); args.length;)
 				this.loadModule(args.shift());
 		} catch (ex) {
-			conn.reply(dest, nick, ex.fileName + ":" + ex.lineNumber, ex);
+			e.reply(ex.fileName + ":" + ex.lineNumber, ex);
 		}
 		break;
 	case "reload":
 		if (!run("aucgbot.js")) {
-			conn.reply(dest, nick, "I can't find myself!");
-			this.log(conn, "Can't reload!");
+			e.reply("I can't find myself!");
+			e.log("Can't reload!");
 		}
 		break;
 	default:
 		if (this.modMethod("remoteControl", arguments))
 			break;
-		conn.notice(nick, "Hmm? Didn't quite get that.");
+		e.notice("Hmm? Didn't quite get that.");
 	}
 };
 /**
@@ -796,8 +787,12 @@ aucgbot.readURI = function readURI(uri, headers) {
 	}
 	return content;
 };
-aucgbot.getJSON = function getJSON() JSON.parse(this.getHTTP.apply(this, arguments));
-aucgbot.getXML = function getXML() new XML(this.getHTTP.apply(this, arguments).replace(/^<\?xml\s+[^?]*\?>/, ""));
+aucgbot.getJSON = function getJSON() {
+	return JSON.parse(this.getHTTP.apply(this, arguments));
+};
+aucgbot.getXML = function getXML() {
+	return new XML(this.getHTTP.apply(this, arguments).replace(/^<\?xml\s+[^?]*\?>/, ""));
+};
 
 /** @constructor */
 aucgbot.HTTPError = function HTTPError(stream, content) {
@@ -858,22 +853,43 @@ aucgbot.Message.prototype = {
 		args.unshift(this.conn);
 		bot.logError.apply(bot, args);
 	},
-	isSU: function isSU() this.bot.isSU(this),
-	okToKick: function okToKick() this.bot.okToKick(this),
+	isSU: function isSU() {
+		return this.bot.isSU(this);
+	},
+	okToKick: function okToKick() {
+		return this.bot.okToKick(this);
+	},
 };
+
+/** @constructor */
+aucgbot.IRCStream = function IRCStream(host, port) {
+	var addr = (host || "127.0.0.1") + ":" + (parseInt(port) || 6667);
+	// Let's make them use strings if they want SSL! Yes, that's what I'll do.
+	// Note: SSL support has been commented out due to its instability until I decide what to do.
+	/*
+	if (typeof port === "string" && port[0] === "+") {
+		Stream.call(this, "exec://openssl s_client -quiet -connect " + addr);
+	} else {
+		Stream.call(this, "net://" + addr);
+	}
+	*/
+	Stream.call(this, "net://" + addr);
+	this.addr = addr;
+};
+aucgbot.IRCStream.prototype.__proto__ = Stream.prototype;
 
 /**
  * Send data to an IRC server.
  *
- * @this {Stream} IRC server connection
+ * @this {IRCStream} IRC server connection
  * @usage conn.send(data...)
- * @link Stream.prototype#msg
- * @link Stream.prototype#reply
+ * @link IRCStream.prototype#msg
+ * @link IRCStream.prototype#reply
  * @return {number} Number of bytes sent.
  */
-Stream.prototype.send = function send(/* ...data */) {
+IRCStream.prototype.send = function send(/* ...data */) {
 	if (!arguments.length)
-		throw new TypeError("Stream.prototype.send requires at least 1 argument");
+		throw new TypeError("IRCStream.prototype.send requires at least 1 argument");
 	var data = encodeUTF8(Array.join(arguments, " ").trim());
 	if (data)
 		return this.writeln(data);
@@ -881,31 +897,31 @@ Stream.prototype.send = function send(/* ...data */) {
 /**
  * Send a PRIVMSG to a specified destination.
  *
- * @this {Stream} IRC server connection
+ * @this {IRCStream} IRC server connection
  * @usage conn.msg(dest, msg...)
  * @param {string} dest Channel or nick to send message to.
  * @param {string} msg Message to send.
- * @link Stream.prototype#send
- * @link Stream.prototype#reply
+ * @link IRCStream.prototype#send
+ * @link IRCStream.prototype#reply
  * @return {number} Number of bytes sent.
  */
-Stream.prototype.msg = function msg(dest) {
+IRCStream.prototype.msg = function msg(dest) {
 	if (arguments.length < 2)
-		throw new TypeError("Stream.prototype.msg requires at least 2 arguments");
+		throw new TypeError("IRCStream.prototype.msg requires at least 2 arguments");
 	var msg = Array.slice(arguments, 1).join(" ").trim().replace(/\s+/g, " ");
 	if (msg)
 		return this.writeln("PRIVMSG ", encodeUTF8(dest + " :" + msg));
 };
-Stream.prototype.nmsg = function nmsg(dest) {
+IRCStream.prototype.nmsg = function nmsg(dest) {
 	if (arguments.length < 2)
-		throw new TypeError("Stream.prototype.nmsg requires at least 2 arguments");
+		throw new TypeError("IRCStream.prototype.nmsg requires at least 2 arguments");
 	var msg = Array.slice(arguments, 1).join(" ").trim().replace(/\s+/g, " ");
 	if (msg)
 		return this.writeln(this.chantypes.contains(dest[0]) ? "PRIVMSG " : "NOTICE ", encodeUTF8(dest + " :" + msg));
 };
-Stream.prototype.notice = function notice(dest) {
+IRCStream.prototype.notice = function notice(dest) {
 	if (arguments.length < 2)
-		throw new TypeError("Stream.prototype.notice requires at least 2 arguments");
+		throw new TypeError("IRCStream.prototype.notice requires at least 2 arguments");
 	var msg = Array.slice(arguments, 1).join(" ").trim().replace(/\s+/g, " ");
 	if (msg)
 		return this.writeln("NOTICE ", encodeUTF8(dest + " :" + msg));
@@ -913,39 +929,39 @@ Stream.prototype.notice = function notice(dest) {
 /**
  * Reply to a user request.
  *
- * @this {Stream} IRC server connection
+ * @this {IRCStream} IRC server connection
  * @usage conn.reply(dest, nick, msg...)
  * @param {string} dest Channel or nick to send message to.
  * @param {string} nick Nick to direct message at.
  * @param {string} msg Message to send to user.
- * @link Stream.prototype#send
- * @link Stream.prototype#msg
+ * @link IRCStream.prototype#send
+ * @link IRCStream.prototype#msg
  * @return {number} Number of bytes sent.
  */
-Stream.prototype.reply = function reply(dest, nick) {
+IRCStream.prototype.reply = function reply(dest, nick) {
 	if (arguments.length < 3)
-		throw new TypeError("Stream.prototype.reply requires at least 3 arguments");
+		throw new TypeError("IRCStream.prototype.reply requires at least 3 arguments");
 	var msg = Array.slice(arguments, 2).join(" ").trim().replace(/\s+/g, " ");
 	if (dest !== nick)
 		msg = nick + ": " + msg;
 	if (msg)
 		return this.writeln("PRIVMSG ", encodeUTF8(dest + " :" + msg));
 };
-Stream.prototype.nreply = function nreply(dest, nick) {
+IRCStream.prototype.nreply = function nreply(dest, nick) {
 	if (arguments.length < 3)
-		throw new TypeError("Stream.prototype.nreply requires at least 3 arguments");
+		throw new TypeError("IRCStream.prototype.nreply requires at least 3 arguments");
 	var msg = Array.slice(arguments, 2).join(" ").trim().replace(/\s+/g, " ");
 	if (dest !== nick)
 		msg = nick + ": " + msg;
 	if (msg)
 		return this.writeln(this.chantypes.contains(dest[0]) ? "PRIVMSG " : "NOTICE ", encodeUTF8(dest + " :" + msg));
 };
-Stream.prototype.chantypes = "#&+!";
+IRCStream.prototype.chantypes = "#&+!";
 /**
  * Write text to the log file.
  *
  * @usage aucgbot.log(conn, data...)
- * @param {Stream} conn Server connection.
+ * @param {IRCStream} conn Server connection.
  */
 aucgbot.log = function _log(conn) {
 	if (!this.prefs.log)
@@ -984,7 +1000,9 @@ randint = function randint(min, max) {
 };
 
 if (typeof Array.random !== "function")
-Array.random = function random(a) a[Math.floor(Math.random() * a.length)];
+Array.random = function random(a) {
+	return a[Math.floor(Math.random() * a.length)];
+};
 if (typeof Array.prototype.random !== "function")
 /**
  * Get a random element of an array. http://svendtofte.com/code/usefull_prototypes
@@ -992,10 +1010,14 @@ if (typeof Array.prototype.random !== "function")
  * @this {Array}
  * @return {*} Random element from array.
  */
-Array.prototype.random = function random() this[Math.floor(Math.random() * this.length)];
+Array.prototype.random = function random() {
+	return this[Math.floor(Math.random() * this.length)];
+};
 
 if (typeof Array.contains !== "function")
-Array.contains = function contains(a, e) Array.indexOf(a, e) !== -1;
+Array.contains = function contains(a, e) {
+	return Array.indexOf(a, e) !== -1;
+};
 if (typeof Array.prototype.contains !== "function")
 /**
  * ES6 shim: Check if an array contains an element.
@@ -1004,10 +1026,14 @@ if (typeof Array.prototype.contains !== "function")
  * @param {*} e An element to check.
  * @return {Boolean} Whether the string contains the substring.
  */
-Array.prototype.contains = function contains(e) this.indexOf(e) !== -1;
+Array.prototype.contains = function contains(e) {
+	return this.indexOf(e) !== -1;
+};
 
 if (typeof String.contains !== "function")
-String.contains = function contains(t, s) String.indexOf(t, s) !== -1;
+String.contains = function contains(t, s) {
+	return String.indexOf(t, s) !== -1;
+};
 if (typeof String.prototype.contains !== "function")
 /**
  * ES6 shim: Check if a string contains a substring.
@@ -1016,7 +1042,9 @@ if (typeof String.prototype.contains !== "function")
  * @param {String} s The substring to check.
  * @return {Boolean} Whether the string contains the substring.
  */
-String.prototype.contains = function contains(s) this.indexOf(s) !== -1;
+String.prototype.contains = function contains(s) {
+	return this.indexOf(s) !== -1;
+};
 
 if (typeof Object.keys !== "function")
 Object.keys = function keys(o) {
@@ -1029,6 +1057,8 @@ Object.keys = function keys(o) {
 };
 
 if (typeof Object.is !== "function")
-Object.is = function is(x, y) x === y ? x !== 0 || 1 / x == 1 / y : x !== x && y !== y;
+Object.is = function is(x, y) {
+	return x === y ? x !== 0 || 1 / x == 1 / y : x !== x && y !== y;
+};
 
 writeln("aucgbot ", aucgbot.version, " loaded.");
