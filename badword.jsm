@@ -8,7 +8,7 @@
 // PLEASE NOTE: if you edit the badwords list using the rc js command, also
 // `this.modules.badword.parseList()` otherwise it will not work
 
-module.version = "5.3 (2013-10-26)";
+module.version = "5.4 (2013-11-21)";
 module.db = {}, module.sfwChans = [];
 module.DB_FILENAME = "badword.json";
 module.spaceAfterColon = false;
@@ -113,6 +113,7 @@ module.badwords = {
 	"Fuck": "f(?:u+a*|oo|[*-])[crw*-]?[kq*-]|d(?:a|er)faq|\\bfk|f(?:cu|sc)kin|wh?[au]t [dt][aeh]+ f|wtf|fml|cbf|omfg|stfu|gtfo|lmfao|fubar|idgaf|\\bf word\\b",
 	"Gay": "g(?:a+|he+)y",
 	"God": "g(?:[o*-]|er|aw)d|omf?g|oh em gee",
+	"Gronk": "gronk",
 	"Hack": "hack",
 	"Heck": "\\bheck",
 	"Hell": "hell\\b|wth|bofh",
@@ -178,7 +179,7 @@ module.onMsg = function onMsg(e) {
 	if (/^!badwords?\b/.test(msg)) {
 		msg = msg.split(" "), msg.shift();
 		var name = msg.shift() || nick;
-		name = name.slice(0, name.indexOf("|")), db = this.getUser(name), word = msg.shift(), msg = msg.join(" ");
+		name = name.split("|")[0], db = this.getUser(name), word = msg.shift(), msg = msg.join(" ");
 		if (!db && !(word && msg && aucgbot.isSU(nick, ident, host)))
 			conn.msg(dest, name, "hasn't said any bad words...yet...");
 		else if (word) {
@@ -235,7 +236,7 @@ module.onMsg = function onMsg(e) {
 	msg = msg.toLowerCase();
 	if (!this.badwordList.test(msg))
 		return;
-	db = this.getUser(nick.slice(0, nick.indexOf("|")), true);
+	db = this.getUser(nick.split("|")[0], true);
 	for (word in this.badwords) {
 		if (this.badwords.hasOwnProperty(word) && typeof this.badwords[word] === "string" && (words = msg.match(this.badwords[word], "g"))) {
 			if (!db[word])
