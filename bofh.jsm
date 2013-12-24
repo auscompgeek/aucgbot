@@ -2,16 +2,14 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global Stream: false, module: false */
+/*global module: false */
 
-module.version = 0.2;
+module.version = 0.3;
 
 module.cmd_bofh = function cmd_bofh(e) {
 	var excuses;
 	try {
-		var file = new Stream("excuses.txt");
-		excuses = file.readFile().split("\n");
-		file.close();
+		excuses = e.bot.readURI("excuses.txt").split("\n");
 	} catch (ex) {
 		excuses = [
 			"out of memory",
