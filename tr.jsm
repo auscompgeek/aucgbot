@@ -6,7 +6,7 @@
 /*jshint es5: true, esnext: true, nonstandard: true */
 /*global decodeB64: false, decodeHTML: false, decodeURL: false, encodeB64: false, encodeHTML: false, encodeURL: false, module: false */
 
-module.version = 2.9;
+module.version = 2.91;
 module.UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 module.LOWER = "abcdefghijklmnopqrstuvwxyz";
 module.ALPHABET = module.UPPER + module.LOWER;
@@ -14,168 +14,184 @@ module.AL_BHED = "YPLTAVKREZGMSHUBXNCDIJFQOWypltavkrezgmshubxncdijfqow";
 module.GOOGLERESE = "ynficwlbkuomxsevzpdrjgthaq";
 module.DIGITS = "0123456789";
 
-module.cmd_tr = function cmd_tr(dest, msg, nick, ident, host, conn, relay) {
+module.cmd_tr = function cmd_tr(e) {
 	var args = /^"((?:\\")*[^"]+(?:\\"[^"]*)*)" "((?:\\")*[^"]+(?:\\"[^"]*)*)" "((?:\\")*[^"]+(?:\\"[^"]*)*)"$/.exec(e.args);
-	e.conn.reply(e.dest, e.nick, args ? (args.shift(), tr.apply(null, args)) : this.cmd_tr.help);
+	e.reply(args ? (args.shift(), tr.apply(null, args)) : this.cmd_tr.help);
 	return true;
 };
 module.cmd_tr.help = 'Like the UNIX tr utility. Usage: tr "<text>" "<trFromTable>" "<trToTable>"';
+
 module.cmd_rot13 = function cmd_rot13(e) {
-	var dest = e.dest, msg = e.args, nick = e.nick, conn = e.conn;
+	var msg = e.args;
 	if (!msg) {
-		conn.reply(dest, nick, this.cmd_rot13.help);
+		e.reply(this.cmd_rot13.help);
 		return true;
 	}
-	conn.reply(dest, nick, tr(msg, this.ALPHABET, "NOPQRSTUVWXYZABCDEFGHIJKLMnopqrstuvwxyzabcdefghijklm"));
+	e.reply(tr(msg, this.ALPHABET, "NOPQRSTUVWXYZABCDEFGHIJKLMnopqrstuvwxyzabcdefghijklm"));
 	return true;
 };
 module.cmd_rot13.help = "ROT13 text. Usage: rot13 <text>";
+
 module.cmd_rot47 = function cmd_rot47(e) {
-	var dest = e.dest, msg = e.args, nick = e.nick, conn = e.conn;
+	var msg = e.args;
 	if (!msg) {
-		conn.reply(dest, nick, this.cmd_rot47.help);
+		e.reply(this.cmd_rot47.help);
 		return true;
 	}
-	conn.reply(dest, nick, tr(msg, "!\"#$%&\'()*+,-./0123456789:;<=>?@" + this.UPPER + "[\\]^_`" + this.LOWER + "{|}~", "PQRSTUVWXYZ[\\]^_`" + this.LOWER + "{|}~!\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNO"));
+	e.reply(tr(msg, "!\"#$%&\'()*+,-./0123456789:;<=>?@" + this.UPPER + "[\\]^_`" + this.LOWER + "{|}~", "PQRSTUVWXYZ[\\]^_`" + this.LOWER + "{|}~!\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNO"));
 	return true;
 };
 module.cmd_rot47.help = "ROT47 text. Usage: rot47 <text>";
+
 module.cmd_revtr = function cmd_revtr(e) {
-	var dest = e.dest, msg = e.args, nick = e.nick, conn = e.conn;
+	var msg = e.args;
 	if (!msg) {
-		conn.reply(dest, nick, this.cmd_revtr.help);
+		e.reply(this.cmd_revtr.help);
 		return true;
 	}
-	conn.reply(dest, nick, tr(msg, this.ALPHABET, this.REVUPPER + this.REVLOWER));
+	e.reply(tr(msg, this.ALPHABET, this.REVUPPER + this.REVLOWER));
 	return true;
 };
 module.cmd_revtr.help = "A reversed alphabet Caesar cyphar. Usage: revtr <text>";
+
 module.cmd_rev = function cmd_rev(e) {
-	var dest = e.dest, msg = e.args, nick = e.nick, conn = e.conn;
+	var msg = e.args;
 	if (!msg) {
-		conn.reply(dest, nick, this.cmd_rev.help);
+		e.reply(this.cmd_rev.help);
 		return true;
 	}
-	conn.reply(dest, nick, msg.reverse());
+	e.reply(msg.reverse());
 	return true;
 };
 module.cmd_rev.help = "Reverse text. Usage: rev <text>";
+
 module.cmd_revword = function cmd_revword(e) {
-	var dest = e.dest, msg = e.args, nick = e.nick, conn = e.conn;
+	var msg = e.args;
 	if (!msg) {
-		conn.reply(dest, nick, this.cmd_revword.help);
+		e.reply(this.cmd_revword.help);
 		return true;
 	}
-	conn.reply(dest, nick, msg.split(" ").map(String.reverse).join(" "));
+	e.reply(msg.split(" ").map(String.reverse).join(" "));
 	return true;
 };
 module.cmd_revword.help = "Reverse words. Usage: revword <text>";
+
 module.cmd_encode = function cmd_encode(e) {
-	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
+	var args = e.args;
 	if (!args) {
-		conn.reply(dest, nick, this.cmd_encode.help);
+		e.reply(this.cmd_encode.help);
 		return true;
 	}
 	args = args.split(" ");
 	var type = args.shift().toLowerCase(), msg = args.join(" ");
 	switch (type) {
 	case "base64": case "b64":
-		conn.reply(dest, nick, encodeB64(msg));
+		e.reply(encodeB64(msg));
 		return true;
 	case "html":
-		conn.reply(dest, nick, encodeHTML(msg));
+		e.reply(encodeHTML(msg));
 		return true;
 	case "url":
-		conn.reply(dest, nick, encodeURL(msg));
+		e.reply(encodeURL(msg));
 		return true;
 	case "uri":
-		conn.reply(dest, nick, encodeURI(msg));
+		e.reply(encodeURI(msg));
 		return true;
 	case "uricomponent":
-		conn.reply(dest, nick, encodeURIComponent(msg));
+		e.reply(encodeURIComponent(msg));
 		return true;
 	case "escape":
-		conn.reply(dest, nick, escape(msg));
+		e.reply(escape(msg));
 		return true;
 	case "charcode": case "dec": case "hex": case "bin":
 		var s = [];
 		for (var i = 0; i < msg.length; i++) {
-			if (type == "bin")
+			if (type == "bin") {
 				s.push(msg.charCodeAt(i).toString(2).zfill(8));
-			else
+			} else {
 				s.push(msg.charCodeAt(i).toString(type == "hex" ? 16 : 10));
+			}
 		}
-		conn.reply(dest, nick, s.join(" "));
+		e.reply(s.join(" "));
 		return true;
 	case "albhed":
-		conn.reply(dest, nick, tr(msg, this.ALPHABET, this.AL_BHED));
+		e.reply(tr(msg, this.ALPHABET, this.AL_BHED));
 		return true;
 	case "googlerese":
-		conn.reply(dest, nick, tr(msg, this.LOWER, this.GOOGLERESE));
+		e.reply(tr(msg, this.LOWER, this.GOOGLERESE));
 		return true;
 	}
 };
 module.cmd_encode.help = "Encode stuff. Usage: encode <type> <text>";
+
 module.cmd_decode = function cmd_decode(e) {
-	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
+	var args = e.args;
 	if (!args) {
-		conn.reply(dest, nick, this.cmd_decode.help);
+		e.reply(this.cmd_decode.help);
 		return true;
 	}
 	args = args.split(" ");
 	var type = args.shift().toLowerCase(), msg = args.join(" ");
 	switch (type) {
 	case "base64": case "b64":
-		conn.reply(dest, nick, decodeB64(msg));
+		e.reply(decodeB64(msg));
 		return true;
 	case "html":
-		conn.reply(dest, nick, decodeHTML(msg));
+		e.reply(decodeHTML(msg));
 		return true;
 	case "url":
-		conn.reply(dest, nick, decodeURL(msg));
+		e.reply(decodeURL(msg));
 		return true;
 	case "uri":
-		conn.reply(dest, nick, decodeURI(msg));
+		e.reply(decodeURI(msg));
 		return true;
 	case "uricomponent":
-		conn.reply(dest, nick, decodeURIComponent(msg));
+		e.reply(decodeURIComponent(msg));
 		return true;
 	case "escape":
-		conn.reply(dest, nick, unescape(msg));
+		e.reply(unescape(msg));
 		return true;
 	case "charcode":
-		conn.reply(dest, nick, String.fromCharCode.apply(null, args));
+		e.reply(String.fromCharCode.apply(null, args));
 		return true;
 	case "codepoint": case "codept": case "dec":
-		conn.reply(dest, nick, String.fromCodePoint.apply(null, args));
+		e.reply(String.fromCodePoint.apply(null, args));
 		return true;
-	case "hex": case "bin":
-		conn.reply(dest, nick, String.fromCodePoint.apply(null, args.map(function (x) parseInt(x, type == "hex" ? 16 : 2))));
+	case "hex":
+		if (args.length === 1 && msg.length > 4) {
+			args = msg.match(/.{1,2}/g);
+		}
+		e.reply(String.fromCodePoint.apply(null, args.map(function (x) parseInt(x, 16))));
+		return true;
+	case "bin":
+		e.reply(String.fromCodePoint.apply(null, args.map(function (x) parseInt(x, 2))));
 		return true;
 	case "albhed":
-		conn.reply(dest, nick, tr(msg, this.AL_BHED, this.ALPHABET));
+		e.reply(tr(msg, this.AL_BHED, this.ALPHABET));
 		return true;
 	case "googlerese":
-		conn.reply(dest, nick, tr(msg, this.GOOGLERESE, this.LOWER));
+		e.reply(tr(msg, this.GOOGLERESE, this.LOWER));
 		return true;
 	}
 };
 module.cmd_decode.help = "Decode stuff. Usage: decode <type> <text>";
+
 module.cmd_rainbow = function cmd_rainbow(e) {
-	var dest = e.dest, msg = e.args, nick = e.nick, conn = e.conn;
+	var msg = e.args;
 	if (!msg) {
-		conn.reply(dest, nick, this.cmd_rainbow.help);
+		e.reply(this.cmd_rainbow.help);
 		return true;
 	}
 	function f(n) n < 10 ? "0" + n : n;
 	var s = "";
 	for (var i = 0, chr; chr = msg[i]; i++) {
-		if (this.DIGITS.contains(chr))
+		if (this.DIGITS.contains(chr)) {
 			s += "\003" + f(randint(0, 15)) + chr;
-		else
+		} else {
 			s += "\003" + randint(0, 15) + chr;
+		}
 	}
-	conn.nmsg(dest, s);
+	e.nmsg(s);
 	return true;
 };
 module.cmd_rainbow.help = "Rainbows, rainbows everywhere! Usage: rainbow <text>";
@@ -200,7 +216,7 @@ String.zfill = function zfill(str, l) {
 };
 String.prototype.zfill = function zfill(l) String.zfill(this, l);
 
-// shim in ES5: ECMA-262 6th Edition, 15.5.3.3
+// shim for ES5: ECMA-262 6th Edition, 15.5.3.3
 String.fromCodePoint = function fromCodePoint() {
 	var points = [];
 	Array.forEach(arguments, function (offset) {
