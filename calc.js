@@ -129,7 +129,7 @@ function calc(expr) {
 		.replace("\u2260", "!=", "g").replace("\u2264", "<=", "g").replace("\u2265", ">=", "g").replace(/(recip|fact|randint|sqrt|(?:co|)sec|(?:sin|cos|csc|cot|tan)h?)[^ ()]*\b/g, "$1").replace(/(\d+|)d(\d+)/g, "d($2,$1)")
 		.replace("sgn", "sign", "g").replace(/ra?nd(?:om|) ?(?!\()/, "rnd()").replace(/ave\w+|mean/, "ave").replace(/(sqrt|atan2|(?:sin|cos|tan|csc|sec|cot)h?|round|floor|ceil|log|exp|recip) (\d+(?:\.\d+|!*)|\.\d+)/g, "$1($2)")
 		.replace(/(\d+(?:\.\d+(?:e[+\-]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e) ?\*\* ?([+\-]?\d+(?:\.\d+(?:e[+\-]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e)/g, "pow($1,$2)").replace(/(\d+)!/g, "fact($1)")
-		.replace(/\b(\d+(?:\.\d+|)|\.\d+) ?([(a-df-wyz])/g, "$1*$2").replace(/\b(ph?i|e|c) ?([^+*\/&|\^<>%),?: \-])/g, "$1*$2").replace(/(\(.*?\)) ?([^+*\/&|\^<>%!),?: \-])/g, "$1*$2");
+		.replace(/\b(\d+(?:\.\d+|)|\.\d+|_) ?([(a-df-wyz_])/g, "$1*$2").replace(/\b(ph?i|[ec_]) ?([^+*\/&|\^<>%),?: \-])/g, "$1*$2").replace(/(\(.*?\)) ?([^+*\/&|\^<>%!),?: \-])/g, "$1*$2");
 
 	// FIXME "pow(pow(a,b),c) ** x" becomes "pow(pow(a,pow(b),c),x)"!
 	while (/pow\(.+,.+\) ?\*\* ?[+\-]?(\d+(\.\d|!?)|\.\d)/.test(expr) || /\w*\(.+\)!/.test(expr)) {
