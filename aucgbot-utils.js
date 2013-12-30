@@ -99,3 +99,9 @@ if (typeof Object.is !== "function")
 Object.is = function is(x, y) {
 	return x === y ? x !== 0 || 1 / x == 1 / y : x !== x && y !== y;
 };
+
+// and now, for something completely different
+if (typeof btoa !== "function" && typeof encodeB64 === "function")
+	btoa = encodeB64;
+if (typeof atob !== "function" && typeof decodeB64 === "function")
+	atob = decodeB64;

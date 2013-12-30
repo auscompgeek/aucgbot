@@ -51,9 +51,9 @@ var aucgbot = aucgbot || {
 		autoAcceptInvite: true, // automatically join on invite
 		"relay.check": true, // toggle relay bot checking
 		"relay.bots": ["iRelayer", "janus", "Mingbeast", "irfail", "rbot"],
-		/** @deprecated */ "keyboard.sendInput": false, // keyboard.dieOnInput must be false
-		"keyboard.evalInput": false, // keyboard.dieOnInput must be false
 		"keyboard.dieOnInput": false, // overrides keyboard.sendInput and keyboard.evalInput
+		/** @deprecated */ "keyboard.sendInput": false,
+		"keyboard.evalInput": false,
 		"kick.rejoin": false,
 		"kick.log": true, // on bot kicked
 		// RegExps to not ban/kick nicks/hosts
@@ -68,7 +68,7 @@ var aucgbot = aucgbot || {
 	modules: {},
 	conns: []
 };
-aucgbot.version = "5.3.2 (2013-12-24)";
+aucgbot.version = "5.3.4 (2013-12-30)";
 aucgbot.source = "https://github.com/auscompgeek/aucgbot";
 aucgbot.useragent = "aucgbot/{0} (+{1}; {2}; JSDB {3})".format(aucgbot.version, aucgbot.source, system.platform, system.release);
 global = this;
@@ -120,22 +120,6 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 
 	if (sasluser && saslpass) {
 		conn.send("CAP REQ sasl");
-		while ((ln = conn.readln().trim())) {
-			writeln(conn.addr, ": ", ln);
-			if (ln === "AUTHENTICATE +")
-				conn.send("AUTHENTICATE", encodeB64(sasluser + "\0" + sasluser + "\0" + saslpass));
-			else if (/^:\S+ CAP \* ACK :sasl/.test(ln))
-				conn.send("AUTHENTICATE PLAIN");
-			else if (/^:\S+ 90([345]) ./.test(ln)) {
-				conn.send("CAP END");
-				if (RegExp.$1 !== "3") {
-					conn.send("QUIT");
-					conn.close();
-					return;
-				}
-				break;
-			}
-		}
 	}
 
 	conn.send("NICK", conn.nick = nick || "aucgbot");
@@ -155,11 +139,24 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 
 	while ((ln = conn.readln().trim())) {
 		writeln(conn.addr, ": ", ln);
-		if (ln.startsWith("PING "))
+		if (ln.startsWith("PING ")) {
 			conn.send("PONG", ln.slice(5));
-		else if (/^:\S+ 433 ./.test(ln))
+		} else if (ln === "AUTHENTICATE +") {
+			conn.send("AUTHENTICATE", encodeB64(sasluser + "\0" + sasluser + "\0" + saslpass));
+			sasluser = saslpass = null;
+		} else if (/^:\S+ CAP \S+ ACK :sasl/.test(ln)) {
+			conn.send("AUTHENTICATE PLAIN");
+		} else if (/^:\S+ 90([345]) ./.test(ln)) {
+			conn.send("CAP END");
+			if (RegExp.$1 !== "3") {
+				conn.send("QUIT");
+				conn.close();
+				return;
+			}
+			break;
+		} else if (/^:\S+ 433 ./.test(ln)) {
 			conn.send("NICK", conn.nick += "_");
-		else if (/^:\S+ 003 ./.test(ln)) {
+		} else if (/^:\S+ 003 ./.test(ln)) {
 			if (channels) {
 				conn.send("JOIN", ":" + channels.map(function (chan) conn.chantypes.contains(chan[0]) ? chan : "#" + chan).join(","));
 				channels = null;
@@ -223,7 +220,7 @@ aucgbot.cleanConn = function cleanConn(i) {
  * @param {Stream} conn Server connection.
  */
 aucgbot.parseln = function parseln(ln, conn) { // TODO parse IRC quoting
-	if (/^\s*$/.test(ln)) // for weird servers
+	if (!ln) // for weird servers
 		return;
 	try { ln = decodeUTF8(ln); } catch (ex) {}
 	writeln(conn.addr, ": ", ln);
@@ -280,9 +277,9 @@ aucgbot.onMsg = function onMsg(e) {
 		if (conn.zncBuffer && this.prefs.zncBufferTSHack)
 			e.msg = e.msg.replace(/^\[[0-2]?\d:[0-5]\d(?::[0-5]\d|)\] /, "");
 		else if (nick === "***") {
-			if (e.msg === "Buffer playback...")
+			if (e.msg === "Buffer Playback...")
 				conn.zncBuffer = true;
-			else if (e.msg === "Playback complete")
+			else if (e.msg === "Playback Complete.")
 				delete conn.zncBuffer;
 			return;
 		}
@@ -427,7 +424,8 @@ aucgbot.parseCmd = function parseCmd(e) {
 		args = args.split(" ");
 		if (this.isSU(e)) {
 			e.rcCmd = args.shift();
-			e.args = args;
+			e.args = args.join(" ");
+			e.argv = args;
 			this.remoteControl(e);
 		} else {
 			e.log("RC ATTEMPT", nick + (relay && ":" + relay) + "!" + e.ident + "@" + host + (dest === nick ? "" : " in " + dest), args.join(" "));
@@ -498,7 +496,7 @@ aucgbot.up = function uptime() {
 	var diff = Math.round((Date.now() - this.started) / 1000),
 		s = diff % 60, m = (diff % 3600 - s) / 60,
 		h = Math.floor(diff / 3600) % 24, d = Math.floor(diff / 86400);
-	return (d ? d + "d " : "") + (h ? h + "h " : "") + (m ? m + "min " : "") + (s ? s + "s" : "");
+	return (d ? d + " d " : "") + (h ? h + " h " : "") + (m ? m + " min " : "") + (s ? s + " s" : "");
 };
 /**
  * Parse a CTCP request. Modules can listen for events here through the onAction, onUnknownCTCP, and (deprecated) onCTCP methods.
@@ -584,58 +582,57 @@ aucgbot.onCTCP = function onCTCP(e) {
  * @param {Stream} conn Server connection.
  */
 aucgbot.remoteControl = function rcBot(e) {
-	var cmd = e.rcCmd, args = e.args, dest = e.dest, nick = e.nick, conn = e.conn;
+	var cmd = e.rcCmd, args = e.args, argv = e.argv, dest = e.dest, nick = e.nick, conn = e.conn;
 	if (cmd !== "log")
-		e.log("RC", nick + (dest === nick ? "" : " in " + dest), cmd, args.join(" "));
+		e.log("RC", nick + (dest === nick ? "" : " in " + dest), cmd, args);
 	switch (cmd) {
 	case "self-destruct": // Hehe, I had to put this in :D
 	case "explode":
-		conn.send("QUIT :" + nick + ": 10... 9... 8... 7... 6... 5... 4... 3... 2... 1... 0... *boom*", args.join(" "));
+		conn.send("QUIT :" + nick + ": 10... 9... 8... 7... 6... 5... 4... 3... 2... 1... 0... *boom*", args);
 		break;
 	case "die":
-		conn.send("QUIT :" + nick + ":", args.join(" "));
+		conn.send("QUIT :" + nick + ":", args);
 		break;
 	case "join":
-		var chans = args.shift().split(",");
+		var chans = argv.shift().split(",");
 		for (var i = chans.length - 1; i >= 0; i--) {
 			if (!conn.chantypes.contains(chans[i][0]))
 				chans[i] = "#" + chans[i];
 		}
-		conn.send("JOIN", chans.join(","), args.join(" "));
+		conn.send("JOIN", chans.join(","), argv.join(" "));
 		break;
 	case "leave":
-		var chans = args.shift().split(",");
+		var chans = argv.shift().split(",");
 		for (var i = chans.length - 1; i >= 0; i--) {
 			if (!conn.chantypes.contains(chans[i][0]))
 				chans[i] = "#" + chans[i];
 		}
-		conn.send("PART", chans.join(","), ":" + nick + ":", args.join(" "));
+		conn.send("PART", chans.join(","), ":" + nick + ":", argv.join(" "));
 		break;
 	case "kick":
-		var chan = args.shift(), user = args.shift();
+		var chan = argv.shift(), user = argv.shift();
 		if (user === conn.nick) {
 			e.reply("Get me to kick myself, yeah, great idea...");
 			break;
 		}
 		if (!conn.chantypes.contains(chan[0]))
 			chan = "#" + chan;
-		conn.send("KICK", chan, user, ":" + nick + ":", args.join(" "));
+		conn.send("KICK", chan, user, ":" + nick + ":", argv.join(" "));
 		break;
 	case "msg": case "privmsg": case "message":
-		if (args[0] === conn.nick) {
+		if (argv[0] === conn.nick) {
 			e.reply(this.ERR_MSG_SELF);
 			break;
 		}
-		conn.msg.apply(conn, args);
+		conn.msg.apply(conn, argv);
 		break;
 	case "echo": case "say":
-		e.send(args.join(" "));
+		e.send(args);
 		break;
 	case "quote": case "raw":
-		conn.send(args.join(" "));
+		conn.send(args);
 		break;
 	case "eval": case "js": // Dangerous!
-		args = args.join(" ");
 		var res;
 		try { res = eval(args); } catch (ex) { res = "exception: " + ex; }
 		if (typeof res === "function")
@@ -647,11 +644,11 @@ aucgbot.remoteControl = function rcBot(e) {
 		e.notice("Not implemented.");
 		break;
 	case "log":
-		e.log("LOG", nick + (dest === nick ? "" : " in " + dest), args.join(" "));
+		e.log("LOG", nick + (dest === nick ? "" : " in " + dest), args);
 		break;
 	case "modload": case "loadmod":
 		try {
-			for (args = args.join(" ").split(","); args.length;)
+			for (args = args.split(","); args.length;)
 				this.loadModule(args.shift());
 		} catch (ex) {
 			e.reply(ex.fileName + ":" + ex.lineNumber, ex);
@@ -722,7 +719,7 @@ aucgbot.okToKick = function okToKick(e) {
  * Load a module.
  *
  * @param {string} id Module name (filename without .jsm extension).
- * @throws TypeError when the module cannot be loaded.
+ * @throws Error when the module cannot be loaded.
  * @return {Object} The loaded module.
  */
 aucgbot.loadModule = function loadModule(id) {
@@ -731,7 +728,7 @@ aucgbot.loadModule = function loadModule(id) {
 		if (run(id + ".jsm") && module.version)
 			this.modules[id] = module;
 		else
-			throw new TypeError(id + " is not a module.");
+			throw new Error(id + " is not a module.");
 		writeln("Loaded mod_", id, " v", module.version);
 		return module;
 	} finally {
