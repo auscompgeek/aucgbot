@@ -68,7 +68,7 @@ var aucgbot = aucgbot || {
 	modules: {},
 	conns: []
 };
-aucgbot.version = "5.3.4 (2013-12-30)";
+aucgbot.version = "5.3.5 (2014-01-16)";
 aucgbot.source = "https://github.com/auscompgeek/aucgbot";
 aucgbot.useragent = "aucgbot/{0} (+{1}; {2}; JSDB {3})".format(aucgbot.version, aucgbot.source, system.platform, system.release);
 global = this;
@@ -428,7 +428,7 @@ aucgbot.parseCmd = function parseCmd(e) {
 			e.argv = args;
 			this.remoteControl(e);
 		} else {
-			e.log("RC ATTEMPT", nick + (relay && ":" + relay) + "!" + e.ident + "@" + host + (dest === nick ? "" : " in " + dest), args.join(" "));
+			e.log("RC ATTEMPT", nick + (relay ? ":" + relay : "") + "!" + e.ident + "@" + host + (dest === nick ? "" : " in " + dest), args.join(" "));
 		}
 		break;
 	case "status": case "uptime":
