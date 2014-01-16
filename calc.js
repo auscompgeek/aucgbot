@@ -126,10 +126,10 @@ function calc(expr) {
 		.replace(/math\w*|\?+$|calc(?:ulat(?:e|or)|)|imum|olute|ing|er|the|of/g, "").replace(/(a|)(?:r(?:c|ea|)|)(cos|sin|tan|csc|sec|cot)\w+?(h|)/g, "$1$2$3").replace("#", "0x", "g").replace(/\b([0-9a-f])h\b/, "0x$1", "g")
 		.replace(/(?:sq(?:uare|) ?|)root|\u221A/g, "sqrt").replace("\u03C0", "pi", "g").replace("\u03C6", "phi", "g").replace("\xB9"/*^1*/, "", "g").replace("\xB2", "**2", "g").replace("\xB3", "**3", "g")
 		.replace("\xD7"/*x*/, "*", "g").replace("\u22C5"/*dot*/, "*", "g").replace("\xF7"/*sign*/, "/", "g").replace("\u2215"/*slash*/, "/", "g").replace("\u2044"/*fraction*/, "/", "g")
-		.replace("\u2260", "!=", "g").replace("\u2264", "<=", "g").replace("\u2265", ">=", "g").replace(/(recip|fact|randint|sqrt|(?:co|)sec|(?:sin|cos|csc|cot|tan)h?)[^ ()]*\b/g, "$1").replace(/(\d+|)d(\d+)/g, "d($2,$1)")
+		.replace("\u2260", "!=", "g").replace("\u2264", "<=", "g").replace("\u2265", ">=", "g").replace(/(recip|fact|randint|sqrt|(?:co|)sec|(?:sin|cos|csc|cot|tan)h?)[^ ()]*\b/g, "$1").replace(/(\d+|)d(\d+)/g, "dice($2,$1)")
 		.replace("sgn", "sign", "g").replace(/ra?nd(?:om|) ?(?!\()/, "rnd()").replace(/ave\w+|mean/, "ave").replace(/(sqrt|atan2|(?:sin|cos|tan|csc|sec|cot)h?|round|floor|ceil|log|exp|recip) (\d+(?:\.\d+|!*)|\.\d+)/g, "$1($2)")
 		.replace(/(\d+(?:\.\d+(?:e[+\-]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e) ?\*\* ?([+\-]?\d+(?:\.\d+(?:e[+\-]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e)/g, "pow($1,$2)").replace(/(\d+)!/g, "fact($1)")
-		.replace(/\b(\d+(?:\.\d+|)|\.\d+|_) ?([(a-df-wyz_])/g, "$1*$2").replace(/\b(ph?i|[ec_]) ?([^+*\/&|\^<>%),?: \-])/g, "$1*$2").replace(/(\(.*?\)) ?([^+*\/&|\^<>%!),?: \-])/g, "$1*$2");
+		.replace(/\b(\d+(?:\.\d+|)|\.\d+|_) ?([(a-df-wyz_])/g, "$1*$2").replace(/\b(ph?i|[ec_]) ?([^+*\/&|\^<>%=),?: \-])/g, "$1*$2").replace(/(\(.*?\)) ?([^+*\/&|\^<>%!),?: \-])/g, "$1*$2");
 
 	// FIXME "pow(pow(a,b),c) ** x" becomes "pow(pow(a,pow(b),c),x)"!
 	while (/pow\(.+,.+\) ?\*\* ?[+\-]?(\d+(\.\d|!?)|\.\d)/.test(expr) || /\w*\(.+\)!/.test(expr)) {
