@@ -85,13 +85,13 @@ module.ytRes = function ytRes(data) {
 
 	var rating = data.rating;
 	if (rating)
-		res.push("{0}/5 ({1}+ {2}-)".format(+rating.toFixed(2), data.likeCount, data.ratingCount - data.likeCount));
+		res.push("{0}/5 (+{1} -{2})".format(+rating.toFixed(2), data.likeCount, data.ratingCount - data.likeCount));
 
 	res.push(data.viewCount + " views");
 
 	var commentCount = data.commentCount;
 	if (commentCount)
-		res.push(commentCount + " comments");
+		res.push(commentCount === 1 ? "1 comment" : commentCount + " comments");
 
 	res.push(data.category);
 
