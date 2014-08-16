@@ -4,17 +4,24 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global module: false */
 
-module.version = 1.2;
+module.version = 1.4;
 module.BASE_URL = "http://api.urbandictionary.com/v0/";
 module.DEFINE_BASE_URL = module.BASE_URL + "define?term=";
 
-module.defToText = function defToText(def, ex) {
-	var text = def[ex ? "example" : "definition"].trim().replace(/\[([^\[\]]+)\]/g, "$1"), shorttext = text.split("\r\n")[0];
-	if (text !== shorttext) {
-		if (shorttext.length > 250 && /^(.*?\.)\s/.test(shorttext)) {
-			shorttext = RegExp.$1;
+module.defToText = function defToText(def, field) {
+	var text = def[field || "definition"].trim().replace(/\[([^\[\]]+)\]/g, "$1").replace("\r\n", "\n", "g");
+	if (text.length > 350) {
+		text = text.split("\n")[0];
+		if (text.length > 350) {
+			// guys pls
+			var l = text.lastIndexOf(". ", 350);
+			if (l != -1) {
+				// I give up...
+				l = 350;
+			}
+			text = text.slice(0, l);
 		}
-		return "{0} ... {1}".format(shorttext, def.permalink);
+		text += " ...";
 	}
 	return "{0} {1}".format(text, def.permalink);
 };
@@ -69,7 +76,7 @@ function cmd_urbanex(e) {
 
 	var def0 = data.list[0];
 	if (def0) {
-		e.send(this.defToText(def0, true));
+		e.send(this.defToText(def0, "example"));
 	} else {
 		e.reply("No results.");
 	}
