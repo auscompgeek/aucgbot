@@ -6,7 +6,7 @@
 // Please don't use the included APPID in other applications.
 // The default APPID is for personal/non-commercial use only.
 
-module.version = 0.5;
+module.version = 0.6;
 module.APPID = "5d5102ff6928ac6e647092a502a2370d";
 module.BASE_URL = "http://api.openweathermap.org/data/2.5/";
 module.WEATHER_BASE_URL = module.BASE_URL + "weather?units=metric&q=";
@@ -15,7 +15,7 @@ module.FORECAST_BASE_URL = module.BASE_URL + "forecast?units=metric&q=";
 module.cmd_weather = module.cmd_owm = function cmd_owm(e) {
 	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
 	if (!args) {
-		conn.reply(dest, nick, "Get current weather by city from OpenWeatherMap.");
+		conn.reply(dest, nick, this.cmd_owm.help);
 		return true;
 	}
 
@@ -34,9 +34,7 @@ module.cmd_weather = module.cmd_owm = function cmd_owm(e) {
 		return true;
 	}
 
-	conn.nreply(dest, nick, "Current weather for", data.name, "from OpenWeatherMap (as of", new Date(data.dt * 1000) + "):");
-
-	var main = data.main, res = [];
+	var main = data.main, res = [], hpa = main.pressure, wind = data.wind, clouds = data.clouds, rain = data.rain, snow = data.snow;
 
 	if (data.weather) {
 		var weather = data.weather[0];  // why is this an array even?
@@ -52,27 +50,22 @@ module.cmd_weather = module.cmd_owm = function cmd_owm(e) {
 
 	res.push("Humidity: {0}%".format(main.humidity));
 
-	var hpa = main.pressure;
 	if (hpa)
 		res.push("Air pressure: {0} hPa".format(hpa));
 
-	var wind = data.wind;
 	if (wind && wind.speed)
 		res.push("Wind: {0} m/s".format(wind.speed));
 
-	var clouds = data.clouds;
 	if (clouds && clouds.all)
 		res.push("Clouds: {0}%".format(clouds.all))
 
-	var rain = data.rain;
 	if (rain && rain["3h"])
 		res.push("Rain (3h): {0} mm".format(rain["3h"]));
 
-	var snow = data.snow;
 	if (snow && snow["3h"])
 		res.push("Snow (3h): {0} mm".format(snow["3h"]));
 
-	conn.nmsg(dest, res.join(" - "));
-
+	e.nreply("Current weather for", data.name, "from OpenWeatherMap (as of", new Date(data.dt * 1000) + "):", res.join(" - "));
 	return true;
 };
+module.cmd_owm.help = "Get the current weather from OpenWeatherMap. Usage: owm <location>";
