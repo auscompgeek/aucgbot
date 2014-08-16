@@ -2,9 +2,9 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global Record: false, aucgbot: false, module: false */
+/*global Record: false, module: false */
 
-module.version = "0.9.1 (2013-12-22)";
+module.version = "0.9.3 (2014-01-21)";
 
 module.loadStateNames = function loadStateNames(state) {
 	var names = new Record();
@@ -19,9 +19,7 @@ module.idToFwoJsonUrl = function idToFwoJsonUrl(id) {
 };
 
 module.idToMinJsonUrl = function idToMinJsonUrl(id) {
-	// thanks forkbomb! :D
-	// https://gist.github.com/keepcalm444/1b7988a8209f21b2a1fd
-	return String.format("http://simon.shields-online.net/minifyjson.php?ID=ID{0}&WSID={1}", id.split("."));
+	return String.format("http://vovo.id.au/scripts/bommin.php?id={0}&wmo={1}", id.split("."));
 };
 
 module.fullNameToName = function fullNameToName(name) {
@@ -35,19 +33,19 @@ module.nameToId = function nameToId(station, state) {
 };
 
 module.cmd_bom_id2fwo = function cmd_bom_id2fwo(e) {
-	e.conn.notice(e.nick, this.idToFwoJsonUrl(e.args));
+	e.notice(this.idToFwoJsonUrl(e.args));
 	return true;
 };
 
 module.cmd_bom_name2id = function cmd_bom_name2id(e) {
-	e.conn.reply(e.dest, e.nick, this.nameToId.apply(this, this.fullNameToName(e.args)));
+	e.reply(this.nameToId.apply(this, this.fullNameToName(e.args)));
 	return true;
 };
 
 module.cmd_bom = function cmd_bom(e) {
-	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
+	var args = e.args;
 	if (!args) {
-		conn.reply(dest, nick, this.cmd_bom.help);
+		e.reply(this.cmd_bom.help);
 		return true;
 	}
 
@@ -55,21 +53,19 @@ module.cmd_bom = function cmd_bom(e) {
 	station = station[0];
 	stationId = this.nameToId(station, state);
 	if (!stationId) {
-		conn.reply(dest, nick, "Could not find station.");
+		e.reply("Could not find station.");
 		return true;
 	}
 
 	var data;
 	try {
-		data = aucgbot.getJSON(this.idToMinJsonUrl(stationId), "bom", this.version);
+		data = e.bot.getJSON(this.idToMinJsonUrl(stationId), "bom", this.version);
 	} catch (ex) {}
 
 	if (!data) {
-		conn.reply(dest, nick, "BoM returned no data.");
+		e.reply("BoM returned no data.");
 		return true;
 	}
-
-	conn.nreply(dest, nick, "Current weather for", data.name + ",", state.toUpperCase(), "from the Bureau of Meteorology (as of", data.local_date_time + "):");
 
 	var res = [], temp = data.air_temp, hum = data.rel_hum, cloud = data.cloud, rain = data.rain_trace, wind = data.wind_spd_kmh, gust = data.gust_kmh;
 
@@ -84,7 +80,7 @@ module.cmd_bom = function cmd_bom(e) {
 	if (hum)
 		res.push("Humidity: {0}%".format(hum));
 
-	if (cloud != "-")
+	if (cloud !== "-")
 		res.push("Cloud: " + cloud);
 
 	if (+rain)
@@ -93,7 +89,7 @@ module.cmd_bom = function cmd_bom(e) {
 	if (wind) {
 		wind = "Wind: {0} km/h ({1} kt)".format(wind, data.wind_spd_kt);
 		var windDir = data.wind_dir;
-		if (windDir != "-")
+		if (windDir !== "-")
 			wind += " " + windDir;
 		res.push(wind);
 	}
@@ -101,7 +97,7 @@ module.cmd_bom = function cmd_bom(e) {
 	if (gust)
 		res.push("Gust: {0} km/h ({1} kt)".format(gust, data.gust_kt));
 
-	conn.nmsg(dest, res.join(" - "));
+	e.nreply("Current weather for", data.name + ",", state.toUpperCase(), "from the Bureau of Meteorology (as of", data.local_date_time + "):", res.join(" - "));
 	return true;
 };
 module.cmd_bom.help = "Get current weather conditions from the Bureau of Meteorology. Usage: bom <station> <state>";
