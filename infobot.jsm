@@ -15,32 +15,41 @@ try { module.db.load(); } catch (ex) {}
 
 module.cmd_def = function cmd_def(e) {
 	var args = e.args.split("="), term = args.shift(), def = this.db.get(term);
-	if (def)
-		e.conn.reply(e.dest, e.nick, term, "is already defined:", def);
-	else
+	if (def) {
+		e.reply(term, "is already defined:", def);
+	} else {
 		this.db.set(term, args.join("=")), this.db.save();
+	}
 	return true;
 };
+module.cmd_def.help = "Define a factoid. Usage: def <term>=<definition>";
+
 module["cmd_no,"] = module.cmd_no = function cmd_no(e) {
 	var args = e.args.split("=");
 	this.db.set(args.shift(), args.join("="));
 	this.db.save();
 	return true;
 };
+module.cmd_no.help = "Redefine a factoid. Usage: no, <term>=<definition>";
+
 module.cmd_reloadfacts = function cmd_reloadfacts(e) {
-	e.conn.reply(e.dest, e.nick, "Loaded", this.db.load(), "factoids.");
+	e.reply("Loaded", this.db.load(), "factoids.");
 	return true;
 };
+
 module.cmd_fact = module.cmd_info = function cmd_fact(e) {
 	var def = this.db.get(e.args);
-	if (def)
-		e.conn.reply(e.dest, e.nick, def);
+	if (def) {
+		e.reply(def);
+	}
 	return true;
 };
+module.cmd_fact.help = "Get a factoid. Usage: fact <term>";
+
 module["cmd_what's"] = function cmd_whats(e) {
 	var def = this.db.get(e.args.replace(/\?$/, ""));
 	if (def) {
-		e.conn.reply(e.dest, e.nick, def);
+		e.reply(def);
 		return true;
 	}
 };
@@ -49,48 +58,52 @@ module.cmd_who = module.cmd_what = function cmd_what(e) {
 		return false;
 	var def = this.db.get(RegExp.$1);
 	if (def) {
-		e.conn.reply(e.dest, e.nick, def);
+		e.reply(def);
 		return true;
 	}
 };
-module.cmd_tell = function cmd_tell(e) {
-	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
+
+module.cmd_send = function cmd_send(e) {
+	var args = e.args, conn = e.conn;
 	if (!args) {
-		conn.reply(dest, nick, this.cmd_tell.help);
+		e.reply(this.cmd_send.help);
 		return true;
 	}
 	args = args.split(" ");
 	var to = args.shift();
-	if (!args.length)
-		conn.reply(dest, nick, this.cmd_tell.help);
-	else if (to == conn.nick)
-		conn.reply(dest, nick, aucgbot.ERR_MSG_SELF);
-	else {
+	if (!args.length) {
+		e.reply(this.cmd_send.help);
+	} else if (to == conn.nick) {
+		e.reply(aucgbot.ERR_MSG_SELF);
+	} else {
 		if (args[0] == "about")
 			args.shift();
 		var term = args.join(" "), def = this.db.get(term);
-		if (def)
-			conn.msg(to, nick, "wanted you to know about", term + ":", def);
+		if (def) {
+			conn.msg(to, e.nick, "wanted you to know about", term + ":", def);
+		}
 	}
 	return true;
 };
-module.cmd_tell.help = "Send a factoid to a user in PM. Usage: tell <nick> <term>";
+module.cmd_send.help = "Send a factoid to a user in PM. Usage: send <nick> <term>";
+
 module.cmd_show = function cmd_show(e) {
-	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
+	var args = e.args, conn = e.conn;
 	if (!args) {
-		conn.reply(dest, nick, this.cmd_show.help);
+		e.reply(this.cmd_show.help);
 		return true;
 	}
 	args = args.split(" ");
 	var to = args.shift();
-	if (!args.length)
-		conn.reply(dest, nick, this.cmd_show.help);
-	else if (to == conn.nick)
-		conn.reply(dest, nick, aucgbot.ERR_MSG_SELF);
-	else {
+	if (!args.length) {
+		e.reply(this.cmd_show.help);
+	} else if (to == conn.nick) {
+		e.reply(aucgbot.ERR_MSG_SELF);
+	} else {
 		var def = this.db.get(args.join(" "));
-		if (def)
-			conn.reply(dest, to, def);
+		if (def) {
+			conn.reply(e.dest, to, def);
+		}
 	}
 	return true;
 };
