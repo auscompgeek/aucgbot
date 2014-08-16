@@ -2,41 +2,54 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global Stream: false, aucgbot: false, module: false, system: false */
+/*global module: false */
 
-module.version = 1.5;
+module.version = 1.6;
 module.BASE_URL = "http://api.duckduckgo.com/?format=json&no_redirect=1&no_html=1&skip_disambig=1&t=aucgbot&q=";
+
+module.cleanAbstract = function cleanAbstract(text) {
+	text = decodeHTML(text);
+	if (text.length > 300) {
+		var l = text.lastIndexOf(". ", 300);
+		if (l != -1) {
+			l = 300;
+		}
+		text = text.slice(0, l);
+		text += " ...";
+	}
+	return text;
+}
 
 module.cmd_ddg = module.duck = module.duckduckgo =
 function cmd_ddg(e) {
-	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
-	if (!args) {
-		conn.reply(dest, nick, "Get DuckDuckGo zero-click info. Usage: ddg <query>");
+	if (!e.args) {
+		e.reply(this.cmd_ddg.help);
 		return true;
 	}
 
-	var data, q = encodeURIComponent(args);
+	var data, q = encodeURIComponent(e.args);
 	try {
-		data = aucgbot.getJSON(this.BASE_URL + q, "ddg", this.version);
+		data = e.bot.getJSON(this.BASE_URL + q, "ddg", this.version);
 	} catch (ex) {}
 
 	if (!data) {
-		conn.reply(dest, nick, "DuckDuckGo returned no data.");
+		e.reply("DuckDuckGo returned no data.");
 		return true;
 	}
 
 	var res0 = data.Results[0];
 	if (data.Answer)
-		conn.reply(dest, nick, data.AnswerType + ":", data.Answer);
+		e.reply(data.AnswerType + ":", data.Answer);
 	else if (data.Abstract)
-		conn.reply(dest, nick, data.Heading, "(" + data.AbstractSource + "):", decodeHTML(data.AbstractText),
+		e.reply(data.Heading, "(" + data.AbstractSource + "):", this.cleanAbstract(data.AbstractText),
 				data.AbstractURL + (res0 ? " [" + res0.Text + ": " + res0.FirstURL + "]" : ""));
 	else if (data.Definition)
-		conn.reply(dest, nick, data.Definition, data.DefinitionURL);
+		e.reply(data.Definition, data.DefinitionURL);
 	else if (data.Redirect)
-		conn.reply(dest, nick, data.Redirect);
+		e.reply(data.Redirect);
 	else
-		conn.reply(dest, nick, "No instant answers. Try searching DuckDuckGo: https://duckduckgo.com/?t=aucgbot&q=" + q);
+		e.reply("No instant answers.");
 
 	return true;
 };
+module.cmd_ddg.help = "Get DuckDuckGo zero-click info. Usage: ddg <query>";
