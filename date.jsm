@@ -4,44 +4,44 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global module: false */
 
-module.version = 0.5;
+module.version = 0.7;
 
 module.cmd_now = function cmd_now(e) {
-	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
+	var args = e.args;
 	if (args) {
 		switch (args.toLowerCase()) {
 		case "iso":
-			conn.reply(dest, nick, new Date().toISOString());
+			e.reply(new Date().toISOString());
 			break;
 		case "epoch":
-			conn.reply(dest, nick, Date.now());
+			e.reply(Date.now());
 			break;
 		case "date":
-			conn.reply(dest, nick, new Date().toDateString());
+			e.reply(new Date().toDateString());
 			break;
 		case "time":
-			conn.reply(dest, nick, new Date().toTimeString());
+			e.reply(new Date().toTimeString());
 			break;
 		case "utc":
-			conn.reply(dest, nick, new Date().toUTCString());
+			e.reply(new Date().toUTCString());
 			break;
 		default:
 			if (args.contains("%"))  // strftime() format string
-				conn.reply(dest, nick, new Date().toLocaleFormat(args));
+				e.reply(new Date().toLocaleFormat(args));
 			else
-				conn.reply(dest, nick, this.cmd_now.help);
+				e.reply(this.cmd_now.help);
 		}
 	} else {
-		conn.reply(dest, nick, Date());
+		e.reply(Date());
 	}
 	return true;
 };
 module.cmd_now.help = "Convert current time to one of ISO, date, time, UTC or format strings or epoch time (ms).";
 
 module.cmd_epoch = function cmd_epoch(e) {
-	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
+	var args = e.args;
 	if (!args) {
-		conn.reply(dest, nick, this.cmd_epoch.help);
+		e.reply(this.cmd_epoch.help);
 		return true;
 	}
 	args = args.split(" ");
@@ -50,26 +50,37 @@ module.cmd_epoch = function cmd_epoch(e) {
 	if (args) {
 		switch (args.toLowerCase()) {
 		case "iso":
-			conn.reply(dest, nick, date.toISOString());
+			e.reply(date.toISOString());
 			break;
 		case "date":
-			conn.reply(dest, nick, date.toDateString());
+			e.reply(date.toDateString());
 			break;
 		case "time":
-			conn.reply(dest, nick, date.toTimeString());
+			e.reply(date.toTimeString());
 			break;
 		case "utc":
-			conn.reply(dest, nick, date.toUTCString());
+			e.reply(date.toUTCString());
 			break;
 		default:
 			if (args.contains("%"))  // strftime() format string
-				conn.reply(dest, nick, date.toLocaleFormat(args));
+				e.reply(date.toLocaleFormat(args));
 			else
-				conn.reply(dest, nick, module.cmd_epoch.help);
+				e.reply(this.cmd_epoch.help);
 		}
 	} else {
-		conn.reply(dest, nick, date);
+		e.reply(date);
 	}
 	return true;
 };
 module.cmd_epoch.help = "Convert epoch time (milliseconds) to human-readable format. Usage: epoch time [format]";
+
+module.cmd_tz = function cmd_tz(e) {
+	var args = e.args;
+	if (!/^[\w+\-]+(?:\/\w+)?$/.test(args)) {
+		e.reply(this.cmd_tz.help);
+		return true;
+	}
+	e.reply(e.bot.readURI("exec://TZ={0} date".format(args)));
+	return true;
+};
+module.cmd_tz.help = "Get the date in another timezone. Timezones are valid TZ strings, e.g. Australia/NSW.";
