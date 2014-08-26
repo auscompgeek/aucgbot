@@ -47,9 +47,8 @@ Calculator.funcs = {
 	Function: undefined,
 
 	fact: function fact(x) {
-		"use asm";
-		x = x | 0;
-		var e = 1;
+		x = x|0;
+		var e = +1;
 
 		// We can't calculate factorials past 170, we get Infinity.
 		if (x > 170)
@@ -65,25 +64,25 @@ Calculator.funcs = {
 	},
 
 	ave: function ave() {
-		var sum = 0;
+		var sum = +0;
 		for (var i = arguments.length - 1; i >= 0; i--)
 			sum += +arguments[i];
 		return sum / arguments.length;
 	},
 
 	// dice: partially from cZ dice plugin.
-	dice: function dice(sides, count, mod) {
-		"use asm";
-		var sum = +mod || 0;
-		sides = sides | 0 || 6;
-		count = count | 0 || 1;
+	// waiting for JSDB to update
+	dice: function dice(sides, count) {
+		sides = sides|0 || 6;
+		count = count|0 || 1;
+		var sum = 0;
 
 		// Prevent DoS.
 		if (count > 1000) {
-			sum += randint(count, sides * count);
+			sum = sum + randint(count, sides * count);
 		} else {
-			for (var i = count; i > 0; i--) {
-				sum += randint(1, sides);
+			for (; count > 0; count = count - 1) {
+				sum = sum + randint(1, sides);
 			}
 		}
 
@@ -91,15 +90,13 @@ Calculator.funcs = {
 	},
 
 	round: function round(x, m) {
-		"use asm";
 		x = +x;
 		m = +m || 1;
-		return Math.round(x / m) * m;
+		return +(Math.round(x / m) * m);
 	},
 
-	// ES6 shim
+	// ES6 shim, can be removed once we have Math.sign
 	sign: function sign(x) {
-		"use asm";
 		x = +x;
 		if (x < 0)
 			return -1;
@@ -109,8 +106,14 @@ Calculator.funcs = {
 	},
 
 	// used by calcbot.jsm, keep them public
-	ctof: function ctof(temp) temp * 1.8 + 32,
-	ftoc: function ftoc(temp) (temp - 32) / 1.8,
+	ctof: function ctof(temp) {
+		temp = +temp;
+		return +(temp * 1.8 + 32);
+	},
+	ftoc: function ftoc(temp) {
+		temp = +temp;
+		return +((temp - 32) / 1.8);
+	},
 
 	ln: Math.log,
 	rnd: Math.random,
@@ -129,7 +132,7 @@ function calc(expr) {
 		.replace("\u2260", "!=", "g").replace("\u2264", "<=", "g").replace("\u2265", ">=", "g").replace(/(recip|fact|randint|sqrt|(?:co|)sec|(?:sin|cos|csc|cot|tan)h?)[^ ()]*\b/g, "$1").replace(/(\d+|)d(\d+)/g, "dice($2,$1)")
 		.replace("sgn", "sign", "g").replace(/ra?nd(?:om|) ?(?!\()/, "rnd()").replace(/ave\w+|mean/, "ave").replace(/(sqrt|atan2|(?:sin|cos|tan|csc|sec|cot)h?|round|floor|ceil|log|exp|recip) (\d+(?:\.\d+|!*)|\.\d+)/g, "$1($2)")
 		.replace(/(\d+(?:\.\d+(?:e[+\-]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e) ?\*\* ?([+\-]?\d+(?:\.\d+(?:e[+\-]?\d(?:\.\d+))|!*)|\.\d+|ph?i|e)/g, "pow($1,$2)").replace(/(\d+)!/g, "fact($1)")
-		.replace(/\b(\d+(?:\.\d+|)|\.\d+|_) ?([(a-df-wyz_])/g, "$1*$2").replace(/\b(ph?i|[ec_]) ?([^+*\/&|\^<>%=),?: \-])/g, "$1*$2").replace(/(\(.*?\)) ?([^+*\/&|\^<>%!),?: \-])/g, "$1*$2");
+		.replace(/\b(\d+(?:\.\d+|)|\.\d+|_) ?([(a-df-wyz_])/g, "$1*$2").replace(/\b(ph?i|[e_]) ?([^+*\/&|\^<>%=),?: \-])/g, "$1*$2").replace(/(\(.*?\)) ?([^+*\/&|\^<>%!),?: \-])/g, "$1*$2");
 
 	// FIXME "pow(pow(a,b),c) ** x" becomes "pow(pow(a,pow(b),c),x)"!
 	while (/pow\(.+,.+\) ?\*\* ?[+\-]?(\d+(\.\d|!?)|\.\d)/.test(expr) || /\w*\(.+\)!/.test(expr)) {

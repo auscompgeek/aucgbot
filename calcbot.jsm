@@ -8,7 +8,7 @@ if (!run("calc.js")) {
 	throw new Error("Could not load calc functions from calc.js");
 }
 
-module.version = "3.1 (2013-12-29)";
+module.version = "3.1.1 (2014-02-18)";
 module.prefs = {
 	equalPrefix: true, // treat messages starting with = as a calculator expression
 	abuse: {
@@ -95,6 +95,8 @@ module["cmd_="] = module.cmd_calc = module.cmd_math = function cmd_calc(e) {
 		var s;
 		if (/^(\d*)d(\d+)$/.test(msg)) {
 			e.send(this.cmdDice(RegExp.$2, RegExp.$1));
+		} else if (/\b\d*[ij]\b/.test(msg)) {
+			e.reply("I don't support complex numbers, sorry.");
 		} else if ((s = this.parseMsg(msg, calc))) {
 			e.reply(s);
 		}
@@ -137,10 +139,10 @@ module.cmd_base10 = function cmd_base10(e) {
 module.cmd_base10.help = "Convert a decimal number to another base. Usage: base10 <num> <toBase>";
 
 module.cmd_qe = function cmd_quadraticEqn(e) {
-	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
+	var args = e.args;
 	if (!/^(?:([+\-]?\d*(?:\.\d*)?) ?\*? ?)?([A-Za-z]) ?(?:\*\*|\^) ?2 ?(?:([+\-] ?\d*(?:\.\d*)?) ?\*? ?\2)? ?([+\-] ?\d*(?:\.\d*)?)? ?= ?([+\-]?\d*(?:\.\d*)?)$/.test(args)) {
 		// not a quadratic equation, bail
-		conn.reply(dest, nick, this.cmd_qe.help);
+		e.reply(this.cmd_qe.help);
 		return true;
 	}
 	var pron = RegExp.$2, a = RegExp.$1, b = RegExp.$3, c = RegExp.$4, _2a, delta, sqrtDelta;
@@ -157,8 +159,10 @@ module.cmd_qe = function cmd_quadraticEqn(e) {
 	if (delta < 0) {
 		// answer is complex, bail
 		// TODO simplify surd
-		conn.reply(dest, nick, pron, "= ({0} \xB1 \u221A{1})/{2}".format(-b, delta, _2a));
+		e.reply(pron, "= ({0} \xB1 \u221A{1})/{2}".format(-b, delta, _2a));
 		return true;
+	}
+	if (delta === 0) {
 	}
 	sqrtDelta = Math.sqrt(delta);
 	e.reply(pron, "= ({0} \xB1 \u221A{1})/{2} = {3} or {4}".format(-b, delta, _2a, (-b + sqrtDelta)/_2a, (-b - sqrtDelta)/_2a));
@@ -184,6 +188,8 @@ module.parseMsg = function parseMsg(msg, calc) {
 	if (this.prefs.easterEggs) { // Time for some Easter Eggs! *dance*
 		if (/^6 ?\* ?9$/.test(msg)) // 'The Hitchhiker's Guide to the Galaxy' (trilogy of 6)!
 			return "42. Wait, what?";
+		if (/^2 ?\+ ?2$/.test(msg)) // 1984
+			return "2 + 2 = 5";
 		if (msg == "9001")
 			return "IT'S OVER 9000!!!1";
 		if (msg == "404")
@@ -193,11 +199,8 @@ module.parseMsg = function parseMsg(msg, calc) {
 		if (/pie/.test(msg))
 			return "Mmmm, pie... 3.141592653589793...";
 	}
-	if (/self|shut|stfu|d(anc|ie|iaf|es)|str|our|(nu|lo|rof|ki)l|nc|egg|rat|cook|m[ea]n|kick|ban|[bm]o[ow]|ham|beef|a\/?s\/?l|au|not|found|up|quiet|bot|pie/.test(msg)) {
+	if (/self|shut|stfu|d(anc|ie|iaf|es)|str|our|(nu|lo|rof|ki)l|nc|egg|rat|cook|m[ea]n|kick|ban|[bm]o[ow]|ham|beef|a\/?s\/?l|au|not|found|up|quiet|bot|pie|\b\d*[ij]\b/.test(msg)) {
 		return;
-	}
-	if (/\b\d*[ij]\b/.test(msg)) {
-		return "I don't support complex numbers, sorry.";
 	}
 	if (/^([+\-]?(\d+(?:\.\d+|)|\.\d+))[\u00b0 ]?f$/.test(msg)) {
 		return Calculator.funcs.ftoc(RegExp.$1) + "\xB0C";
