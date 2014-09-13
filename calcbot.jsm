@@ -2,14 +2,13 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global aucgbot: false, ctof: false, calc: false, encodeUTF8: false, ftoc: false, module: false, randint: false, run: false, writeln: false */
+/*global aucgbot: false, ctof: false, calc: false, encodeUTF8: false, ftoc: false, module.exports: false, randint: false, run: false, writeln: false */
 
-if (!(run("es5-sham.js") && run("math.js"))) {
-	throw new Error("Could not load math.js");
-}
+require("./es5-sham.js");
+var math = require("./math.js");
 
-module.version = "4.0.2 (2014-08-26)";
-module.prefs = {
+module.exports.version = "4.0.2 (2014-08-26)";
+module.exports.prefs = {
 	equalPrefix: true, // treat messages starting with = as a calculator expression
 	abuse: {
 		log: true,
@@ -25,18 +24,18 @@ module.prefs = {
 	userfriendly: false,
 	actDice: true // output <x>d<y> as /me rolls a d<y> x times: a, b, c; total: d
 };
-//module.abuse = /[\[{'"}\]]|alert|ass|cli|con|date|def|del|doc|ecma|eval|exit|false|for|glob|import|in[fs]|java|js|lo(?:ad|cal|se)|minimi|my|nan|op|p(?:ro|atch|lug|lay|rint)|quit|raw|rctrl|read|rite|run|scr|sys|this|throw|true|until|voice|while|win|yp/;
-module.list = "Functions: acos, asin, atan, atan2, cos, sin, tan, exp, ln, pow, sqrt, abs, ceil, max, min, floor, round, random, randint, fact, mean, dice, ftoc, ctof. Constants: e, pi, phi, c. Operators: %, ^, **. Other topics: decimal, trig.";
-module.calcs = {};
+//module.exports.abuse = /[\[{'"}\]]|alert|ass|cli|con|date|def|del|doc|ecma|eval|exit|false|for|glob|import|in[fs]|java|js|lo(?:ad|cal|se)|minimi|my|nan|op|p(?:ro|atch|lug|lay|rint)|quit|raw|rctrl|read|rite|run|scr|sys|this|throw|true|until|voice|while|win|yp/;
+module.exports.list = "Functions: acos, asin, atan, atan2, cos, sin, tan, exp, ln, pow, sqrt, abs, ceil, max, min, floor, round, random, randint, fact, mean, dice, ftoc, ctof. Constants: e, pi, phi, c. Operators: %, ^, **. Other topics: decimal, trig.";
+module.exports.calcs = {};
 
-module.onNick = function onNick(e) {
+module.exports.onNick = function onNick(e) {
 	const calcs = this.calcs, oldNick = e.oldNick.split("|")[0], oldNickCalc = calcs[oldNick], newNick = e.newNick.split("|")[0];
 	if (oldNickCalc && !calcs[newNick]) {
 		calcs[newNick] = oldNickCalc;
 	}
 };
 
-module.onUnknownMsg = function onUnknownMsg(e) {
+module.exports.onUnknownMsg = function onUnknownMsg(e) {
 	// Note: This silently ignores errors to avoid weird stuff.
 	var msg = e.msg;
 	if (msg[0] !== "=" || !this.prefs.equalPrefix) {
@@ -77,7 +76,7 @@ module.onUnknownMsg = function onUnknownMsg(e) {
 	return true;
 };
 
-module["cmd_="] = module.cmd_calc = module.cmd_math = function cmd_calc(e) {
+module.exports["cmd_="] = module.exports.cmd_calc = module.exports.cmd_math = function cmd_calc(e) {
 	var dest = e.dest, msg = e.args.replace(/(?:\/\/|@).*/, ""), nick = e.nick, name = nick.split("|")[0];
 	/*
 	if (msg.match(this.abuse)) {
@@ -116,9 +115,9 @@ module["cmd_="] = module.cmd_calc = module.cmd_math = function cmd_calc(e) {
 	}
 	return true;
 };
-module.cmd_calc.help = "A powerful calculator. Whatever you do probably works. (Excel-style prefixed messages to the channel also work unless disabled.)";
+module.exports.cmd_calc.help = "A powerful calculator. Whatever you do probably works. (Excel-style prefixed messages to the channel also work unless disabled.)";
 
-module.cmd_base = function cmd_base(e) {
+module.exports.cmd_base = function cmd_base(e) {
 	var args = e.args.split(" ");
 	if (args.length < 2 || args.length > 3) {
 		e.reply(this.cmd_base.help);
@@ -127,9 +126,9 @@ module.cmd_base = function cmd_base(e) {
 	}
 	return true;
 };
-module.cmd_base.help = "Convert a number from one base to another. Usage: base <num> <fromBase> [<toBase>]";
+module.exports.cmd_base.help = "Convert a number from one base to another. Usage: base <num> <fromBase> [<toBase>]";
 
-module.cmd_base10 = function cmd_base10(e) {
+module.exports.cmd_base10 = function cmd_base10(e) {
 	var args = e.args.split(" ");
 	if (args.length !== 2) {
 		e.reply(this.cmd_base10.help);
@@ -138,9 +137,9 @@ module.cmd_base10 = function cmd_base10(e) {
 	}
 	return true;
 }
-module.cmd_base10.help = "Convert a decimal number to another base. Usage: base10 <num> <toBase>";
+module.exports.cmd_base10.help = "Convert a decimal number to another base. Usage: base10 <num> <toBase>";
 
-module.cmd_qe = function cmd_quadraticEqn(e) {
+module.exports.cmd_qe = function cmd_quadraticEqn(e) {
 	var args = e.args;
 	if (!/^(?:([+\-]?\d*(?:\.\d*)?) ?\*? ?)?([A-Za-z]) ?(?:\*\*|\^) ?2 ?(?:([+\-] ?\d*(?:\.\d*)?) ?\*? ?\2)? ?([+\-] ?\d*(?:\.\d*)?)? ?= ?([+\-]?\d*(?:\.\d*)?)$/.test(args)) {
 		// not a quadratic equation, bail
@@ -170,9 +169,9 @@ module.cmd_qe = function cmd_quadraticEqn(e) {
 	e.reply(pron, "= ({0} \xB1 \u221A{1})/{2} = {3} or {4}".format(-b, delta, _2a, (-b + sqrtDelta)/_2a, (-b - sqrtDelta)/_2a));
 	return true;
 };
-module.cmd_qe.help = "Evaluates the value of the pronumeral in a quadratic equation in general form, i.e. ax**2 + bx + c = 0. Usage: qe <equation>";
+module.exports.cmd_qe.help = "Evaluates the value of the pronumeral in a quadratic equation in general form, i.e. ax**2 + bx + c = 0. Usage: qe <equation>";
 
-module.cmd_dice = module.cmd_roll = function cmd_roll(e) {
+module.exports.cmd_dice = module.exports.cmd_roll = function cmd_roll(e) {
 	var args = e.args;
 	if (/^(\d*)d(\d+)$/.test(args)) {
 		e.send(this.cmdDice(RegExp.$2, RegExp.$1));
@@ -181,9 +180,9 @@ module.cmd_dice = module.cmd_roll = function cmd_roll(e) {
 	}
 	return true;
 };
-module.cmd_roll.help = "Roll some dice. Usage: roll [<num>]d<sides> OR roll [<sides> [<num>]]";
+module.exports.cmd_roll.help = "Roll some dice. Usage: roll [<num>]d<sides> OR roll [<sides> [<num>]]";
 
-module.parseMsg = function parseMsg(msg, calc) {
+module.exports.parseMsg = function parseMsg(msg, calc) {
 	if (/help|list|^\?[^?]/.test(msg)) {
 		return this.help(msg);
 	}
@@ -219,7 +218,7 @@ module.parseMsg = function parseMsg(msg, calc) {
 };
 
 // Very loosely based on the cZ dice plugin.
-module.cmdDice = function cmdDice(sides, count) {
+module.exports.cmdDice = function cmdDice(sides, count) {
 	var ary = [], total = 0, i;
 	sides = parseInt(sides) || 6;
 	count = parseInt(count) || 1;
@@ -245,7 +244,7 @@ module.cmdDice = function cmdDice(sides, count) {
 	return count > 1 ? ary.join(" + ") + " = " + total : ary[0];
 };
 
-module.help = function calcHelp(e) {
+module.exports.help = function calcHelp(e) {
 	switch (e.replace(/help|[? #]|math\.*|imum|ing|er/g, "").slice(0, 7)) {
 	case "arccosi": case "arccos": case "acos": case "cos^-1": case "cos^(-1":
 		return "acos(z): Get the arc cosine of z in radians. See also: cos";

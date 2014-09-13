@@ -1,4 +1,3 @@
-#!/usr/bin/env jsdb
 // -*- Mode: JavaScript; tab-width: 4 -*- vim:tabstop=4 syntax=javascript:
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -6,17 +5,13 @@
 /*jshint expr: true */
 /*global aucgbot: false, print: false, println: false, readln: false, run: false, sleep: false, system: false */
 
-system.cwd = system.script.replace(/[^\\\/]+?$/, "");
-run("aucgbot.js");
-if (!this.aucgbot) {
-	println("aucgbot could not be loaded.");
-	println("system.cwd = ", system.cwd);
-	sleep(750);
-	system.exitCode = 1;
-	system.exit();
+require("./aucgbot.js");
+if (!aucgbot) {
+	console.log("aucgbot could not be loaded.");
+	process.exit(1);
 }
 
-print("\nLoad modules: ");
+/*print("\nLoad modules: ");
 for (let s = readln().trim().split(","); m=s.shift();) {
 	try {
 		aucgbot.loadModule(m);
@@ -24,22 +19,13 @@ for (let s = readln().trim().split(","); m=s.shift();) {
 		println(ex);
 		println(ex.stack);
 	}
-}
+}*/
 
 {
-let servers = [];
-for (let s = true, server; s;) {
-	server = [];
+let servers = [
+	/*["Hostname", "Port", "Nickname", "Ident", "Pass", "Channels", "SASL user", "SASL pass"]*/
+	["chat.freenode.net", "6667", "forkbot", "aucgbot", "", "##hypnotoad", "", ""]
+];
 
-	for (let i = 0, prompts = ["\nHostname", "Port", "Nickname", "Ident", "Pass", "Channels", "SASL user", "SASL pass"]; i < prompts.length; i++) {
-		print(prompts[i], ": ");
-		server.push(readln());
-	}
-
-	servers.push(server);
-	print("Add another server? ");
-	s = readln()[0] == "y";
-	println();
-}
 aucgbot.start.apply(aucgbot, servers);
 }
