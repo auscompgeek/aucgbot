@@ -4,11 +4,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global aucgbot: false, ctof: false, calc: false, encodeUTF8: false, ftoc: false, module: false, randint: false, run: false, writeln: false */
 
-if (!run("calc.js")) {
-	throw new Error("Could not load calc functions from calc.js");
+if (!(run("es5-sham.js") && run("math.js"))) {
+	throw new Error("Could not load math.js");
 }
 
-module.version = "3.1.1 (2014-02-18)";
+module.version = "4.0.2 (2014-08-26)";
 module.prefs = {
 	equalPrefix: true, // treat messages starting with = as a calculator expression
 	abuse: {
@@ -25,8 +25,8 @@ module.prefs = {
 	userfriendly: false,
 	actDice: true // output <x>d<y> as /me rolls a d<y> x times: a, b, c; total: d
 };
-module.abuse = /[\[{'"}\]]|alert|ass|cli|con|date|def|del|doc|ecma|eval|exit|false|for|glob|import|in[fs]|java|js|lo(?:ad|cal|se)|minimi|my|nan|op|p(?:ro|atch|lug|lay|rint)|quit|raw|rctrl|read|rite|run|scr|sys|this|throw|true|until|voice|while|win|yp/;
-module.list = "Functions [<x>()]: acos, asin, atan, atan2, cos, sin, tan, exp, ln, pow, sqrt, abs, ceil, max, min, floor, round, random, randint, fact, mean, dice, ftoc, ctof. Constants: e, pi, phi, c. Operators: %, ^, **. Other topics: decimal, trig.";
+//module.abuse = /[\[{'"}\]]|alert|ass|cli|con|date|def|del|doc|ecma|eval|exit|false|for|glob|import|in[fs]|java|js|lo(?:ad|cal|se)|minimi|my|nan|op|p(?:ro|atch|lug|lay|rint)|quit|raw|rctrl|read|rite|run|scr|sys|this|throw|true|until|voice|while|win|yp/;
+module.list = "Functions: acos, asin, atan, atan2, cos, sin, tan, exp, ln, pow, sqrt, abs, ceil, max, min, floor, round, random, randint, fact, mean, dice, ftoc, ctof. Constants: e, pi, phi, c. Operators: %, ^, **. Other topics: decimal, trig.";
 module.calcs = {};
 
 module.onNick = function onNick(e) {
@@ -42,12 +42,13 @@ module.onUnknownMsg = function onUnknownMsg(e) {
 	if (msg[0] !== "=" || !this.prefs.equalPrefix) {
 		return false;
 	}
-	msg = msg.slice(1).replace(/(?:\/\/|@).*/, "").trim().toLowerCase();
+	msg = msg.slice(1).replace(/(?:\/\/|@).*/, "").trim();
 	if (msg.length < 3 || /^[\-^]?(.)\1+$/.test(msg)) {
 		// eh, not interested
 		return false;
 	}
 	var dest = e.dest, nick = e.nick, name = nick.split("|")[0];
+	/*
 	if (msg.match(this.abuse)) {
 		writeln("[WARNING] Abuse detected! ^^^^^");
 		if (this.prefs.abuse.log) {
@@ -55,9 +56,10 @@ module.onUnknownMsg = function onUnknownMsg(e) {
 		}
 		return true;
 	}
+	*/
 	var calc = this.calcs[name];
-	if (!(calc && typeof calc.calc === "function")) {
-		calc = this.calcs[name] = new Calculator();
+	if (!calc) {
+		calc = this.calcs[name] = {};
 	}
 	try {
 		var s;
@@ -76,7 +78,8 @@ module.onUnknownMsg = function onUnknownMsg(e) {
 };
 
 module["cmd_="] = module.cmd_calc = module.cmd_math = function cmd_calc(e) {
-	var dest = e.dest, msg = e.args.replace(/(?:\/\/|@).*/, "").toLowerCase(), nick = e.nick, name = nick.split("|")[0];
+	var dest = e.dest, msg = e.args.replace(/(?:\/\/|@).*/, ""), nick = e.nick, name = nick.split("|")[0];
+	/*
 	if (msg.match(this.abuse)) {
 		if (this.prefs.abuse.warn && !e.relay) {
 			e.notice("Whoa! Careful dude!");
@@ -87,16 +90,15 @@ module["cmd_="] = module.cmd_calc = module.cmd_math = function cmd_calc(e) {
 		}
 		return true;
 	}
+	*/
 	var calc = this.calcs[name];
-	if (!(calc && typeof calc.calc === "function")) {
-		calc = this.calcs[name] = new Calculator();
+	if (!calc) {
+		calc = this.calcs[name] = {};
 	}
 	try {
 		var s;
 		if (/^(\d*)d(\d+)$/.test(msg)) {
 			e.send(this.cmdDice(RegExp.$2, RegExp.$1));
-		} else if (/\b\d*[ij]\b/.test(msg)) {
-			e.reply("I don't support complex numbers, sorry.");
 		} else if ((s = this.parseMsg(msg, calc))) {
 			e.reply(s);
 		}
@@ -114,7 +116,7 @@ module["cmd_="] = module.cmd_calc = module.cmd_math = function cmd_calc(e) {
 	}
 	return true;
 };
-module.cmd_calc.help = "A powerful calculator. More help available through the command. Usage: = (<expression> | help)";
+module.cmd_calc.help = "A powerful calculator. Whatever you do probably works. (Excel-style prefixed messages to the channel also work unless disabled.)";
 
 module.cmd_base = function cmd_base(e) {
 	var args = e.args.split(" ");
@@ -199,29 +201,21 @@ module.parseMsg = function parseMsg(msg, calc) {
 		if (/pie/.test(msg))
 			return "Mmmm, pie... 3.141592653589793...";
 	}
-	if (/self|shut|stfu|d(anc|ie|iaf|es)|str|our|(nu|lo|rof|ki)l|nc|egg|rat|cook|m[ea]n|kick|ban|[bm]o[ow]|ham|beef|a\/?s\/?l|au|not|found|up|quiet|bot|pie|\b\d*[ij]\b/.test(msg)) {
+	if (/self|shut|stfu|d(anc|ie|iaf|es)|str|our|(nu|lo|rof|ki)l|nc|egg|rat|cook|m[ea]n|kick|ban|[bm]o[ow]|ham|beef|a\/?s\/?l|au|not|found|up|quiet|bot|pie/.test(msg)) {
 		return;
 	}
-	if (/^([+\-]?(\d+(?:\.\d+|)|\.\d+))[\u00b0 ]?f$/.test(msg)) {
-		return Calculator.funcs.ftoc(RegExp.$1) + "\xB0C";
-	}
-	if (/^([+\-]?(\d+(?:\.\d+|)|\.\d+))[\u00b0 ]?c$/.test(msg)) {
-		return Calculator.funcs.ctof(RegExp.$1) + "\xB0F";
-	}
 	// calculate & return result
-	msg = calc.calc(msg);
+	var node = math.parse(msg);
+	var ans = node.compile(math).eval(calc);
 	if (this.prefs.userfriendly) {
-		if (isNaN(calc.vars.ans)) {
-			return "That isn't a real number.";
-		}
-		if (calc.vars.ans == Infinity) {
+		if (ans == Infinity) {
 			return this.prefs.easterEggs ? "IT'S OVER 9000!!!1" : "That's a number that's too big for me.";
 		}
-		if (calc.vars.ans == -Infinity) {
+		if (ans == -Infinity) {
 			return "That's a number that's too negative for me.";
 		}
 	}
-	return msg + ": " + calc.vars.ans.toLocaleString();
+	return node + ": " + ans;
 };
 
 // Very loosely based on the cZ dice plugin.
@@ -289,16 +283,16 @@ module.help = function calcHelp(e) {
 	case "absolut": case "abs":
 		return "abs(x): Get the absolute value of x, i.e. sqrt(x*x)";
 	case "ceil":
-		return "ceil(x): Get the smallest integer >= x.";
+		return "ceil(x): Get the smallest integer >= x. See also: floor, round";
 	case "max":
 		return "max(x,y): Get the greater of x & y. See also: min";
 	case "min":
 		return "min(x,y): Get the lesser of x & y. See also: max";
 	case "floor":
-		return "floor(x): Round a number down, i.e. towards -Infinity. See also: round";
+		return "floor(x): Round a number down, i.e. towards -Infinity. See also: ceil, round";
 	case "roundde": // round decimal
 	case "round":
-		return "round(x,[prec]): Round a number off to the nearest prec, default 1. See also: floor";
+		return "round(x,[p]): Round a number to a given precision in decimal digits (default 0 digits). See also: floor, ceil";
 	case "randomd": // random decimal
 	case "random": case "rand": case "rnd":
 		return "rand(): Get a random decimal e.g. floor(rand()*(max-min+1))+min. See also: dice, floor, randint";
