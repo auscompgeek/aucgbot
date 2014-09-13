@@ -4,14 +4,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global module: false */
 
-module.version = "1.2.1 (2013-12-24)";
+module.version = "1.2.3 (2014-01-21)";
 module.prefs = {
 	"fnqwebirc": true,
 	"help!": true,
-	"ciao": true,
-	"!list": true,
-	"!kick": true,
-	"!ban": true,
+	"ciao": false,
+	"!list": false,
+	"kick": true,
+	"ban": true,
 	"!kb": true
 };
 module.strings = {
@@ -19,7 +19,7 @@ module.strings = {
 	"help!": "Welcome! To get help, please state your problem. Being specific will get you help faster.",
 	"ciao": "Welcome. Please note we do not support warez around here, as this is a free, open-source software network.",
 	"!list": ":No warez for you!",
-	"!kick": ":you asked for it",
+	"kick": ":you asked for it",
 	"!kb": ":you asked for it"
 };
 module.parseln = function parseln(ln, conn) {
@@ -29,7 +29,7 @@ module.parseln = function parseln(ln, conn) {
 	conn.send("CNOTICE", RegExp.$1, RegExp.$2, this.strings.fnqwebirc.format(RegExp.$2));
 	return true;
 };
-module.onMsg = function onMsg(e) {
+module.onUnknownMsg = function onUnknownMsg(e) {
 	var dest = e.dest, msg = e.msg, nick = e.nick, conn = e.conn;
 	msg = msg.split(" ");
 	var arg = msg[1];
@@ -53,19 +53,19 @@ module.onMsg = function onMsg(e) {
 		}
 		break;
 	case "!kick": case "!k":
-		if (this.prefs["!kick"] && (!arg || arg === nick)) {
-			conn.send("KICK", dest, nick, this.strings["!kick"]);
+		if (this.prefs.kick && (!arg || arg === nick || arg === "me")) {
+			conn.send("KICK", dest, nick, this.strings.kick);
 			return true;
 		}
 		break;
 	case "!ban": case "!b":
-		if (this.prefs["!ban"] && (!arg || arg === nick) && e.okToKick()) {
+		if (this.prefs.ban && (!arg || arg === nick || arg === "me") && e.okToKick()) {
 			conn.send("MODE", dest, "+b", "*!*@" + host);
 			return true;
 		}
 		break;
 	case "!kick-ban": case "!kickban": case "!kb":
-		if (this.prefs["!kb"] && (!arg || arg === nick) && e.okToKick()) {
+		if (this.prefs["!kb"] && (!arg || arg === nick || arg === "me") && e.okToKick()) {
 			conn.send("KICK", dest, nick, this.strings["!kb"]);
 			conn.send("MODE", dest, "+b", "*!*@" + host);
 			return true;
