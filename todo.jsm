@@ -2,23 +2,21 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global module: false */
+/*global module.exports: false */
+var fs = require("fs");
+module.exports.version = 0.9;
+module.exports.users = {};
+module.exports.DB_FILENAME = "todo.json";
 
-module.version = 0.9;
-module.users = {};
-module.DB_FILENAME = "todo.json";
-
-module.loadUsers = function loadUsers() {
+module.exports.loadUsers = function loadUsers() {
 	this.users = JSON.parse(aucgbot.readURI(this.DB_FILENAME));
 };
 
-module.saveUsers = function saveUsers() {
-	var file = new Stream(this.DB_FILENAME, "w");
-	file.write(JSON.stringify(this.users));
-	file.close();
+module.exports.saveUsers = function saveUsers() {
+	fs.writeFileSync(JSON.stringify(this.users));
 };
 
-module.getList = function getList(nick) {
+module.exports.getList = function getList(nick) {
 	var name = nick.replace(/(?!^)(?:\|.*|\d+|_+)$/, "").toLowerCase();
 	var users = this.users;
 	if (!Object.prototype.hasOwnProperty.call(users, name)) {
@@ -27,7 +25,7 @@ module.getList = function getList(nick) {
 	return users[name];
 };
 
-module.cmd_todo = function cmd_todo(e) {
+module.exports.cmd_todo = function cmd_todo(e) {
 	var list = this.getList(e.nick);
 
 	if (e.args) {
@@ -45,9 +43,9 @@ module.cmd_todo = function cmd_todo(e) {
 
 	return true;
 };
-module.cmd_todo.help = "Add stuff to your todo list and get the list. Usage: todo [item]";
+module.exports.cmd_todo.help = "Add stuff to your todo list and get the list. Usage: todo [item]";
 
-module.cmd_tododel = function cmd_tododel(e) {
+module.exports.cmd_tododel = function cmd_tododel(e) {
 	if (!e.args) {
 		e.reply(this.cmd_tododel.help);
 		return true;
@@ -126,6 +124,6 @@ module.cmd_todoins = function cmd_todoins(e) {
 
 module.cmd_todoins.help = "Inserts a todo before the specified index. Usage: todoins <index> <todo>";
 
-try { module.loadUsers(); } catch (ex) {
+try { module.exports.loadUsers(); } catch (ex) {
 	println("Error while loading todo lists from disk: ", ex);
 }

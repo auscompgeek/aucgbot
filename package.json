@@ -1,0 +1,20 @@
+{
+  "name": "aucgbot",
+  "version": "6.00.0",
+  "license": "MPL-2.0",
+  "dependencies": {
+    "html-entities": "^1.1.1",
+    "httpsync": "0.0.8",
+    "moment": "^2.8.3",
+    "moment-timezone": "^0.2.2"
+  },
+  "scripts": {
+    "start": "node --harmony --use-strict start-aucgbot"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/auscompgeek/aucgbot"
+  },
+  "authors": "the aucgbot contributors (auscompgeek et. al.)",
+  "devDependencies": {}
+}

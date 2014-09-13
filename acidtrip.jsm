@@ -2,14 +2,14 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global module: false */
+/*global module.exports: false */
 
-module.version = "0.2 (2013-10-26)";
-module.cmd_acidtrip = function cmd_acidtrip(e) {
+module.exports.version = "0.2 (2013-10-26)";
+module.exports.cmd_acidtrip = function cmd_acidtrip(e) {
 	var s = '', msg = e.args,
 		maxi = Math.ceil(msg.length / 60),
 		last = msg.length % 60,
-		lastIndex = 0;
+		lastIndex = 0, mlen = 0, fg = 0, bg = 0;
 	for (var j = 0; j < maxi; j++) {
 		mlen = 60;
 		if (j + 1 == maxi) {
@@ -25,7 +25,7 @@ module.cmd_acidtrip = function cmd_acidtrip(e) {
 			if (bg < 10) {
 				bg = '0' + bg;
 			}
-			s += '\003' + fg + ',' + bg + msg[i];
+			s += '\x03' + fg + ',' + bg + msg[i];
 		}
 		e.conn.msg(e.dest, s);
 		lastIndex += mlen;

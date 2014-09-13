@@ -1,5 +1,6 @@
 *.log
 *.json
+!package.json
 *.ini
 *.csv
 *.sqlite
@@ -7,4 +8,5 @@
 .settings
 .project
 excuses.txt
+node_modules
 *~

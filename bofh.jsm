@@ -2,11 +2,11 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global module: false */
+/*global module.exports: false */
 
-module.version = 0.3;
+module.exports.version = 0.3;
 
-module.cmd_bofh = function cmd_bofh(e) {
+module.exports.cmd_bofh = function cmd_bofh(e) {
 	var excuses;
 	try {
 		excuses = e.bot.readURI("excuses.txt").split("\n");
