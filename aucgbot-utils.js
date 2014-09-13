@@ -3,6 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+run("es5-shim.js");
+
 if (typeof randint !== "function")
 /**
  * Generate a psuedo-random integer. Similar to Python's random.randint method.
@@ -60,7 +62,7 @@ if (typeof String.prototype.contains !== "function")
  * @return {Boolean} Whether the string contains the substring.
  */
 String.prototype.contains = function contains(s, pos) {
-	"use asm";
+	//"use asm";
 	s = s + "";
 	pos = pos | 0;
 	var S = this + "";
@@ -77,22 +79,12 @@ if (typeof String.prototype.startsWith !== "function")
  * @return {Boolean} Whether the string starts with the substring.
  */
 String.prototype.startsWith = function startsWith(s, pos) {
-	"use asm";
+	//"use asm";
 	s = s + "";
 	pos = pos | 0;
 	var S = this + "";
 	//return S.indexOf(s, pos) === pos;
 	return S.substr(pos, s.length) === s;
-};
-
-if (typeof Object.keys !== "function")
-Object.keys = function keys(o) {
-	var a = [];
-	for (var i in o) {
-		if (Object.hasOwnProperty(o, i))
-			a.push(i);
-	}
-	return a;
 };
 
 if (typeof Object.is !== "function")
@@ -101,7 +93,9 @@ Object.is = function is(x, y) {
 };
 
 // and now, for something completely different
-if (typeof btoa !== "function" && typeof encodeB64 === "function")
+if (typeof btoa !== "function" && typeof encodeB64 === "function") {
 	btoa = encodeB64;
-if (typeof atob !== "function" && typeof decodeB64 === "function")
+}
+if (typeof atob !== "function" && typeof decodeB64 === "function") {
 	atob = decodeB64;
+}
