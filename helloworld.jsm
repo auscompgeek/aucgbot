@@ -32,13 +32,16 @@ module.version = "0.6 (2013-10-26)";
  * @param {string} relay If sent by a relay bot, the relay bot's nick, else "".
  * @returns {boolean} true if the bot should stop processing the message.
  */
+/*
 module.onMsg = function onMsg(e) {
 	if (e.msg.match("hello bot")) {
-		conn.msg(dest, "Hello, World!");
+		// sends a message back to the destination (channel or nick if PM)
+		e.send("Hello, World!");
 		return true; // Stop processing of message.
 	}
 };
+*/
 module.cmd_hello = function cmd_hello(e) {
-	conn.reply(dest, nick, "Hello, World!");
+	e.reply("Hello, World!");
 	return true; // Say that we've reached a valid command and stop processing the message.
 };
