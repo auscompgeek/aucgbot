@@ -2,11 +2,11 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global module: false */
+/*global module.exports: false */
+var moment = require('moment-timezone');
+module.exports.version = 0.7;
 
-module.version = 0.7;
-
-module.cmd_now = function cmd_now(e) {
+module.exports.cmd_now = function cmd_now(e) {
 	var args = e.args;
 	if (args) {
 		switch (args.toLowerCase()) {
@@ -36,9 +36,9 @@ module.cmd_now = function cmd_now(e) {
 	}
 	return true;
 };
-module.cmd_now.help = "Convert current time to one of ISO, date, time, UTC or format strings or epoch time (ms).";
+module.exports.cmd_now.help = "Convert current time to one of ISO, date, time, UTC or format strings or epoch time (ms).";
 
-module.cmd_epoch = function cmd_epoch(e) {
+module.exports.cmd_epoch = function cmd_epoch(e) {
 	var args = e.args;
 	if (!args) {
 		e.reply(this.cmd_epoch.help);
@@ -72,15 +72,15 @@ module.cmd_epoch = function cmd_epoch(e) {
 	}
 	return true;
 };
-module.cmd_epoch.help = "Convert epoch time (milliseconds) to human-readable format. Usage: epoch time [format]";
+module.exports.cmd_epoch.help = "Convert epoch time (milliseconds) to human-readable format. Usage: epoch time [format]";
 
-module.cmd_tz = function cmd_tz(e) {
+module.exports.cmd_tz = function cmd_tz(e) {
 	var args = e.args;
 	if (!/^[\w+\-]+(?:\/\w+)?$/.test(args)) {
 		e.reply(this.cmd_tz.help);
 		return true;
 	}
-	e.reply(e.bot.readURI("exec://TZ={0} date".format(args)));
+	e.reply(moment().tz(args).format("ddd MMM D HH:mm:ss z YYYY"));
 	return true;
 };
-module.cmd_tz.help = "Get the date in another timezone. Timezones are valid TZ strings, e.g. Australia/NSW.";
+module.exports.cmd_tz.help = "Get the date in another timezone. Timezones are valid TZ strings, e.g. Australia/NSW.";

@@ -2,10 +2,8 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
-run("es5-shim.js");
-
-if (typeof randint !== "function")
+/* jshint eqnull: true */
+if (typeof global.randint !== "function")
 /**
  * Generate a psuedo-random integer. Similar to Python's random.randint method.
  *
@@ -13,7 +11,7 @@ if (typeof randint !== "function")
  * @param {number} [max] Maximum number (default: 10).
  * @return {number} Random integer.
  */
-randint = function randint(min, max) {
+global.randint = function randint(min, max) {
 	min = min != null ? +min : 1;
 	max = max != null ? +max : 10;
 	if (min >= max)
@@ -62,7 +60,7 @@ if (typeof String.prototype.contains !== "function")
  * @return {Boolean} Whether the string contains the substring.
  */
 String.prototype.contains = function contains(s, pos) {
-	//"use asm";
+	"use asm";
 	s = s + "";
 	pos = pos | 0;
 	var S = this + "";
@@ -79,7 +77,7 @@ if (typeof String.prototype.startsWith !== "function")
  * @return {Boolean} Whether the string starts with the substring.
  */
 String.prototype.startsWith = function startsWith(s, pos) {
-	//"use asm";
+	"use asm";
 	s = s + "";
 	pos = pos | 0;
 	var S = this + "";
@@ -87,15 +85,49 @@ String.prototype.startsWith = function startsWith(s, pos) {
 	return S.substr(pos, s.length) === s;
 };
 
+if (typeof Object.keys !== "function")
+Object.keys = function keys(o) {
+	var a = [];
+	for (var i in o) {
+		if (Object.hasOwnProperty(o, i))
+			a.push(i);
+	}
+	return a;
+};
+
 if (typeof Object.is !== "function")
 Object.is = function is(x, y) {
 	return x === y ? x !== 0 || 1 / x == 1 / y : x !== x && y !== y;
 };
 
+
+if (typeof Array.slice !== "function")
+Array.slice = function (obj, start, end) {
+	var res = [];
+	for (let i in obj) {
+		if (obj.hasOwnProperty(i)) {
+			res.push(obj[i]);
+		}
+	}
+	return res.slice(start, end);
+};
+
+if (typeof Array.join !== "function")
+Array.join = function (args, sep) {
+	var res = [];
+	for (let i in args) {
+		if (args.hasOwnProperty(i)) {
+			res.push(args[i]);
+		}
+	}
+	return res.join(sep);
+};
+
+global.encodeUTF8 = function(a) {
+	return a;
+};
 // and now, for something completely different
-if (typeof btoa !== "function" && typeof encodeB64 === "function") {
+if (typeof btoa !== "function" && typeof encodeB64 === "function")
 	btoa = encodeB64;
-}
-if (typeof atob !== "function" && typeof decodeB64 === "function") {
+if (typeof atob !== "function" && typeof decodeB64 === "function")
 	atob = decodeB64;
-}

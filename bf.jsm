@@ -1,13 +1,13 @@
 // -*- Mode: JavaScript; tab-width: 4 -*- vim:tabstop=4 syntax=javascript:
 /*jshint expr: true, es5: true, esnext: true */
-/*global module: false */
+/*global module.exports: false */
 
-module.version = 1.6;
-module.MAX_LOOP_TIMES = 1000;
-module.input = "You know it's rude to stare, right?";
+module.exports.version = 1.6;
+module.exports.MAX_LOOP_TIMES = 1000;
+module.exports.input = "You know it's rude to stare, right?";
 
 // http://code.google.com/p/jslibs/wiki/JavascriptTips#Brainfuck_interpreter
-module.cmd_bf = function cmd_bf(e) {
+module.exports.cmd_bf = function cmd_bf(e) {
 	var dest = e.dest, code = e.args, nick = e.nick, conn = e.conn;
 	if (!code) {
 		conn.reply(dest, nick, "Interpret some Brainfuck. bf <code>");
