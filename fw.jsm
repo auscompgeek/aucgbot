@@ -5,7 +5,7 @@
  * Licensed under the Eiffel Forum License 2.
  *
  * Stolen from jenni, hence the differing license.
- * https://github.com/myano/jenni/blob/master/module.exportss/weather.py
+ * https://github.com/myano/jenni/blob/master/modules/weather.py
  */
 /*global module.exports: false */
 

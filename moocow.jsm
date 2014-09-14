@@ -36,7 +36,7 @@ module.exports.onAction = function onAction(e) {
 	function me(msg) { return "\x01ACTION " + msg + "\x01"; }
 	var res = this.res;
 	if (aucgbot.modules.meanie)
-		res = res.concat(aucgbot.module.exportss.meanie.slaps);
+		res = res.concat(aucgbot.modules.meanie.slaps);
 	e.send(res.random().replace("$dest", e.dest, "g").replace("$nick", e.nick, "g"));
 	return true;
 };
