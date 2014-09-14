@@ -8,7 +8,7 @@ module.exports.version = 2.2;
 module.exports.SEARCH_API_BASE = "http://ajax.googleapis.com/ajax/services/search/web?v=1.0&rsz=1&q=";
 module.exports.HUMAN_NOJS_SEARCH_BASE = "http://www.google.com/search?gbv=1&q=";
 // yes, I'm scraping HTML with regex. get over it.
-// regex stolen from jenni, a fellow bot: https://github.com/myano/jenni/blob/master/module.exportss/calc.py
+// regex stolen from jenni, a fellow bot: https://github.com/myano/jenni/blob/master/modules/calc.py
 // This regex is Copyright 2009-2013, Michael Yanovich (yanovich.net). Licensed under the Eiffel Forum License 2.
 module.exports.CALC_REGEX = /<(?:h2 class="r"|div id="aoba")[^>]*>(.+?)<\/(?:h2|div)>/;
 

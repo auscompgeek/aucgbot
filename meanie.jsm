@@ -45,7 +45,7 @@ module.exports.nouns = ["bat toenails", "bug spit", "cat hair", "chicken piss",
 	"cold sores", "anal warts", "IE user"];
 
 // Comes up with a random insult. Copyedited from mozbot.
-// https://mxr.mozilla.org/mozilla/source/webtools/mozbot/Botmodule.exportss/Insult.bm
+// https://mxr.mozilla.org/mozilla/source/webtools/mozbot/Botmodules/Insult.bm
 module.exports.cmd_insult = function cmd_insult(e) {
 	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
 	switch (args.toLowerCase()) {
