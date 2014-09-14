@@ -1,24 +1,24 @@
 // -*- Mode: JavaScript; tab-width: 4 -*- vim:tabstop=4 syntax=javascript:
-/* fw.jsm - aucgbot module - get the fucking weather
+/* fw.jsm - aucgbot module.exports - get the fucking weather
  * Copyright 2013, auscompgeek (auscompgeek.tk)
  * Copyright 2009-2013, Michael Yanovich (yanovich.net)
  * Licensed under the Eiffel Forum License 2.
  *
  * Stolen from jenni, hence the differing license.
- * https://github.com/myano/jenni/blob/master/modules/weather.py
+ * https://github.com/myano/jenni/blob/master/module.exportss/weather.py
  */
-/*global module: false */
+/*global module.exports: false */
 
-module.version = 0.1;
-module.BASE_URL = "http://thefuckingweather.com/?unit=c&where=";
+module.exports.version = 0.1;
+module.exports.BASE_URL = "http://thefuckingweather.com/?unit=c&where=";
 // yes, I'm scraping HTML with regex. get over it.
-module.LOC_RE = /<span id="locationDisplaySpan" class="small">(.+?)<\/span>/;
-module.TEMP_RE = /<span class="temperature" tempf="(\d+)">(\d+)<\/span>/;
-module.COND_RE = /<p class="large specialCondition">(.+?)<\/p>/
-module.REMARK_RE = /<p class="remark">(.+?)<\/p>/;
-module.FLAVOR_RE = /<p class="flavor">(.+?)<\/p>/;
+module.exports.LOC_RE = /<span id="locationDisplaySpan" class="small">(.+?)<\/span>/;
+module.exports.TEMP_RE = /<span class="temperature" tempf="(\d+)">(\d+)<\/span>/;
+module.exports.COND_RE = /<p class="large specialCondition">(.+?)<\/p>/;
+module.exports.REMARK_RE = /<p class="remark">(.+?)<\/p>/;
+module.exports.FLAVOR_RE = /<p class="flavor">(.+?)<\/p>/;
 
-module.cmd_fw = function cmd_fw(e) {
+module.exports.cmd_fw = function cmd_fw(e) {
 	var args = e.args;
 	if (!args) {
 		e.reply(this.cmd_fw.help);
@@ -53,4 +53,4 @@ module.cmd_fw = function cmd_fw(e) {
 	e.reply(res);
 	return true;
 };
-module.cmd_fw.help = "Get the fucking weather. Usage: fw <location>";
+module.exports.cmd_fw.help = "Get the fucking weather. Usage: fw <location>";

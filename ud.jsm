@@ -2,13 +2,13 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global module: false */
+/*global module.exports: false */
 
-module.version = 1.4;
-module.BASE_URL = "http://api.urbandictionary.com/v0/";
-module.DEFINE_BASE_URL = module.BASE_URL + "define?term=";
+module.exports.version = 1.4;
+module.exports.BASE_URL = "http://api.urbandictionary.com/v0/";
+module.exports.DEFINE_BASE_URL = module.exports.BASE_URL + "define?term=";
 
-module.defToText = function defToText(def, field) {
+module.exports.defToText = function defToText(def, field) {
 	var text = def[field || "definition"].trim().replace(/\[([^\[\]]+)\]/g, "$1").replace("\r\n", "\n", "g");
 	if (text.length > 350) {
 		text = text.split("\n")[0];
@@ -26,7 +26,7 @@ module.defToText = function defToText(def, field) {
 	return "{0} {1}".format(text, def.permalink);
 };
 
-module.cmd_ud = module.cmd_urban =
+module.exports.cmd_ud = module.exports.cmd_urban =
 function cmd_ud(e) {
 	var term = e.args;
 	if (!term) {
@@ -53,9 +53,9 @@ function cmd_ud(e) {
 	}
 	return true;
 };
-module.cmd_ud.help = "Search Urban Dictionary. Usage: ud <term>";
+module.exports.cmd_ud.help = "Search Urban Dictionary. Usage: ud <term>";
 
-module.cmd_urbanex =
+module.exports.cmd_urbanex =
 function cmd_urbanex(e) {
 	var term = e.args;
 	if (!term) {
@@ -82,4 +82,4 @@ function cmd_urbanex(e) {
 	}
 	return true;
 };
-module.cmd_urbanex.help = "Get the top Urban Dictionary definition's example for a word. Usage: urbanex <term>";
+module.exports.cmd_urbanex.help = "Get the top Urban Dictionary definition's example for a word. Usage: urbanex <term>";

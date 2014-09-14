@@ -2,12 +2,12 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global module: false */
+/*global module.exports: false */
 
-module.version = 1.6;
-module.BASE_URL = "http://api.duckduckgo.com/?format=json&no_redirect=1&no_html=1&skip_disambig=1&t=aucgbot&q=";
+module.exports.version = 1.6;
+module.exports.BASE_URL = "http://api.duckduckgo.com/?format=json&no_redirect=1&no_html=1&skip_disambig=1&t=aucgbot&q=";
 
-module.cleanAbstract = function cleanAbstract(text) {
+module.exports.cleanAbstract = function cleanAbstract(text) {
 	text = decodeHTML(text);
 	if (text.length > 300) {
 		var l = text.lastIndexOf(". ", 300);
@@ -18,9 +18,9 @@ module.cleanAbstract = function cleanAbstract(text) {
 		text += " ...";
 	}
 	return text;
-}
+};
 
-module.cmd_ddg = module.duck = module.duckduckgo =
+module.exports.cmd_ddg = module.exports.duck = module.exports.duckduckgo =
 function cmd_ddg(e) {
 	if (!e.args) {
 		e.reply(this.cmd_ddg.help);
@@ -52,4 +52,4 @@ function cmd_ddg(e) {
 
 	return true;
 };
-module.cmd_ddg.help = "Get DuckDuckGo zero-click info. Usage: ddg <query>";
+module.exports.cmd_ddg.help = "Get DuckDuckGo zero-click info. Usage: ddg <query>";

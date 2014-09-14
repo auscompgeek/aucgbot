@@ -2,11 +2,11 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global module: false */
+/*global module.exports: false */
 
-module.version = 0.9;
+module.exports.version = 0.9;
 
-module.cmd_longurl = function cmd_longurl(e) {
+module.exports.cmd_longurl = function cmd_longurl(e) {
 	var url = e.args.replace(/^htt?p?(s)?:?\/\/?/i, "http$1://"); // typo correction
 
 	if (!url) {
@@ -17,7 +17,7 @@ module.cmd_longurl = function cmd_longurl(e) {
 	if (url.slice(0, 4) != "http")
 		url = "http://" + url;
 
-	if (/^(http:\/\/v\.gd\/)(\w+)/.test(url)) {
+	if (/^(http:\/\/(?:v|is)\.gd\/)(\w+)/.test(url)) {
 		// v.gd shortening service - use their lookup API as LongURL.org doesn't work
 		e.reply(e.bot.getHTTP(RegExp.$1 + "forward.php?format=simple&shorturl=" + RegExp.$2));
 		return true;
@@ -46,4 +46,4 @@ module.cmd_longurl = function cmd_longurl(e) {
 	e.reply(res.join(" - "));
 	return true;
 };
-module.cmd_longurl.help = "Get the canonical long URL from LongURL.org. Usage: longurl <url>";
+module.exports.cmd_longurl.help = "Get the canonical long URL from LongURL.org. Usage: longurl <url>";
