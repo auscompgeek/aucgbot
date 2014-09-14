@@ -3,11 +3,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*jshint expr: true */
-/*global module: false, randint: false */
+/*global module.exports: false, randint: false */
 
-module.version = 0.7;
+module.exports.version = 0.7;
 
-module.adjs = ["acidic", "antique", "contemptible", "culturally-unsound",
+module.exports.adjs = ["acidic", "antique", "contemptible", "culturally-unsound",
 	"despicable", "evil", "fermented", "festering", "foul", "fulminating", "humid", "impure",
 	"inept", "inferior", "industrial", "left-over", "low-quality", "malodorous", "off-color",
 	"penguin-molesting", "petrified", "pointy-nosed", "salty", "sausage-snorfling",
@@ -29,11 +29,11 @@ module.adjs = ["acidic", "antique", "contemptible", "culturally-unsound",
 	"imp-bladdereddle-headed", "boil-brained", "tottering", "hedge-born",
 	"hugger-muggered", "elf-skinned", "Microsoft-loving"];
 
-module.amnts = ["accumulation", "bucket", "coagulation", "enema-bucketful",
+module.exports.amnts = ["accumulation", "bucket", "coagulation", "enema-bucketful",
 	"gob", "half-mouthful", "heap", "mass", "mound", "petrification", "pile", "puddle", "stack",
 	"thimbleful", "tongueful", "ooze", "quart", "bag", "plate", "ass-full", "assload"];
 
-module.nouns = ["bat toenails", "bug spit", "cat hair", "chicken piss",
+module.exports.nouns = ["bat toenails", "bug spit", "cat hair", "chicken piss",
 	"dog vomit", "dung", "fat woman's stomach-bile", "fish heads",
 	"guano", "gunk", "pond scum", "rat retch", "red dye number-9",
 	"Sun IPC manuals", "waffle-house grits", "yoo-hoo", "dog balls",
@@ -45,8 +45,8 @@ module.nouns = ["bat toenails", "bug spit", "cat hair", "chicken piss",
 	"cold sores", "anal warts", "IE user"];
 
 // Comes up with a random insult. Copyedited from mozbot.
-// https://mxr.mozilla.org/mozilla/source/webtools/mozbot/BotModules/Insult.bm
-module.cmd_insult = function cmd_insult(e) {
+// https://mxr.mozilla.org/mozilla/source/webtools/mozbot/Botmodule.exportss/Insult.bm
+module.exports.cmd_insult = function cmd_insult(e) {
 	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
 	switch (args.toLowerCase()) {
 	case "yourself": case "itself": case "himself": case "herself": case "self": case conn.nick:
@@ -87,8 +87,10 @@ module.cmd_insult = function cmd_insult(e) {
 	return true;
 };
 
-module.makeSlaps = function makeSlaps() {
-	function me(msg) "\x01ACTION " + msg + "\x01";
+module.exports.makeSlaps = function makeSlaps() {
+	function me(msg) {
+		return "\x01ACTION " + msg + "\x01";
+	}
 	return [
 		me("slaps $nick around a bit with a large trout"),
 		me("slaps $nick around a bit with a small fish"),
@@ -123,9 +125,9 @@ module.makeSlaps = function makeSlaps() {
 		me("drops a large CRT monitor off a balcony above $nick")
 	];
 };
-module.slaps = module.makeSlaps();
+module.exports.slaps = module.exports.makeSlaps();
 
-module.cmd_slap = function cmd_slap(e) {
+module.exports.cmd_slap = function cmd_slap(e) {
 	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
 	conn.msg(dest, this.slaps.random().replace("$nick", args && args != conn.nick && args != "me" ? args : nick));
 	return true;
