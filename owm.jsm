@@ -2,17 +2,17 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global Stream: false, XML: false, aucgbot: false, module: false, system: false */
+/*global Stream: false, XML: false, aucgbot: false, module.exports: false, system: false */
 // Please don't use the included APPID in other applications.
 // The default APPID is for personal/non-commercial use only.
 
-module.version = 0.6;
-module.APPID = "5d5102ff6928ac6e647092a502a2370d";
-module.BASE_URL = "http://api.openweathermap.org/data/2.5/";
-module.WEATHER_BASE_URL = module.BASE_URL + "weather?units=metric&q=";
-module.FORECAST_BASE_URL = module.BASE_URL + "forecast?units=metric&q=";
+module.exports.version = 0.6;
+module.exports.APPID = "5d5102ff6928ac6e647092a502a2370d";
+module.exports.BASE_URL = "http://api.openweathermap.org/data/2.5/";
+module.exports.WEATHER_BASE_URL = module.exports.BASE_URL + "weather?units=metric&q=";
+module.exports.FORECAST_BASE_URL = module.exports.BASE_URL + "forecast?units=metric&q=";
 
-module.cmd_weather = module.cmd_owm = function cmd_owm(e) {
+module.exports.cmd_weather = module.exports.cmd_owm = function cmd_owm(e) {
 	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
 	if (!args) {
 		conn.reply(dest, nick, this.cmd_owm.help);
@@ -21,7 +21,7 @@ module.cmd_weather = module.cmd_owm = function cmd_owm(e) {
 
 	var data;
 	try {
-		data = aucgbot.getJSON(this.WEATHER_BASE_URL + encodeURIComponent(args), "owm", this.version, {"X-API-Key": module.APPID});
+		data = aucgbot.getJSON(this.WEATHER_BASE_URL + encodeURIComponent(args), "owm", this.version, {"X-API-Key": module.exports.APPID});
 	} catch (ex) {}
 
 	if (!data) {
@@ -68,4 +68,4 @@ module.cmd_weather = module.cmd_owm = function cmd_owm(e) {
 	e.nreply("Current weather for", data.name, "from OpenWeatherMap (as of", new Date(data.dt * 1000) + "):", res.join(" - "));
 	return true;
 };
-module.cmd_owm.help = "Get the current weather from OpenWeatherMap. Usage: owm <location>";
+module.exports.cmd_owm.help = "Get the current weather from OpenWeatherMap. Usage: owm <location>";

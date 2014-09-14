@@ -578,17 +578,17 @@ aucgbot.getHTTP = function getHTTP(uri, modname, modver, headers) {
 		throw new this.HTTPError(res, res.data.toString());
 	}
 	return res.data.toString();
-}
+};
 
 aucgbot.readURI = function readURI(uri, headers) {
-	if (headers == null) {
+	if (headers == null && !/^https?:\/\//.test(uri)) {
 		if (fs.existsSync(uri)) {
 			return "";
 		}
 		return fs.readFileSync(uri);
 	}
 	else {
-		writeln("NOT IMPLEMENTED YET CRY EVERY TIEM");
+		return this.getHTTP(uri, null, null, headers);
 	}
 	/*var stream = new Stream(uri, null, headers), content;
 	sleep(this.prefs.readDelay);  // wait a tick so that the entire file actually comes through

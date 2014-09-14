@@ -2,18 +2,18 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global module: false */
+/*global module.exports: false */
 // Please don't use the included API key in other applications.
 // The default API key is for personal/non-commercial use only.
 
-module.version = 0.8;
-module.API_KEY = "bb7ba883f6b6aea5";
-module.BASE_URL = "http://api.wunderground.com/api/" + module.API_KEY;
-module.COND_BASE_URL = module.BASE_URL + "/conditions/q/";
+module.exports.version = 0.8;
+module.exports.API_KEY = "bb7ba883f6b6aea5";
+module.exports.BASE_URL = "http://api.wunderground.com/api/" + module.exports.API_KEY;
+module.exports.COND_BASE_URL = module.exports.BASE_URL + "/conditions/q/";
 // forecast doesn't return the location
-module.FORECAST_BASE_URL = module.BASE_URL + "/geolookup/forecast/q/";
+module.exports.FORECAST_BASE_URL = module.exports.BASE_URL + "/geolookup/forecast/q/";
 
-module.cmd_weather = module.cmd_wu = module.cmd_wunderground = function cmd_wu(e) {
+module.exports.cmd_weather = module.exports.cmd_wu = module.exports.cmd_wunderground = function cmd_wu(e) {
 	var args = e.args;
 	if (!args) {
 		e.reply(this.cmd_wu.help);
@@ -38,7 +38,7 @@ module.cmd_weather = module.cmd_wu = module.cmd_wunderground = function cmd_wu(e
 
 	var results = data.response.results;
 	if (results) {
-		var names = results.map(function (loc) "{city}, {state}, {country}".format(loc));
+		var names = results.map(function (loc) { return "{city}, {state}, {country}".format(loc); });
 		e.nreply(results.length, "locations matched your query:", names.join(" - "));
 		return true;
 	}
@@ -54,9 +54,9 @@ module.cmd_weather = module.cmd_wu = module.cmd_wunderground = function cmd_wu(e
 	e.nreply("Current weather for", curr.display_location.full, "from Weather Underground (" + curr.observation_time + "):", res.join(" - "));
 	return true;
 };
-module.cmd_wu.help = "Get current weather conditions from Weather Underground.";
+module.exports.cmd_wu.help = "Get current weather conditions from Weather Underground.";
 
-module.cmd_forecast = module.cmd_wu_forecast = function cmd_wu_forecast(e) {
+module.exports.cmd_forecast = module.exports.cmd_wu_forecast = function cmd_wu_forecast(e) {
 	var args = e.args;
 	if (!args) {
 		e.reply(this.cmd_wu_forecast.help);
@@ -81,7 +81,7 @@ module.cmd_forecast = module.cmd_wu_forecast = function cmd_wu_forecast(e) {
 
 	var results = data.response.results;
 	if (results) {
-		var names = results.map(function (loc) "{city}, {state}, {country}".format(loc));
+		var names = results.map(function (loc) { return "{city}, {state}, {country}".format(loc); });
 		e.nreply(results.length, "locations matched your query:", names.join(" - "));
 		return true;
 	}
@@ -92,4 +92,4 @@ module.cmd_forecast = module.cmd_wu_forecast = function cmd_wu_forecast(e) {
 
 	return true;
 };
-module.cmd_wu_forecast.help = "Get weather forecast from Weather Underground.";
+module.exports.cmd_wu_forecast.help = "Get weather forecast from Weather Underground.";

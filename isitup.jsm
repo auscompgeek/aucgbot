@@ -2,12 +2,12 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global module: false */
+/*global module.exports: false */
 
-module.version = 0.3;
-module.BASE_URL = "http://isitup.org/{0}.json";
+module.exports.version = 0.3;
+module.exports.BASE_URL = "http://isitup.org/{0}.json";
 
-module.cmd_isitup = function cmd_isitup(e) {
+module.exports.cmd_isitup = function cmd_isitup(e) {
 	var domain = e.args.replace(/https?:\/\/|\/.*/g, "");
 	if (!domain) {
 		e.reply(this.cmd_isitup.help);
@@ -44,4 +44,4 @@ module.cmd_isitup = function cmd_isitup(e) {
 
 	return true;
 };
-module.cmd_isitup.help = "Is a website up? Queries isitup.org. Usage: isitup <domain>";
+module.exports.cmd_isitup.help = "Is a website up? Queries isitup.org. Usage: isitup <domain>";

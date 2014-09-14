@@ -2,12 +2,12 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global module: false */
+/*global module.exports: false */
 
-module.version = 0.3;
-module.users = {};
+module.exports.version = 0.3;
+module.exports.users = {};
 
-module.cmd_tell = function cmd_tell(e) {
+module.exports.cmd_tell = function cmd_tell(e) {
 	var argv = e.args.split(" "), nick = e.nick;
 	if (argv.length < 2) {
 		e.reply(this.cmd_tell.help);
@@ -33,9 +33,9 @@ module.cmd_tell = function cmd_tell(e) {
 	e.reply("I'll pass that on when", user, "is around.");
 	return true;
 };
-module.cmd_tell.help = "Send a message (through NOTICE) to someone when I see them next. Usage: tell <nick> <message>";
+module.exports.cmd_tell.help = "Send a message (through NOTICE) to someone when I see them next. Usage: tell <nick> <message>";
 
-module.onMsg = function onMsg(e) {
+module.exports.onMsg = function onMsg(e) {
 	var name = e.nick.toLowerCase(), users = this.users, user = users[name], line;
 	if (Object.prototype.hasOwnProperty.call(users, name) && user.length) {
 		while ((line = user.pop())) {

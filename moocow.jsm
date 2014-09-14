@@ -3,10 +3,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*jshint es5: true, esnext: true, expr: true */
-/*global module: false */
+/*global module.exports: false */
 
-module.version = "0.11.1 (2013-12-21)";
-module.res = [
+module.exports.version = "0.11.1 (2013-12-21)";
+module.exports.res = [
 	"Mooooooooooo!", "MOO!", "Moo.", "Moo. Moo.", "Moo Moo Moo, Moo Moo.", "fish go m00!",
 	"\x01ACTION nibbles on some grass\x01",
 	"\x01ACTION goes and gets a drink\x01",
@@ -30,13 +30,13 @@ module.res = [
  * @param {string} [relay] If sent by a relay bot, the relay bot's nick.
  * @returns {boolean} true if the bot should stop processing the action.
  */
-module.onAction = function onAction(e) {
+module.exports.onAction = function onAction(e) {
 	if (!e.msg.match("(hit|kick|slap|eat|prod|stab|kill|whack|insult|teabag|(punch|bash|touch|pok)e)s " + e.conn.nick.replace(/\W/g, "\\$&") + "\\b", "i"))
 		return false;
-	function me(msg) "\x01ACTION " + msg + "\x01";
+	function me(msg) { return "\x01ACTION " + msg + "\x01"; }
 	var res = this.res;
 	if (aucgbot.modules.meanie)
-		res = res.concat(aucgbot.modules.meanie.slaps);
+		res = res.concat(aucgbot.module.exportss.meanie.slaps);
 	e.send(res.random().replace("$dest", e.dest, "g").replace("$nick", e.nick, "g"));
 	return true;
 };
@@ -51,7 +51,7 @@ module.onAction = function onAction(e) {
  * @param {Stream} conn Server connection.
  * @param {string} relay If sent by a relay bot, the relay bot's nick, else "".
  */
-module.onUnknownMsg = function onUnknownMsg(e) {
+module.exports.onUnknownMsg = function onUnknownMsg(e) {
 	var nick = e.nick, msg = e.msg;
 	if (/(ham|cheese) ?burger|big mac|beef/i.test(msg) && !/^au/.test(nick))
 		e.send("\x01ACTION eats", nick + "\x01");

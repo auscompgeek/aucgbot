@@ -2,10 +2,10 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global module: false */
+/*global module.exports: false */
 
-module.version = "1.2.3 (2014-01-21)";
-module.prefs = {
+module.exports.version = "1.2.3 (2014-01-21)";
+module.exports.prefs = {
 	"fnqwebirc": true,
 	"help!": true,
 	"ciao": false,
@@ -14,7 +14,7 @@ module.prefs = {
 	"ban": true,
 	"!kb": true
 };
-module.strings = {
+module.exports.strings = {
 	"fnqwebirc": ":[{0}] Welcome! To allow other users to identify you more easily, please change your nick (/nick newnickname). Thanks!",
 	"help!": "Welcome! To get help, please state your problem. Being specific will get you help faster.",
 	"ciao": "Welcome. Please note we do not support warez around here, as this is a free, open-source software network.",
@@ -22,14 +22,14 @@ module.strings = {
 	"kick": ":you asked for it",
 	"!kb": ":you asked for it"
 };
-module.parseln = function parseln(ln, conn) {
+module.exports.parseln = function parseln(ln, conn) {
 	if (!(this.prefs.fnqwebirc && /^:(qwebirc\d+)![0-9a-f]+@gateway\/web\/freenode\/ip\.\d+\.\d+\.\d+\.\d+ JOIN :?(\S+)/.test(ln))) {
 		return false;
 	}
 	conn.send("CNOTICE", RegExp.$1, RegExp.$2, this.strings.fnqwebirc.format(RegExp.$2));
 	return true;
 };
-module.onUnknownMsg = function onUnknownMsg(e) {
+module.exports.onUnknownMsg = function onUnknownMsg(e) {
 	var dest = e.dest, msg = e.msg, nick = e.nick, conn = e.conn;
 	msg = msg.split(" ");
 	var arg = msg[1];

@@ -126,6 +126,14 @@ Array.join = function (args, sep) {
 global.encodeUTF8 = function(a) {
 	return a;
 };
+
+global.encodeB64 = function(a) {
+	return new Buffer(a).toString("base64");
+};
+
+global.decodeB64 = function(a) {
+	return new Buffer(a, "base64").toString("utf8");
+};
 // and now, for something completely different
 if (typeof btoa !== "function" && typeof encodeB64 === "function")
 	btoa = encodeB64;
