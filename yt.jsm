@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*jshint es5: true, esnext: true, expr: true */
 /*global Stream: false, aucgbot: false, module.exports: false, system: false */
-
+"use strict";
 module.exports.version = 2.6;
 
 module.exports.cmd_ytv = module.exports.cmd_ytid =

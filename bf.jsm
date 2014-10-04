@@ -1,7 +1,7 @@
 // -*- Mode: JavaScript; tab-width: 4 -*- vim:tabstop=4 syntax=javascript:
 /*jshint expr: true, es5: true, esnext: true */
 /*global module.exports: false */
-
+"use strict";
 module.exports.version = 1.6;
 module.exports.MAX_LOOP_TIMES = 1000;
 module.exports.input = "You know it's rude to stare, right?";

@@ -5,7 +5,7 @@
 /** @fileoverview aucgbot module: Transform text. */
 /*jshint es5: true, esnext: true, nonstandard: true */
 /*global decodeB64: false, decodeHTML: false, decodeURL: false, encodeB64: false, encodeHTML: false, encodeURL: false, module.exports: false */
-
+"use strict";
 module.exports.version = 2.91;
 module.exports.UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 module.exports.LOWER = "abcdefghijklmnopqrstuvwxyz";
