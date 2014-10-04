@@ -7,7 +7,7 @@
 
 // PLEASE NOTE: if you edit the badwords list using the rc js command, also
 // `this.modules.badword.parseList()` otherwise it will not work
-
+"use strict";
 module.exports.version = "5.4 (2013-11-21)";
 module.exports.db = {}, module.exports.sfwChans = [];
 module.exports.DB_FILENAME = "badword.json";

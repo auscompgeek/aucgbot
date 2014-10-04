@@ -3,6 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /* jshint eqnull: true */
+"use strict";
 if (typeof global.randint !== "function")
 /**
  * Generate a psuedo-random integer. Similar to Python's random.randint method.
@@ -136,6 +137,6 @@ global.decodeB64 = function(a) {
 };
 // and now, for something completely different
 if (typeof btoa !== "function" && typeof encodeB64 === "function")
-	btoa = encodeB64;
+	global.btoa = encodeB64;
 if (typeof atob !== "function" && typeof decodeB64 === "function")
-	atob = decodeB64;
+	global.atob = decodeB64;

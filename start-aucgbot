@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*jshint expr: true */
 /*global aucgbot: false, print: false, println: false, readln: false, run: false, sleep: false, system: false */
-
+"use strict";
 require("./aucgbot.js");
 if (!aucgbot) {
 	console.log("aucgbot could not be loaded.");

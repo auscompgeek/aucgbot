@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*jshint es5: true, esnext: true, expr: true */
 /*global module.exports: false */
-
+"use strict";
 module.exports.version = "0.11.1 (2013-12-21)";
 module.exports.res = [
 	"Mooooooooooo!", "MOO!", "Moo.", "Moo. Moo.", "Moo Moo Moo, Moo Moo.", "fish go m00!",
