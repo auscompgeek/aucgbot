@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*jshint es5: true, esnext: true */
 /*global aucgbot: false, module.exports: false, writeln: false */
-
+"use strict";
 if (!aucgbot.modules.badword)
 	throw new Error("badword module.exports not loaded");
 
