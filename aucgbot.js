@@ -53,7 +53,7 @@ global.aucgbot = global.aucgbot || {
 	conns: []
 };
 
-aucgbot.version = "6.0.0 (2014-09)";
+aucgbot.version = "6.0.0 (2014-10)";
 aucgbot.source = "https://github.com/auscompgeek/aucgbot";
 aucgbot.useragent = "aucgbot/{0} (+{1}; {2}; NodeJS {3})".format(aucgbot.version, aucgbot.source, process.platform, process.version);
 // JSDB shims
