@@ -24,7 +24,7 @@ for (let s = readln().trim().split(","); m=s.shift();) {
 {
 let servers = [
 	/*["Hostname", "Port", "Nickname", "Ident", "Pass", "Channels", "SASL user", "SASL pass"]*/
-	["chat.freenode.net", "6667", "forkbot", "aucgbot", "", "##hypnotoad", "", ""]
+	["chat.freenode.net", "6667", "forkbot", "aucgbot", "", "##hypnotoad", "PaperBag", "uniqueradioactivelolly"]
 ];
 
 aucgbot.start.apply(aucgbot, servers);
