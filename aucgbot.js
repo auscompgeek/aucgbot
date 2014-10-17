@@ -2,6 +2,8 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* jshint esnext: true, node: true*/
+/* globals: entities, aucgbot, encodeUTF8, decodeUTF8, writeln, println */
 "use strict";
 var net = require("net"),
 	util = require("util"),
@@ -65,8 +67,6 @@ global.decodeHTML = entities.decode;
  */
 aucgbot.start = function startBot() {
 	var args = Array.slice(arguments);
-	console.log(args);
-	console.log(arguments);
 	while (args.length)
 		this.connect.apply(this, args.shift());
 	args = null;
@@ -86,7 +86,6 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 	/* stupid nodejs is stupid */
 	conn.writeln = function writeln() {
 		var thing = Array.slice(arguments).join(" ").trim().replace(/\s+/g, " ");
-		console.log("SEND",thing);
 		return this.write(thing + "\r\n");
 	};
 
@@ -100,8 +99,8 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 	conn.msg = function msg(dest) {
 		if (arguments.length < 2)
 			throw new TypeError("conn.msg requires at least 2 arguments");
-		var msg = Array.slice(arguments, 1).join(" ").trim().replace(/\s+/g, " ");
-		if (msg)
+		let m = Array.slice(arguments, 1).join(" ").trim().replace(/\s+/g, " ");
+		if (m)
 			return this.writeln("PRIVMSG ", encodeUTF8(dest + " :" + msg));
 	};
 	conn.nmsg = function nmsg(dest) {
@@ -169,22 +168,29 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 	conn.channels = channels;
 	conn.flood_lines = 0;
 	conn.joined = false;
-	conn.on("data", conn.onLine = function(ln) {
-		ln = ln.trim();
-		if (/003/.test(ln)) {
-			console.log(ln);
+	console.log("Here we go...");
+	conn.on("data", function(data) {
+		var lns = data.split("\n");
+		for (let i = 0; i < lns.length; i++) {
+			conn.onLine(lns[i]);
 		}
+	});
+	conn.onLine = function(ln) {
+		ln = ln.trim().trim();
 		if (!conn.joined) {
+			console.log(ln);
 			if (ln.startsWith("PING ")) {
 				conn.send("PONG", ln.slice(5));
 			} else if (ln === "AUTHENTICATE +") {
 				conn.send("AUTHENTICATE", encodeB64(sasluser + "\0" + sasluser + "\0" + saslpass));
 				sasluser = saslpass = null;
 			} else if (/^:\S+ CAP \S+ ACK :sasl/.test(ln)) {
+				console.error('yep, sasl');
 				conn.send("AUTHENTICATE PLAIN");
-			} else if (/^:\S+ 90([345]) ./.test(ln)) {
+			} else if (/^:\S+ 90([345]) ./.test(ln)) {/^:\S+ 90([345]) ./.test(ln)
 				conn.send("CAP END");
-				if (RegExp.$1 !== "3") {
+				let obj = /^:\S+ 90([345]) ./.exec(ln)[1];
+				if (obj !== "3") {
 					conn.send("QUIT");
 					conn.end(null, function() {
 						writeln("Disconnected from",conn.addr);
@@ -235,7 +241,7 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 				}
 			}
 		}
-	});
+	};
 	conn.on('close', function(a) {
 		console.log("Connection shut");
 	});
@@ -384,11 +390,8 @@ aucgbot.onMsg = function onMsg(e) {
 
 	var prefix = this.prefs.prefix;
 	if (prefix && msg.startsWith(prefix)) {
-		console.log(msg.slice(prefix.length));
-		console.log(/^(\S+) ?/.test(msg.slice(prefix.length)));
 		e.args = msg.slice(prefix.length).replace(/^(\S+) ?/, "");
 		e.cmd = RegExp.$1.toLowerCase();
-		console.log(RegExp.$1);
 		this.parseCmd(e);
 	} else if (meping.test(msg) || dest === nick) {
 		e.args = msg.replace(meping, "").replace(/^(\S+) ?/, "");
@@ -629,11 +632,9 @@ aucgbot.loadModule = function loadModule(id) {
 		delete require.cache[require.resolve("./" + id + ".jsm")];
 		let m = require("./" + id + ".jsm"); // must leak to global scope to reach module itself
 		if (m && m.version) {
-			console.log(m);
 			this.modules[id] = m;
 		}
 		else {
-			console.log(m);
 			throw new Error(id + " is not a module.");
 		}
 		writeln("Loaded mod_", id, " v", m.version);
@@ -653,7 +654,6 @@ aucgbot.loadModule = function loadModule(id) {
  * @return {boolean} Whether to stop processing the event.
  */
 aucgbot.modMethod = function modMethod(id, args) {
-	console.log("modMethod",id);
 	if (args != null && typeof args.length !== "number")
 		args = Array.slice(arguments, 1);
 	try {
@@ -661,9 +661,6 @@ aucgbot.modMethod = function modMethod(id, args) {
 			if (this.modules.hasOwnProperty(m)) {
 				module = this.modules[m];
 				if (typeof module === "object" && module && module.hasOwnProperty(id)) {
-					console.log(util.inspect(module));
-					console.log(module.hasOwnProperty(id));
-					console.log(module[id]);
 					let method = module[id];
 					if (typeof method === "function" && method.apply(module, args))
 						return true;
