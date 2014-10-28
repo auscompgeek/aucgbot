@@ -19,6 +19,7 @@ global.aucgbot = global.aucgbot || {
 	ERR_MSG_SELF: "Get me to talk to myself, yeah, great idea...",
 	prefs: {
 		flood: {
+			differentiate: true, // treat all users as the same or not? (false may result in kicking of innocents)
 			lines: 8,
 			secs: 3,
 			check: true,
@@ -166,9 +167,17 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 	}
 	chans = null;
 	conn.channels = channels;
-	conn.flood_lines = 0;
+	if (aucgbot.prefs.flood.differentiate) {
+		conn.flood_lines = {};
+		conn.flood_lastTime = {};
+		conn.flood_in = {};
+	}
+	else {
+		conn.flood_lines = 0;
+		conn.flood_lastTime = 0;
+		conn.flood_in = false;
+	}
 	conn.joined = false;
-	console.log("Here we go...");
 	conn.on("data", function(data) {
 		var lns = data.split("\n");
 		for (let i = 0; i < lns.length; i++) {
@@ -428,13 +437,32 @@ aucgbot.checkFlood = function checkFlood(e) {
 	 */
 	if (!this.prefs.flood.check || e.conn.zncBuffer)
 		return false;
-	var now = Date.now(), conn = e.conn, dest = e.dest, nick = e.nick, host = e.host, relay = e.relay, msg = e.msg;
-	if (now - conn.flood_lastTime > this.prefs.flood.secs * 1000)
-		conn.flood_lines = 0;
-	if (conn.flood_lines >= this.prefs.flood.lines && now - conn.flood_lastTime <= this.prefs.flood.secs * 1000) {
+	var now = Date.now(), conn = e.conn, dest = e.dest, nick = e.nick, host = e.host, relay = e.relay, msg = e.msg, diff = this.prefs.flood.differentiate, lastFloodTime, floodLines, inFlood;
+	if (diff) {
+		if (!(nick in conn.flood_lines)) conn.flood_lines[nick] = 0;
+		if (!(nick in conn.flood_lastTime)) conn.flood_lastTime[nick] = 0;
+		floodLines = conn.flood_lines[nick];
+		lastFloodTime = conn.flood_lastTime[nick];
+		inFlood = conn.flood_in[nick];
+	}
+	else {
+		floodLines = conn.flood_lines;
+		lastFloodTime = conn.flood_lastTime;
+		inFlood = conn.flood_in;
+	}
+	if (now - (diff ? conn.flood_lastTime[nick] : conn.flood_lastTime) > this.prefs.flood.secs * 1000) {
+		if (diff)
+			conn.flood_lines[nick] = 0;
+		else
+			conn.flood_lines = 0;
+	}
+	if ((diff ? conn.flood_lines[nick] : conn.flood_lines) >= this.prefs.flood.lines && now - (diff ? conn.flood_lastTime[nick] : conn.flood_lastTime) <= this.prefs.flood.secs * 1000) {
 		var kb = this.okToKick(e);
-		conn.flood_lastTime = now;
-		if (conn.flood_in) {
+		if (difF)
+			conn.flood_lastTime[nick] = now;
+		else
+			conn.flood_lastTime = now;
+		if ((diff ? conn.flood_in[nick] : conn.flood_in)) {
 			if (kb) {
 				if (this.prefs.flood.kick)
 					conn.send("KICK", dest, nick, ":No flooding!");
@@ -442,8 +470,11 @@ aucgbot.checkFlood = function checkFlood(e) {
 					conn.send("MODE", dest, "+b *!*@" + host);
 			}
 		} else {
-			conn.flood_in = true;
-			writeln("[WARNING] Flood detected!");
+			if (diff)
+				conn.flood_in[nick] = true;
+			else
+				conn.flood_in = true;
+			writeln("[WARNING] Flood detected by " + nick + "!");
 			if (kb && this.prefs.flood.kick)
 				conn.send("KICK", dest, nick, ":No flooding!");
 			else if (this.prefs.flood.warn && !relay)
@@ -453,7 +484,10 @@ aucgbot.checkFlood = function checkFlood(e) {
 			e.log("Flood", nick + (dest === nick ? "" : " in " + dest), msg);
 		return true;
 	}
-	conn.flood_in = false, conn.flood_lastTime = now, conn.flood_lines++;
+	if (diff)
+		conn.flood_in[nick] = false, conn.flood_lastTime[nick] = now, conn.flood_lines[nick]++;
+	else
+		conn.flood_in = false, conn.flood_lastTime = now, conn.flood_lines++;
 	return false;
 };
 /**
