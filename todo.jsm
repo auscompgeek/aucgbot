@@ -9,11 +9,11 @@ module.exports.users = {};
 module.exports.DB_FILENAME = "todo.json";
 
 module.exports.loadUsers = function loadUsers() {
-	this.users = JSON.parse(aucgbot.readURI(this.DB_FILENAME));
+	this.users = JSON.parse(fs.readFileSync(this.DB_FILENAME));
 };
 
 module.exports.saveUsers = function saveUsers() {
-	fs.writeFileSync(JSON.stringify(this.users));
+	fs.writeFileSync(this.DB_FILENAME, JSON.stringify(this.users));
 };
 
 module.exports.getList = function getList(nick) {
@@ -27,7 +27,7 @@ module.exports.getList = function getList(nick) {
 
 module.exports.cmd_todo = function cmd_todo(e) {
 	var list = this.getList(e.nick);
-
+	console.log('args: ' + e);
 	if (e.args) {
 		list.push(e.args);
 		this.saveUsers();

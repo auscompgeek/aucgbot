@@ -399,11 +399,15 @@ aucgbot.onMsg = function onMsg(e) {
 
 	var prefix = this.prefs.prefix;
 	if (prefix && msg.startsWith(prefix)) {
-		e.args = msg.slice(prefix.length).replace(/^(\S+) ?/, "");
-		e.cmd = RegExp.$1.toLowerCase();
+		let temp = msg.slice(prefix.length);
+		let match = temp.match(/^(\S+) ?/);
+		e.args = temp.replace(/^(\S+) ?/, "");
+		e.cmd = match[1].toLowerCase();
 		this.parseCmd(e);
 	} else if (meping.test(msg) || dest === nick) {
-		e.args = msg.replace(meping, "").replace(/^(\S+) ?/, "");
+		let temp = msg.replace(meping, "");
+		let match = temp.match(/^(\S+) ?/);
+		e.args = temp.replace(/^(\S+) ?/, "");
 		e.cmd = RegExp.$1.toLowerCase();
 		this.parseCmd(e);
 	} else {
@@ -574,6 +578,7 @@ aucgbot.parseCmd = function parseCmd(e) {
 			if (cmd.substr(0,4) == "cmd_") {
 				cmd = cmd.substr(4);
 			}
+			console.log(cmd, require('util').inspect(e));
 			this.modMethod("parseCmd", arguments) || this.modMethod("cmd_" + cmd, arguments);
 		} catch (ex) {
 			e.notice("Oops, I encountered an error.", ex);
@@ -688,12 +693,14 @@ aucgbot.loadModule = function loadModule(id) {
  * @return {boolean} Whether to stop processing the event.
  */
 aucgbot.modMethod = function modMethod(id, args) {
+	console.log(require('util').inspect(args));
 	if (args != null && typeof args.length !== "number")
 		args = Array.slice(arguments, 1);
 	try {
 		for (var m in this.modules) {
 			if (this.modules.hasOwnProperty(m)) {
 				module = this.modules[m];
+				console.log('try and run: ' + id + ' from ' + m);
 				if (typeof module === "object" && module && module.hasOwnProperty(id)) {
 					let method = module[id];
 					if (typeof method === "function" && method.apply(module, args))
