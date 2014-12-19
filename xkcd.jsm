@@ -2,16 +2,16 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global aucgbot: false, module: false, randint: false */
+/*global aucgbot: false, module.exports: false, randint: false */
 
-module.version = 0.4;
+module.exports.version = 0.4;
 
-module.getXKCDInfo = function getXKCDInfo(num) {
+module.exports.getXKCDInfo = function getXKCDInfo(num) {
 	num = num | 0;
 	return JSON.parse(aucgbot.readURI("http://xkcd.com/" + (num ? num + "/" : "") + "info.0.json"));
-}
+};
 
-module.cmd_randxkcd = function cmd_randxkcd(e) {
+module.exports.cmd_randxkcd = function cmd_randxkcd(e) {
 	var dest = e.dest, num = e.args | 0, nick = e.nick, conn = e.conn;
 
 	try {
@@ -26,7 +26,7 @@ module.cmd_randxkcd = function cmd_randxkcd(e) {
 	return true;
 };
 
-module.cmd_xkcd = function cmd_xkcd(e) {
+module.exports.cmd_xkcd = function cmd_xkcd(e) {
 	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn, info;
 	try {
 		info = this.getXKCDInfo(args);

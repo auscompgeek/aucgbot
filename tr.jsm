@@ -4,24 +4,24 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /** @fileoverview aucgbot module: Transform text. */
 /*jshint es5: true, esnext: true, nonstandard: true */
-/*global decodeB64: false, decodeHTML: false, decodeURL: false, encodeB64: false, encodeHTML: false, encodeURL: false, module: false */
+/*global decodeB64: false, decodeHTML: false, decodeURL: false, encodeB64: false, encodeHTML: false, encodeURL: false, module.exports: false */
+"use strict";
+module.exports.version = 2.91;
+module.exports.UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+module.exports.LOWER = "abcdefghijklmnopqrstuvwxyz";
+module.exports.ALPHABET = module.exports.UPPER + module.exports.LOWER;
+module.exports.AL_BHED = "YPLTAVKREZGMSHUBXNCDIJFQOWypltavkrezgmshubxncdijfqow";
+module.exports.GOOGLERESE = "ynficwlbkuomxsevzpdrjgthaq";
+module.exports.DIGITS = "0123456789";
 
-module.version = 2.91;
-module.UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-module.LOWER = "abcdefghijklmnopqrstuvwxyz";
-module.ALPHABET = module.UPPER + module.LOWER;
-module.AL_BHED = "YPLTAVKREZGMSHUBXNCDIJFQOWypltavkrezgmshubxncdijfqow";
-module.GOOGLERESE = "ynficwlbkuomxsevzpdrjgthaq";
-module.DIGITS = "0123456789";
-
-module.cmd_tr = function cmd_tr(e) {
+module.exports.cmd_tr = function cmd_tr(e) {
 	var args = /^"((?:\\")*[^"]+(?:\\"[^"]*)*)" "((?:\\")*[^"]+(?:\\"[^"]*)*)" "((?:\\")*[^"]+(?:\\"[^"]*)*)"$/.exec(e.args);
 	e.reply(args ? (args.shift(), tr.apply(null, args)) : this.cmd_tr.help);
 	return true;
 };
-module.cmd_tr.help = 'Like the UNIX tr utility. Usage: tr "<text>" "<trFromTable>" "<trToTable>"';
+module.exports.cmd_tr.help = 'Like the UNIX tr utility. Usage: tr "<text>" "<trFromTable>" "<trToTable>"';
 
-module.cmd_rot13 = function cmd_rot13(e) {
+module.exports.cmd_rot13 = function cmd_rot13(e) {
 	var msg = e.args;
 	if (!msg) {
 		e.reply(this.cmd_rot13.help);
@@ -30,9 +30,9 @@ module.cmd_rot13 = function cmd_rot13(e) {
 	e.reply(tr(msg, this.ALPHABET, "NOPQRSTUVWXYZABCDEFGHIJKLMnopqrstuvwxyzabcdefghijklm"));
 	return true;
 };
-module.cmd_rot13.help = "ROT13 text. Usage: rot13 <text>";
+module.exports.cmd_rot13.help = "ROT13 text. Usage: rot13 <text>";
 
-module.cmd_rot47 = function cmd_rot47(e) {
+module.exports.cmd_rot47 = function cmd_rot47(e) {
 	var msg = e.args;
 	if (!msg) {
 		e.reply(this.cmd_rot47.help);
@@ -41,9 +41,9 @@ module.cmd_rot47 = function cmd_rot47(e) {
 	e.reply(tr(msg, "!\"#$%&\'()*+,-./0123456789:;<=>?@" + this.UPPER + "[\\]^_`" + this.LOWER + "{|}~", "PQRSTUVWXYZ[\\]^_`" + this.LOWER + "{|}~!\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNO"));
 	return true;
 };
-module.cmd_rot47.help = "ROT47 text. Usage: rot47 <text>";
+module.exports.cmd_rot47.help = "ROT47 text. Usage: rot47 <text>";
 
-module.cmd_revtr = function cmd_revtr(e) {
+module.exports.cmd_revtr = function cmd_revtr(e) {
 	var msg = e.args;
 	if (!msg) {
 		e.reply(this.cmd_revtr.help);
@@ -52,9 +52,9 @@ module.cmd_revtr = function cmd_revtr(e) {
 	e.reply(tr(msg, this.ALPHABET, this.REVUPPER + this.REVLOWER));
 	return true;
 };
-module.cmd_revtr.help = "A reversed alphabet Caesar cyphar. Usage: revtr <text>";
+module.exports.cmd_revtr.help = "A reversed alphabet Caesar cyphar. Usage: revtr <text>";
 
-module.cmd_rev = function cmd_rev(e) {
+module.exports.cmd_rev = function cmd_rev(e) {
 	var msg = e.args;
 	if (!msg) {
 		e.reply(this.cmd_rev.help);
@@ -63,9 +63,9 @@ module.cmd_rev = function cmd_rev(e) {
 	e.reply(msg.reverse());
 	return true;
 };
-module.cmd_rev.help = "Reverse text. Usage: rev <text>";
+module.exports.cmd_rev.help = "Reverse text. Usage: rev <text>";
 
-module.cmd_revword = function cmd_revword(e) {
+module.exports.cmd_revword = function cmd_revword(e) {
 	var msg = e.args;
 	if (!msg) {
 		e.reply(this.cmd_revword.help);
@@ -74,9 +74,9 @@ module.cmd_revword = function cmd_revword(e) {
 	e.reply(msg.split(" ").map(String.reverse).join(" "));
 	return true;
 };
-module.cmd_revword.help = "Reverse words. Usage: revword <text>";
+module.exports.cmd_revword.help = "Reverse words. Usage: revword <text>";
 
-module.cmd_encode = function cmd_encode(e) {
+module.exports.cmd_encode = function cmd_encode(e) {
 	var args = e.args;
 	if (!args) {
 		e.reply(this.cmd_encode.help);
@@ -122,9 +122,9 @@ module.cmd_encode = function cmd_encode(e) {
 		return true;
 	}
 };
-module.cmd_encode.help = "Encode stuff. Usage: encode <type> <text>";
+module.exports.cmd_encode.help = "Encode stuff. Usage: encode <type> <text>";
 
-module.cmd_decode = function cmd_decode(e) {
+module.exports.cmd_decode = function cmd_decode(e) {
 	var args = e.args;
 	if (!args) {
 		e.reply(this.cmd_decode.help);
@@ -161,10 +161,10 @@ module.cmd_decode = function cmd_decode(e) {
 		if (args.length === 1 && msg.length > 4) {
 			args = msg.match(/.{1,2}/g);
 		}
-		e.reply(String.fromCodePoint.apply(null, args.map(function (x) parseInt(x, 16))));
+		e.reply(String.fromCodePoint.apply(null, args.map(function (x) { return parseInt(x, 16); })));
 		return true;
 	case "bin":
-		e.reply(String.fromCodePoint.apply(null, args.map(function (x) parseInt(x, 2))));
+		e.reply(String.fromCodePoint.apply(null, args.map(function (x) { return parseInt(x, 2); })));
 		return true;
 	case "albhed":
 		e.reply(tr(msg, this.AL_BHED, this.ALPHABET));
@@ -174,27 +174,28 @@ module.cmd_decode = function cmd_decode(e) {
 		return true;
 	}
 };
-module.cmd_decode.help = "Decode stuff. Usage: decode <type> <text>";
+module.exports.cmd_decode.help = "Decode stuff. Usage: decode <type> <text>";
 
-module.cmd_rainbow = function cmd_rainbow(e) {
+module.exports.cmd_rainbow = function cmd_rainbow(e) {
 	var msg = e.args;
 	if (!msg) {
 		e.reply(this.cmd_rainbow.help);
 		return true;
 	}
-	function f(n) n < 10 ? "0" + n : n;
+	function f(n) { return n < 10 ? "0" + n : n; }
 	var s = "";
-	for (var i = 0, chr; chr = msg[i]; i++) {
+	for (var i = 0, chr; i < msg.length; i++) {
+		chr = msg[i];
 		if (this.DIGITS.contains(chr)) {
-			s += "\003" + f(randint(0, 15)) + chr;
+			s += "\x03" + f(randint(0, 15)) + chr;
 		} else {
-			s += "\003" + randint(0, 15) + chr;
+			s += "\x03" + randint(0, 15) + chr;
 		}
 	}
 	e.nmsg(s);
 	return true;
 };
-module.cmd_rainbow.help = "Rainbows, rainbows everywhere! Usage: rainbow <text>";
+module.exports.cmd_rainbow.help = "Rainbows, rainbows everywhere! Usage: rainbow <text>";
 
 // from https://developer.mozilla.org/en/A_re-introduction_to_JavaScript
 // henceforth licensed in whatever license the MDN is (probably MPL)
@@ -204,17 +205,17 @@ String.reverse = function reverse(str) {
 		s += str[i];
 	return s;
 };
-String.prototype.reverse = function reverse() String.reverse(this);
+String.prototype.reverse = function reverse() { return String.reverse(this); };
 
-module.REVUPPER = module.UPPER.reverse();
-module.REVLOWER = module.REVUPPER.toLowerCase();
+module.exports.REVUPPER = module.exports.UPPER.reverse();
+module.exports.REVLOWER = module.exports.REVUPPER.toLowerCase();
 
 String.zfill = function zfill(str, l) {
 	while (str.length < l)
 		str = "0" + str;
 	return str;
 };
-String.prototype.zfill = function zfill(l) String.zfill(this, l);
+String.prototype.zfill = function zfill(l) { return String.zfill(this, l); };
 
 // shim for ES5: ECMA-262 6th Edition, 15.5.3.3
 String.fromCodePoint = function fromCodePoint() {

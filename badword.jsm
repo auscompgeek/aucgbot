@@ -3,17 +3,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*jshint es5: true, esnext: true, forin: true, proto: true */
-/*global Stream: false, aucgbot: false, module: false */
+/*global Stream: false, aucgbot: false, module.exports: false */
 
 // PLEASE NOTE: if you edit the badwords list using the rc js command, also
 // `this.modules.badword.parseList()` otherwise it will not work
+"use strict";
+module.exports.version = "5.4 (2013-11-21)";
+module.exports.db = {}, module.exports.sfwChans = [];
+module.exports.DB_FILENAME = "badword.json";
+module.exports.spaceAfterColon = false;
 
-module.version = "5.4 (2013-11-21)";
-module.db = {}, module.sfwChans = [];
-module.DB_FILENAME = "badword.json";
-module.spaceAfterColon = false;
-
-module.parseList = function parseList() {
+module.exports.parseList = function parseList() {
 	var badwords = [];
 	for (var word in this.badwords) {
 		if (this.badwords.hasOwnProperty(word) && typeof this.badwords[word] === "string")
@@ -21,14 +21,10 @@ module.parseList = function parseList() {
 	}
 	this.badwordList = RegExp(badwords.join("|"));
 };
-module.loadDB = function loadDB() {
-	var file;
+module.exports.loadDB = function loadDB() {
 	try {
-		file = new Stream(this.DB_FILENAME);
-		this.db = JSON.parse(file.readFile());
+		this.db = JSON.parse(aucgbot.readURI(this.DB_FILENAME));
 	} catch (ex) {}
-	if (file && typeof file.close === "function")
-		file.close();
 	/* hasOwnProperty __proto__ hack: __proto__ === null => hasOwnProperty returns false
 	 *
 	 * We don't want to define __proto__ if __proto__ has been removed
@@ -49,7 +45,7 @@ module.loadDB = function loadDB() {
 	//if (this.db.__proto__ === Object.prototype && Object.prototype.hasOwnProperty.call({}, "__proto__"))
 		//this.db.__proto__ = null;
 };
-module.saveDB = function saveDB() {
+module.exports.saveDB = function saveDB() {
 	var file = new Stream(this.DB_FILENAME, "w");
 	file.write(JSON.stringify(this.db));
 	file.close();
@@ -62,7 +58,7 @@ module.saveDB = function saveDB() {
  * @param {boolean} [noAlts] Whether to not recursively get alternate nicks.
  * @return {Object} The database entry.
  */
-module.getUser = function getUser(nick, create, noAlts) {
+module.exports.getUser = function getUser(nick, create, noAlts) {
 	const name = nick.toLowerCase();
 	var db;
 	// We shall forever marvel at the wonders of __proto__... </sarcasm>
@@ -80,7 +76,7 @@ module.getUser = function getUser(nick, create, noAlts) {
 	return db;
 };
 
-module.badwords = {
+module.exports.badwords = {
 // "Word": "lowercase quoted regex",
 	"Arse": "\\barse\\b",
 	"Asian": "as(?:ia|ai)n",
@@ -168,10 +164,10 @@ module.badwords = {
 	"YOLO": "\\byolo\\b|u only live once",
 	"iPhone": "iphone"
 };
-module.parseList();
-module.loadDB();
+module.exports.parseList();
+module.exports.loadDB();
 
-module.onMsg = function onMsg(e) {
+module.exports.onMsg = function onMsg(e) {
 	var dest = e.dest, msg = e.msg, nick = e.nick, conn = e.conn;
 	if (dest !== nick && this.sfwChans.indexOf(dest) !== -1)
 		dest = nick;

@@ -5,7 +5,7 @@
 /*jshint esnext: true, evil: true, expr: true, proto: true, smarttabs: true, withstmt: true, indent: 1, white: false */
 /*global randint: false */
 // Notice: JSHint doesn't like function lambdas; please ignore any errors that may relate to these.
-
+"use strict";
 /** @constructor */
 function Calculator() {
 	this.vars = {

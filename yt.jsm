@@ -3,11 +3,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*jshint es5: true, esnext: true, expr: true */
-/*global Stream: false, aucgbot: false, module: false, system: false */
+/*global Stream: false, aucgbot: false, module.exports: false, system: false */
+"use strict";
+module.exports.version = 2.6;
 
-module.version = 2.6;
-
-module.cmd_ytv = module.cmd_ytid =
+module.exports.cmd_ytv = module.exports.cmd_ytid =
 function cmd_ytv(e) {
 	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
 	if (!/^(?:(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|(?:v|embed)\/)|youtu\.be\/))?([\w\-]+)(?:[?&#].*)?$/i.test(args)) {
@@ -33,7 +33,7 @@ function cmd_ytv(e) {
 	return true;
 };
 
-module.cmd_yt = module.cmd_youtube =
+module.exports.cmd_yt = module.exports.cmd_youtube =
 function cmd_yt(e) {
 	var dest = e.dest, q = e.args, nick = e.nick, conn = e.conn;
 	if (!q) {
@@ -63,12 +63,12 @@ function cmd_yt(e) {
 	return true;
 };
 
-module.ytRes = function ytRes(data) {
+module.exports.ytRes = function ytRes(data) {
 	var res = [data.title, data.uploader];
 
 	{
 		let dura = data.duration,
-			f = function f(n) n < 10 ? "0" + n : n,
+			f = function f(n) { return n < 10 ? "0" + n : n; },
 			m = f(Math.floor((dura % 3600) / 60)),
 			s = f(dura % 60),
 			h = Math.floor(dura / 3600);

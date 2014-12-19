@@ -3,14 +3,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*jshint es5: true, esnext: true */
-/*global aucgbot: false, module: false, writeln: false */
-
+/*global aucgbot: false, module.exports: false, writeln: false */
+"use strict";
 if (!aucgbot.modules.badword)
-	throw new Error("badword module not loaded");
+	throw new Error("badword module.exports not loaded");
 
-module.version = "1.3 (2013-11-21)";
+module.exports.version = "1.3 (2013-11-21)";
 
-module.onNick = function onNick(e) {
+module.exports.onNick = function onNick(e) {
 	const mod_badword = aucgbot.modules.badword;
 	if (!mod_badword) {
 		writeln("[WARNING] badword module not loaded");
