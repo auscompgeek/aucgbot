@@ -57,6 +57,7 @@ module.cmd_tododel = function cmd_tododel(e) {
 		e.reply("You only have {0} things in your todo list.".format(list.length));
 	} else {
 		list.splice(index, 1);
+		this.saveUsers();
 		e.notice("Ok.");
 	}
 
