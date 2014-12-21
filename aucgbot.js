@@ -804,6 +804,24 @@ aucgbot.getXML = function getXML() {
 	return new XML(this.getHTTP.apply(this, arguments).replace(/^<\?xml\s+[^?]*\?>/, ""));
 };
 
+aucgbot.readFile = function readFile(filename) {
+	var file = new Stream(filename), content;
+	content = file.readFile();
+	file.close();
+	try {
+		content = decodeUTF8(content);
+	} catch (ex) {}
+	return content;
+};
+aucgbot.writeFile = function writeFile(filename, data, utf8) {
+	if (!utf8) {
+		data = encodeUTF8(data);
+	}
+	var file = new Stream(filename, "w");
+	file.write(data);
+	file.close();
+};
+
 /** @constructor */
 aucgbot.HTTPError = function HTTPError(stream, content) {
 	this.message = "HTTP {0} {1}".format(stream.status, stream.statusText);
