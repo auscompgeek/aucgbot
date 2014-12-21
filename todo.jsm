@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global module: false */
 
-module.version = 0.8;
+module.version = 0.9;
 module.users = {};
 module.DB_FILENAME = "todo.json";
 
@@ -103,6 +103,28 @@ module.cmd_tododel = function cmd_tododel(e) {
 	return true;
 };
 module.cmd_tododel.help = "Delete an item from your todo list. Usage: tododel [<index> | <startswith>]";
+
+module.cmd_todoins = function cmd_todoins(e) {
+	var regex = /^([0-9]+) (.+)$/;
+	if (!e.args || ! regex.test(e.args)) {
+		e.reply(this.cmd_todoins.help);
+		return true;
+	}
+	var match = regex.exec(e.args);
+	var list = this.getList(e.nick);
+	var index = Number(match[1]), todo = match[2];
+
+	if (index >= list.length)
+		e.reply("You only have {0} todo{1} on your todo list.".format(list.length, list.length == 1 ? "" : "s"));
+	else {
+		list.splice(index, 0, todo);
+		this.saveUsers();
+		e.notice("Ok.");
+	}
+	return true;
+}
+
+module.cmd_todoins.help = "Inserts a todo before the specified index. Usage: todoins <index> <todo>";
 
 try { module.loadUsers(); } catch (ex) {
 	println("Error while loading todo lists from disk: ", ex);
