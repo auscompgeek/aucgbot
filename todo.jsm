@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global module: false */
 
-module.version = 0.5;
+module.version = 0.6;
 module.users = {};
 module.DB_FILENAME = "todo.json";
 
@@ -37,7 +37,10 @@ module.cmd_todo = function cmd_todo(e) {
 	} else if (!list.length) {
 		e.reply("Nothing on your todo list.");
 	} else {
-		e.reply(list.join("; "));
+		var i = 0;
+		e.reply(list.map(function addIndex(todo) {
+			return "[{0}] {1}".format(i++, todo);
+		}).join("; "));
 	}
 
 	return true;
