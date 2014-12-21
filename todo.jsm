@@ -102,7 +102,7 @@ module.cmd_tododel = function cmd_tododel(e) {
 	}
 	return true;
 };
-module.cmd_tododel.help = "Delete an item from your todo list. Usage: tododel <index>";
+module.cmd_tododel.help = "Delete an item from your todo list. Usage: tododel [<index> | <startswith>]";
 
 try { module.loadUsers(); } catch (ex) {
 	println("Error while loading todo lists from disk: ", ex);
