@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global module.exports: false */
 var fs = require("fs");
-module.exports.version = 0.9;
+module.exports.version = 0.91;
 module.exports.users = {};
 module.exports.DB_FILENAME = "todo.json";
 
@@ -31,14 +31,14 @@ module.exports.cmd_todo = function cmd_todo(e) {
 	if (e.args) {
 		list.push(e.args);
 		this.saveUsers();
-		e.notice("Ok.");
+		// e.notice("Ok.");
 	} else if (!list.length) {
 		e.reply("Nothing on your todo list.");
 	} else {
 		var i = 0;
 		e.reply(list.map(function addIndex(todo) {
 			return "[{0}] {1}".format(i++, todo);
-		}).join("; "));
+		}).join(" "));
 	}
 
 	return true;
@@ -67,11 +67,10 @@ module.exports.cmd_tododel = function cmd_tododel(e) {
 		var deleted = indexes.length - notdeleted;
 		if (deleted != 0) {
 			this.saveUsers();
-			e.notice("Ok, deleted {0} todo{1}.".format(deleted, deleted == 1 ? "" : "s"));
+			// e.notice("Ok, deleted {0} todo{1}.".format(deleted, deleted == 1 ? "" : "s"));
 		}
 		if (notdeleted > 0)
-			e.reply("{0} todo{1}n't deleted. You only have {2} todo{3} on your todo list.".format(
-				notdeleted, notdeleted == 1 ? " was" : "s were", list.length, list.length == 1 ? "" : "s"));
+			e.reply("You only have {0} todo{1}.".format(list.length, list.length == 1 ? "" : "s"));
 	} else {
 		var filteredlist = list.filter(function startsWith(s) {
 			return s.slice(0, e.args.length) == e.args;
@@ -79,12 +78,12 @@ module.exports.cmd_tododel = function cmd_tododel(e) {
 
 		switch (filteredlist.length) {
 			case 0:
-				e.reply("No todos found starting with \"{0}\".".format(e.args));
+				e.reply("No todos starting with \"{0}\".".format(e.args));
 				break;
 			case 1:
 				list.splice(list.indexOf(filteredlist[0]), 1);
 				this.saveUsers();
-				e.notice("Ok, deleted \"{0}\".".format(filteredlist[0]));
+				// e.notice("Ok, deleted \"{0}\".".format(filteredlist[0]));
 				break;
 			default:
 				var formattedlist = [], currentindex = 0;
@@ -113,11 +112,11 @@ module.exports.cmd_todoins = function cmd_todoins(e) {
 	var index = Number(match[1]), todo = match[2];
 
 	if (index >= list.length)
-		e.reply("You only have {0} todo{1} on your todo list.".format(list.length, list.length == 1 ? "" : "s"));
+		e.reply("You only have {0} todo{1}.".format(list.length, list.length == 1 ? "" : "s"));
 	else {
 		list.splice(index, 0, todo);
 		this.saveUsers();
-		e.notice("Ok.");
+		// e.notice("Ok.");
 	}
 	return true;
 }
