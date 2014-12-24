@@ -3,46 +3,46 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global Record: false, module: false */
+(function(bom){
+bom.version = "0.9.3 (2014-01-21)";
 
-module.version = "0.9.3 (2014-01-21)";
-
-module.loadStateNames = function loadStateNames(state) {
+bom.loadStateNames = function loadStateNames(state) {
 	var names = new Record();
 	names.readINI(system.cwd + "/bom_names.ini", state);
 	return names;
 };
 
-module.idToFwoJsonUrl = function idToFwoJsonUrl(id) {
+bom.idToFwoJsonUrl = function idToFwoJsonUrl(id) {
 	// BoM's JSON seems to be a bit much for JSDB to handle correctly, i.e. not load entirely
 	var regionId = id.slice(0, id.indexOf("."));
 	return "http://www.bom.gov.au/fwo/ID{0}/ID{1}.json".format(regionId, id);
 };
 
-module.idToMinJsonUrl = function idToMinJsonUrl(id) {
+bom.idToMinJsonUrl = function idToMinJsonUrl(id) {
 	return String.format("http://vovo.id.au/scripts/bommin.php?id={0}&wmo={1}", id.split("."));
 };
 
-module.fullNameToName = function fullNameToName(name) {
+bom.fullNameToName = function fullNameToName(name) {
 	var station = name.split(" "), state = station.pop();
 	return [station.join(" ").replace(/,$/, ""), state];
 }
 
-module.nameToId = function nameToId(station, state) {
+bom.nameToId = function nameToId(station, state) {
 	var names = this.loadStateNames(state);
 	return names.get(station);
 };
 
-module.cmd_bom_id2fwo = function cmd_bom_id2fwo(e) {
+bom.cmd_bom_id2fwo = function cmd_bom_id2fwo(e) {
 	e.notice(this.idToFwoJsonUrl(e.args));
 	return true;
 };
 
-module.cmd_bom_name2id = function cmd_bom_name2id(e) {
+bom.cmd_bom_name2id = function cmd_bom_name2id(e) {
 	e.reply(this.nameToId.apply(this, this.fullNameToName(e.args)));
 	return true;
 };
 
-module.cmd_bom = function cmd_bom(e) {
+bom.cmd_bom = function cmd_bom(e) {
 	var args = e.args;
 	if (!args) {
 		e.reply(this.cmd_bom.help);
@@ -100,4 +100,5 @@ module.cmd_bom = function cmd_bom(e) {
 	e.nreply("Current weather for", data.name + ",", state.toUpperCase(), "from the Bureau of Meteorology (as of", data.local_date_time + "):", res.join(" - "));
 	return true;
 };
-module.cmd_bom.help = "Get current weather conditions from the Bureau of Meteorology. Usage: bom <station> <state>";
+bom.cmd_bom.help = "Get current weather conditions from the Bureau of Meteorology. Usage: bom <station> <state>";
+})(module.exports);

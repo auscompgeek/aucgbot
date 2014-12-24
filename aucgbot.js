@@ -6,6 +6,7 @@
 /* globals: entities, aucgbot, encodeUTF8, decodeUTF8, writeln, println */
 "use strict";
 var net = require("net"),
+	url = require("url"),
 	util = require("util"),
 	fs = require("fs"),
 	http = require("httpsync"),
@@ -462,7 +463,7 @@ aucgbot.checkFlood = function checkFlood(e) {
 	}
 	if ((diff ? conn.flood_lines[nick] : conn.flood_lines) >= this.prefs.flood.lines && now - (diff ? conn.flood_lastTime[nick] : conn.flood_lastTime) <= this.prefs.flood.secs * 1000) {
 		var kb = this.okToKick(e);
-		if (difF)
+		if (diff)
 			conn.flood_lastTime[nick] = now;
 		else
 			conn.flood_lastTime = now;
@@ -578,7 +579,7 @@ aucgbot.parseCmd = function parseCmd(e) {
 			if (cmd.substr(0,4) == "cmd_") {
 				cmd = cmd.substr(4);
 			}
-			console.log(cmd, require('util').inspect(e));
+//			console.log(cmd, require('util').inspect(e));
 			this.modMethod("parseCmd", arguments) || this.modMethod("cmd_" + cmd, arguments);
 		} catch (ex) {
 			e.notice("Oops, I encountered an error.", ex);
@@ -609,15 +610,15 @@ aucgbot.getHTTP = function getHTTP(uri, modname, modver, headers) {
 		if (modver)
 			useragent += "/" + modver;
 	}
-	headers["User-Agent"] = useragent;
 	var req = http.request({
 		"url": uri,
 		"method": "GET",
-		"useragent": useragent,
-		"headers": headers
+		"headers": headers,
+		"useragent": useragent
 	});
 	var res = req.end();
-	if (res.status && res.status >= 300) {
+	if (res.statusCode && res.statusCode >= 300) {
+		console.log("the stuff", res.statusCode, res.data.toString());
 		throw new this.HTTPError(res, res.data.toString());
 	}
 	return res.data.toString();
@@ -693,14 +694,12 @@ aucgbot.loadModule = function loadModule(id) {
  * @return {boolean} Whether to stop processing the event.
  */
 aucgbot.modMethod = function modMethod(id, args) {
-	console.log(require('util').inspect(args));
 	if (args != null && typeof args.length !== "number")
 		args = Array.slice(arguments, 1);
 	try {
 		for (var m in this.modules) {
 			if (this.modules.hasOwnProperty(m)) {
 				module = this.modules[m];
-				console.log('try and run: ' + id + ' from ' + m);
 				if (typeof module === "object" && module && module.hasOwnProperty(id)) {
 					let method = module[id];
 					if (typeof method === "function" && method.apply(module, args))
