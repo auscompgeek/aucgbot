@@ -61,8 +61,7 @@ module.cmd_tododel = function cmd_tododel(e) {
 		for (var i = 0; i < indexes.length; i++) {
 			if (indexes[i] >= list.length) {
 				notDeleted++;
-			}
-			else {
+			} else {
 				list.splice(indexes[i], 1);
 			}
 		}
@@ -90,7 +89,7 @@ module.cmd_tododel = function cmd_tododel(e) {
 				e.reply('No todos starting with "{0}".'.format(e.args));
 				break;
 			case 1:
-				list.splice(list.indexOf(filteredList[0].elem), 1);
+				list.splice(list.indexOf(filteredList[0].index), 1);
 				this.saveUsers();
 				// e.notice("Ok, deleted \"{0}\".".format(filteredList[0].elem));
 				break;
@@ -106,16 +105,16 @@ module.cmd_tododel.help = "Delete an item from your todo list. Usage: tododel <c
 
 module.cmd_todoins = function cmd_todoins(e) {
 	var match = /^([0-9]+) (.+)$/.exec(e.args);
-	if (match === null) {
+	if (!match) {
 		e.reply(this.cmd_todoins.help);
 		return true;
 	}
 	var list = this.getList(e.nick);
 	var index = match[1] >>> 0, todo = match[2];
 
-	if (index >= list.length)
+	if (index >= list.length) {
 		e.reply("You only have {0} todo{1}.".format(list.length, list.length == 1 ? "" : "s"));
-	else {
+	} else {
 		list.splice(index, 0, todo);
 		this.saveUsers();
 		// e.notice("Ok.");
