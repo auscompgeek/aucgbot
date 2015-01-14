@@ -103,7 +103,7 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 			throw new TypeError("conn.msg requires at least 2 arguments");
 		let m = Array.slice(arguments, 1).join(" ").trim().replace(/\s+/g, " ");
 		if (m)
-			return this.writeln("PRIVMSG ", encodeUTF8(dest + " :" + msg));
+			return this.writeln("PRIVMSG ", encodeUTF8(dest + " :" + m));
 	};
 	conn.nmsg = function nmsg(dest) {
 		if (arguments.length < 2)
@@ -399,7 +399,7 @@ aucgbot.onMsg = function onMsg(e) {
 	}
 
 	var prefix = this.prefs.prefix;
-	if (prefix && msg.startsWith(prefix)) {
+	if (prefix && msg.slice(0,prefix.length) === prefix && msg.length > prefix.length) {
 		let temp = msg.slice(prefix.length);
 		let match = temp.match(/^(\S+) ?/);
 		e.args = temp.replace(/^(\S+) ?/, "");
