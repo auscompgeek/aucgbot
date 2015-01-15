@@ -4,10 +4,10 @@
   "license": "MPL-2.0",
   "dependencies": {
     "html-entities": "^1.1.1",
-    "httpsync": "0.0.8",
     "moment": "^2.8.3",
     "moment-timezone": "^0.2.2",
-    "synchronize": "^0.9.9"
+    "synchronize": "^0.9.9",
+    "urllib-sync": "^1.0.1"
   },
   "scripts": {
     "start": "node --harmony --use-strict start-aucgbot"

@@ -9,7 +9,7 @@ var net = require("net"),
 	url = require("url"),
 	util = require("util"),
 	fs = require("fs"),
-	http = require("httpsync"),
+	request = require("urllib-sync").request,
 	Entities = require("html-entities").AllHtmlEntities;
 
 global.entities = new Entities();
@@ -610,12 +610,13 @@ aucgbot.getHTTP = function getHTTP(uri, modname, modver, headers) {
 		if (modver)
 			useragent += "/" + modver;
 	}
-	var req = http.request({
-		"url": uri,
-		"method": "GET",
-		"headers": headers,
-		"useragent": useragent
-	});
+	headers['User-Agent'] = useragent;
+	var req = request(
+			uri,
+			{
+				"method": "GET",
+				"headers": headers,
+			});
 	var res = req.end();
 	if (res.statusCode && res.statusCode >= 300) {
 		console.log("the stuff", res.statusCode, res.data.toString());
