@@ -403,7 +403,7 @@ aucgbot.onMsg = function onMsg(e) {
 		let temp = msg.slice(prefix.length);
 		let match = temp.match(/^(\S+) ?/);
 		e.args = temp.replace(/^(\S+) ?/, "");
-		if (match.length < 1) return;
+		if (match == null) return;
 		e.cmd = match[1].toLowerCase();
 		this.parseCmd(e);
 	} else if (meping.test(msg) || dest === nick) {
