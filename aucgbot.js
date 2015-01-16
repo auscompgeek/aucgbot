@@ -612,13 +612,12 @@ aucgbot.getHTTP = function getHTTP(uri, modname, modver, headers) {
 			useragent += "/" + modver;
 	}
 	headers['User-Agent'] = useragent;
-	var req = request(
+	var res = request(
 			uri,
 			{
 				"method": "GET",
 				"headers": headers,
 			});
-	var res = req.end();
 	if (res.statusCode && res.statusCode >= 300) {
 		console.log("the stuff", res.statusCode, res.data.toString());
 		throw new this.HTTPError(res, res.data.toString());
