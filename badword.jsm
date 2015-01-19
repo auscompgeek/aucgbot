@@ -8,7 +8,7 @@
 // PLEASE NOTE: if you edit the badwords list using the rc js command, also
 // `this.modules.badword.parseList()` otherwise it will not work
 
-module.version = "5.4 (2013-11-21)";
+module.version = "5.4.1 (2015-01-19)";
 module.db = {}, module.sfwChans = [];
 module.DB_FILENAME = "badword.json";
 module.spaceAfterColon = false;
@@ -22,13 +22,9 @@ module.parseList = function parseList() {
 	this.badwordList = RegExp(badwords.join("|"));
 };
 module.loadDB = function loadDB() {
-	var file;
 	try {
-		file = new Stream(this.DB_FILENAME);
-		this.db = JSON.parse(file.readFile());
+		this.db = JSON.parse(aucgbot.readFile(this.DB_FILENAME));
 	} catch (ex) {}
-	if (file && typeof file.close === "function")
-		file.close();
 	/* hasOwnProperty __proto__ hack: __proto__ === null => hasOwnProperty returns false
 	 *
 	 * We don't want to define __proto__ if __proto__ has been removed
@@ -50,9 +46,7 @@ module.loadDB = function loadDB() {
 		//this.db.__proto__ = null;
 };
 module.saveDB = function saveDB() {
-	var file = new Stream(this.DB_FILENAME, "w");
-	file.write(JSON.stringify(this.db));
-	file.close();
+	aucgbot.writeFile(this.DB_FILENAME, JSON.stringify(this.db));
 };
 /**
  * Get a user's database entry.
