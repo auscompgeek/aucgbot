@@ -7,12 +7,12 @@
 module.version = 0.4;
 
 module.getXKCDInfo = function getXKCDInfo(num) {
-	num = num | 0;
+	num = num >>> 0;
 	return JSON.parse(aucgbot.readURI("http://xkcd.com/" + (num ? num + "/" : "") + "info.0.json"));
 }
 
 module.cmd_randxkcd = function cmd_randxkcd(e) {
-	var dest = e.dest, num = e.args | 0, nick = e.nick, conn = e.conn;
+	var num = e.args | 0;
 
 	try {
 		num = this.getXKCDInfo().num;
@@ -22,23 +22,22 @@ module.cmd_randxkcd = function cmd_randxkcd(e) {
 		num = ((new Date()).getFullYear() / 2) | 0;
 	}
 
-	conn.reply(dest, nick, "https://xkcd.com/" + randint(1, num) + "/");
+	e.reply("https://xkcd.com/" + randint(1, num) + "/");
 	return true;
 };
 
 module.cmd_xkcd = function cmd_xkcd(e) {
-	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn, info;
+	var args = e.args, info;
 	try {
 		info = this.getXKCDInfo(args);
 	} catch (ex) {}
 
 	if (!info) {
-		conn.reply(dest, nick, "xkcd didn't return any info.");
+		e.reply("xkcd didn't return any info.");
 		return true;
 	}
 
-	conn.reply(
-		dest, nick,
+	e.reply(
 		"{0}-{1}-{2}".format(info.year, info.month, info.day), "-",
 		info.safe_title, "-",
 		"https://xkcd.com/" + info.num + "/"

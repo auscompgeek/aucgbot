@@ -13,9 +13,9 @@ module.WEATHER_BASE_URL = module.BASE_URL + "weather?units=metric&q=";
 module.FORECAST_BASE_URL = module.BASE_URL + "forecast?units=metric&q=";
 
 module.cmd_weather = module.cmd_owm = function cmd_owm(e) {
-	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
+	var args = e.args;
 	if (!args) {
-		conn.reply(dest, nick, this.cmd_owm.help);
+		e.reply(this.cmd_owm.help);
 		return true;
 	}
 
@@ -25,12 +25,12 @@ module.cmd_weather = module.cmd_owm = function cmd_owm(e) {
 	} catch (ex) {}
 
 	if (!data) {
-		conn.reply(dest, nick, "OpenWeatherMap returned no data.");
+		e.reply("OpenWeatherMap returned no data.");
 		return true;
 	}
 
 	if (data.cod != 200) {
-		conn.reply(dest, nick, "OpenWeatherMap returned a", data.cod);
+		e.reply("OpenWeatherMap returned a", data.cod);
 		return true;
 	}
 

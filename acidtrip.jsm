@@ -4,12 +4,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global module: false */
 
-module.version = "0.2 (2013-10-26)";
+module.version = "0.2.1 (2014-12-30)";
 module.cmd_acidtrip = function cmd_acidtrip(e) {
 	var s = '', msg = e.args,
 		maxi = Math.ceil(msg.length / 60),
 		last = msg.length % 60,
-		lastIndex = 0;
+		lastIndex = 0, fg, bg;
 	for (var j = 0; j < maxi; j++) {
 		mlen = 60;
 		if (j + 1 == maxi) {
@@ -27,7 +27,7 @@ module.cmd_acidtrip = function cmd_acidtrip(e) {
 			}
 			s += '\003' + fg + ',' + bg + msg[i];
 		}
-		e.conn.msg(e.dest, s);
+		e.send(s);
 		lastIndex += mlen;
 		s = '';
 	}

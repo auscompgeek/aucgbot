@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global module: false */
 
-module.version = "1.2.3 (2014-01-21)";
+module.version = "1.2.4 (2014-12-30)";
 module.prefs = {
 	"fnqwebirc": true,
 	"help!": true,
@@ -30,7 +30,7 @@ module.parseln = function parseln(ln, conn) {
 	return true;
 };
 module.onUnknownMsg = function onUnknownMsg(e) {
-	var dest = e.dest, msg = e.msg, nick = e.nick, conn = e.conn;
+	var dest = e.dest, msg = e.msg, nick = e.nick, host = e.host, conn = e.conn;
 	msg = msg.split(" ");
 	var arg = msg[1];
 	switch (msg[0]) {

@@ -25,7 +25,7 @@ module.onMsg = function onMsg(e) {
 };
 
 module.cmd_karma = function cmd_karma(e) {
-	var nick = e.nick, args = e.args || nick;
-	e.conn.reply(e.dest, nick, args, "has", this.db.get(args) || "no", "karma.");
+	var nick = e.args || e.nick;
+	e.reply(nick, "has", this.db.get(nick) || "no", "karma.");
 	return true;
 };

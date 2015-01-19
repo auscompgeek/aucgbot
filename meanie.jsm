@@ -50,10 +50,10 @@ module.cmd_insult = function cmd_insult(e) {
 	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
 	switch (args.toLowerCase()) {
 	case "yourself": case "itself": case "himself": case "herself": case "self": case conn.nick:
-		conn.reply(dest, nick, "Nice try fool.");
+		e.reply("Nice try fool.");
 		return true;
 	case "urself": case "hisself":
-		conn.reply(dest, nick, "At least learn to spell.");
+		e.reply("At least learn to spell.");
 		return true;
 	case "mozilla": case "firefox":
 		conn.reply(dest, args, "You are nothing but the best browser on the planet.");
@@ -126,7 +126,7 @@ module.makeSlaps = function makeSlaps() {
 module.slaps = module.makeSlaps();
 
 module.cmd_slap = function cmd_slap(e) {
-	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
-	conn.msg(dest, this.slaps.random().replace("$nick", args && args != conn.nick && args != "me" ? args : nick));
+	var args = e.args;
+	e.send(this.slaps.random().replace("$nick", args && args != e.conn.nick && args != "me" ? args : e.nick));
 	return true;
 };

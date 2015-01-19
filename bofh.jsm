@@ -9,7 +9,7 @@ module.version = 0.3;
 module.cmd_bofh = function cmd_bofh(e) {
 	var excuses;
 	try {
-		excuses = e.bot.readURI("excuses.txt").split("\n");
+		excuses = e.bot.readFile("excuses.txt").split("\n");
 	} catch (ex) {
 		excuses = [
 			"out of memory",
@@ -22,6 +22,6 @@ module.cmd_bofh = function cmd_bofh(e) {
 			"operation failed because: there is no message for this error (#1014)"
 		];
 	}
-	e.conn.reply(e.dest, e.nick, excuses.random());
+	e.reply(excuses.random());
 	return true;
 };

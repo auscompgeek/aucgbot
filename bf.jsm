@@ -8,9 +8,9 @@ module.input = "You know it's rude to stare, right?";
 
 // http://code.google.com/p/jslibs/wiki/JavascriptTips#Brainfuck_interpreter
 module.cmd_bf = function cmd_bf(e) {
-	var dest = e.dest, code = e.args, nick = e.nick, conn = e.conn;
+	var code = e.args;
 	if (!code) {
-		conn.reply(dest, nick, "Interpret some Brainfuck. bf <code>");
+		e.reply("Interpret some Brainfuck. bf <code>");
 		return true;
 	}
 
@@ -36,6 +36,6 @@ module.cmd_bf = function cmd_bf(e) {
 		}
 	}
 
-	conn.reply(dest, nick, out.replace("\n", " ", "g"));
+	e.reply(out.replace("\n", " ", "g"));
 	return true;
 };

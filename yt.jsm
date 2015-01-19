@@ -9,9 +9,9 @@ module.version = 2.6;
 
 module.cmd_ytv = module.cmd_ytid =
 function cmd_ytv(e) {
-	var dest = e.dest, args = e.args, nick = e.nick, conn = e.conn;
+	var args = e.args;
 	if (!/^(?:(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|(?:v|embed)\/)|youtu\.be\/))?([\w\-]+)(?:[?&#].*)?$/i.test(args)) {
-		conn.reply(dest, nick, "Get info about a YouTube video. Usage: ytv <link|id>");
+		e.reply("Get info about a YouTube video. Usage: ytv <link|id>");
 		return true;
 	}
 
@@ -21,7 +21,7 @@ function cmd_ytv(e) {
 	} catch (ex) {}
 
 	if (!data) {
-		conn.reply(dest, nick, "YouTube returned no data.");
+		e.reply("YouTube returned no data.");
 		return true;
 	}
 
@@ -29,15 +29,15 @@ function cmd_ytv(e) {
 	if (id === args)
 		res.push("https://youtu.be/" + id);
 
-	conn.reply(dest, nick, res.join(" - "));
+	e.reply(res.join(" - "));
 	return true;
 };
 
 module.cmd_yt = module.cmd_youtube =
 function cmd_yt(e) {
-	var dest = e.dest, q = e.args, nick = e.nick, conn = e.conn;
+	var q = e.args;
 	if (!q) {
-		conn.reply(dest, nick, "Get the first result of a YouTube search.");
+		e.reply("Get the first result of a YouTube search.");
 		return true;
 	}
 
@@ -47,19 +47,19 @@ function cmd_yt(e) {
 	} catch (ex) {}
 
 	if (!data) {
-		conn.reply(dest, nick, "YouTube returned no data.");
+		e.reply("YouTube returned no data.");
 		return true;
 	}
 
 	if (!data.totalItems) {
-		conn.reply(dest, nick, "No results.");
+		e.reply("No results.");
 		return true;
 	}
 
 	var item = data.items[0], res = this.ytRes(item);
 	res.push("https://youtu.be/" + item.id);
 
-	conn.reply(dest, nick, res.join(" - "));
+	e.reply(res.join(" - "));
 	return true;
 };
 

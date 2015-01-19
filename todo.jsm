@@ -9,7 +9,7 @@ module.users = {};
 module.DB_FILENAME = "todo.json";
 
 module.loadUsers = function loadUsers() {
-	this.users = JSON.parse(aucgbot.readURI(this.DB_FILENAME));
+	this.users = JSON.parse(aucgbot.readFile(this.DB_FILENAME));
 };
 
 module.saveUsers = function saveUsers() {
