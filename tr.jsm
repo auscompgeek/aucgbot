@@ -43,16 +43,27 @@ module.cmd_rot47 = function cmd_rot47(e) {
 };
 module.cmd_rot47.help = "ROT47 text. Usage: rot47 <text>";
 
-module.cmd_revtr = function cmd_revtr(e) {
+module.cmd_atbash = function cmd_atbash(e) {
 	var msg = e.args;
 	if (!msg) {
-		e.reply(this.cmd_revtr.help);
+		e.reply(this.cmd_atbash.help);
 		return true;
 	}
 	e.reply(tr(msg, this.ALPHABET, this.REVUPPER + this.REVLOWER));
 	return true;
 };
-module.cmd_revtr.help = "A reversed alphabet Caesar cyphar. Usage: revtr <text>";
+module.cmd_atbash.help = "Atbash: a reversed alphabet Caesar cyphar. Usage: atbash <text>";
+
+module.cmd_atbashd = function cmd_atbashd(e) {
+	var msg = e.args;
+	if (!msg) {
+		e.reply(this.cmd_atbashd.help);
+		return true;
+	}
+	e.reply(tr(msg, this.ALPHABET + this.DIGITS, this.REVUPPER + this.REVLOWER + this.DIGITS.reverse()));
+	return true;
+};
+module.cmd_atbashd.help = "Atbash + digits: a reversed alphabet Caesar cyphar. Usage: atbashd <text>";
 
 module.cmd_rev = function cmd_rev(e) {
 	var msg = e.args;
