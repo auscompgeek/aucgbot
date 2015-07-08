@@ -5,7 +5,7 @@
 /*global aucgbot: false, ctof: false, calc: false, encodeUTF8: false, ftoc: false, module.exports: false, randint: false, run: false, writeln: false */
 
 require("./es5-sham.js");
-var math = require("./math.js");
+var math = require("mathjs");
 
 module.exports.version = "4.0.2 (2014-08-26)";
 module.exports.prefs = {
@@ -200,9 +200,9 @@ module.exports.parseMsg = function parseMsg(msg, calc) {
 		if (/pie/.test(msg))
 			return "Mmmm, pie... 3.141592653589793...";
 	}
-	if (/self|shut|stfu|d(anc|ie|iaf|es)|str|our|(nu|lo|rof|ki)l|nc|egg|rat|cook|m[ea]n|kick|ban|[bm]o[ow]|ham|beef|a\/?s\/?l|au|not|found|up|quiet|bot|pie/.test(msg)) {
+	/*if (/self|shut|stfu|d(anc|ie|iaf|es)|str|our|(nu|lo|rof|ki)l|nc|egg|rat|cook|m[ea]n|kick|ban|[bm]o[ow]|ham|beef|a\/?s\/?l|au|not|found|up|quiet|bot|pie/.test(msg)) {
 		return;
-	}
+	}*/
 	// calculate & return result
 	var node = math.parse(msg);
 	var ans = node.compile(math).eval(calc);
@@ -213,6 +213,10 @@ module.exports.parseMsg = function parseMsg(msg, calc) {
 		if (ans == -Infinity) {
 			return "That's a number that's too negative for me.";
 		}
+	}
+	if (typeof ans === "function") {
+		ans = ans.toString();
+		ans = ans.slice(0, ans.indexOf("{")-1);
 	}
 	return node + ": " + ans;
 };

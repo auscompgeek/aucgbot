@@ -48,7 +48,7 @@ global.aucgbot = global.aucgbot || {
 		bots: ["PaperBag"], // bot nicks that don't match the bot regex
 		suDests: [],
 		// regex for allowed hosts to use rc command
-		suHosts: /aucg|auscompgeek|forkbomb|^(?:freenode\/|)(?:staff|dev)|botters|^(?:127\.\d+\.\d+\.\d+|localhost(?:\.localdomain)?)$/
+		suHosts: /aucg|auscompgeek|forkbomb|gnustomp|^(?:freenode\/|)(?:staff|dev)|botters|^(?:127\.\d+\.\d+\.\d+|localhost(?:\.localdomain)?)$/
 	},
 	//cmodes: {}, // TODO Parse MODE lines.
 	modules: {},

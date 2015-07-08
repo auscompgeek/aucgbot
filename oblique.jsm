@@ -5,7 +5,7 @@
 /*global module.exports: false */
 
 module.exports.version = 0.7;
-module.exports.BASE_URL = "http://tumbolia.appspot.com/";
+module.exports.BASE_URL = "http://tumbolia-hrd.appspot.com/";
 module.exports.PY_BASE_URL = module.exports.BASE_URL + "py/";
 module.exports.GENERAL_BASE_URL = module.exports.BASE_URL + "general/";
 module.exports.TITLE_XPATH = "//x:title";
