@@ -4,6 +4,7 @@
   "license": "MPL-2.0",
   "dependencies": {
     "html-entities": "^1.1.1",
+    "ini": "*",
     "mathjs": "*",
     "moment": "^2.8.3",
     "moment-timezone": "^0.2.2",

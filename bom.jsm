@@ -3,13 +3,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global Record: false, module: false */
-(function(bom){
-bom.version = "0.9.3 (2014-01-21)";
+
+(function(bom, fs, ini) {
+
+bom.version = "1.0 (2015-08-24)";
 
 bom.loadStateNames = function loadStateNames(state) {
-	var names = new Record();
-	names.readINI(system.cwd + "/bom_names.ini", state);
-	return names;
+	return ini.parse(fs.readFileSync('./bom_names.ini', 'utf-8'))[state.toLowerCase()];
 };
 
 bom.idToFwoJsonUrl = function idToFwoJsonUrl(id) {
@@ -29,7 +29,7 @@ bom.fullNameToName = function fullNameToName(name) {
 
 bom.nameToId = function nameToId(station, state) {
 	var names = this.loadStateNames(state);
-	return names.get(station);
+	return names[station];
 };
 
 bom.cmd_bom_id2fwo = function cmd_bom_id2fwo(e) {
@@ -101,4 +101,5 @@ bom.cmd_bom = function cmd_bom(e) {
 	return true;
 };
 bom.cmd_bom.help = "Get current weather conditions from the Bureau of Meteorology. Usage: bom <station> <state>";
-})(module.exports);
+
+})(module.exports, require('fs'), require('ini'));
