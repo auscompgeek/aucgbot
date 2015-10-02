@@ -22,7 +22,7 @@ global.aucgbot = global.aucgbot || {
 		flood: {
 			differentiate: true, // treat all users as the same or not? (false may result in kicking of innocents)
 			lines: 8,
-			secs: 3,
+			secs: 2,
 			check: true,
 			log: true,
 			kick: true, // not if message was relayed
@@ -30,32 +30,33 @@ global.aucgbot = global.aucgbot || {
 			warn: false // warn user sending message in PM when flood starts
 		},
 		readDelay: 150, // delay on readURI()
-		log: true, // toggle all logging
+		log: false, // toggle all logging
 		prefix: "+", // command prefix
-		zncBufferHacks: true, // use ZNC buffer hacks
+		zncBufferHacks: false, // use ZNC buffer hacks
 		zncBufferTSHack: false, // use ZNC buffer timestamps hack
-		autoAcceptInvite: true, // automatically join on invite
+		autoAcceptInvite: false, // automatically join on invite
 		"relay.check": true, // toggle relay bot checking
 		"relay.bots": ["iRelayer", "janus", "Mingbeast", "irfail", "rbot"],
 		"keyboard.dieOnInput": false, // overrides keyboard.sendInput and keyboard.evalInput
 		/** @deprecated */ "keyboard.sendInput": false,
 		"keyboard.evalInput": false,
+		printMessages: false,
 		"kick.rejoin": false,
 		"kick.log": true, // on bot kicked
 		// RegExps to not ban/kick nicks/hosts
 		"nokick.nicks": /Tanner|Mardeg|aj00200|ChrisMorgan|JohnTHaller|Bensawsome|juju|Shadow|TMZ|aus?c(ompgeek|g|ow)|janb|Peng|TFEF|Nightmare/,
 		"nokick.hosts": /botters|staff|dev|math|javascript/,
-		bots: ["PaperBag"], // bot nicks that don't match the bot regex
+		bots: ["PaperBag", "root"], // bot nicks that don't match the bot regex
 		suDests: [],
 		// regex for allowed hosts to use rc command
-		suHosts: /aucg|auscompgeek|forkbomb|gnustomp|^(?:freenode\/|)(?:staff|dev)|botters|^(?:127\.\d+\.\d+\.\d+|localhost(?:\.localdomain)?)$/
+		suHosts: /\/(?:auscompgeek|forkbomb|gnustomp)$/
 	},
 	//cmodes: {}, // TODO Parse MODE lines.
 	modules: {},
 	conns: []
 };
 
-aucgbot.version = "6.0.0 (2014-10)";
+aucgbot.version = "6.0.1 (2015-09)";
 aucgbot.source = "https://github.com/auscompgeek/aucgbot";
 aucgbot.useragent = "aucgbot/{0} (+{1}; {2}; NodeJS {3})".format(aucgbot.version, aucgbot.source, process.platform, process.version);
 // JSDB shims
@@ -87,7 +88,7 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 	conn.nick = nick;
 	/* stupid nodejs is stupid */
 	conn.writeln = function writeln() {
-		var thing = Array.slice(arguments).join(" ").trim().replace(/\s+/g, " ");
+		var thing = Array.slice(arguments).join("");
 		return this.write(thing + "\r\n");
 	};
 
@@ -186,9 +187,11 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 		}
 	});
 	conn.onLine = function(ln) {
-		ln = ln.trim().trim();
-		if (!conn.joined) {
+		ln = ln.trim();
+		if (!ln) return;
+		if (aucgbot.prefs.printMessages)
 			console.log(ln);
+		if (!conn.joined) {
 			if (ln.startsWith("PING ")) {
 				conn.send("PONG", ln.slice(5));
 			} else if (ln === "AUTHENTICATE +") {
@@ -255,6 +258,7 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 	conn.on('close', function(a) {
 		console.log("Connection shut");
 	});
+	this.conns.push(conn);
 };
 
 /** @constructor */
@@ -541,7 +545,7 @@ aucgbot.parseCmd = function parseCmd(e) {
 				mods.push(i + " " + this.modules[i].version);
 		}
 		if (mods.length)
-			e.notice(mods.join(", "));
+			e.reply(mods.join(", "));
 		break;
 	case "help":
 		if (args) {
@@ -573,7 +577,7 @@ aucgbot.parseCmd = function parseCmd(e) {
 			}
 		}
 		if (s.length > 1)
-			e.notice(s.join(" "));
+			e.reply(s.join(" "));
 		break;
 	default:
 		try {
