@@ -4,8 +4,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global module.exports: false */
 
-module.exports.version = 0.7;
-module.exports.BASE_URL = "http://tumbolia-hrd.appspot.com/";
+module.exports.version = 0.8;
+module.exports.BASE_URL = "http://tumbolia-two.appspot.com/";
 module.exports.PY_BASE_URL = module.exports.BASE_URL + "py/";
 module.exports.GENERAL_BASE_URL = module.exports.BASE_URL + "general/";
 module.exports.TITLE_XPATH = "//x:title";
@@ -21,7 +21,7 @@ module.exports.cmd_py = function cmd_py(e) {
 	e.reply(e.bot.getHTTP(this.PY_BASE_URL + encodeURIComponent(args), "oblique", this.version) || "No result.");
 	return true;
 };
-module.exports.cmd_py.help = "Evaluate Python 2.5 using Google App Engine. Usage: py <expression>";
+module.exports.cmd_py.help = "Evaluate Python 2.7.5 using Google App Engine. Usage: py <expression>";
 
 module.exports.cmd_wwwtitle = function cmd_wwwtitle(e) {
 	var url = e.args.replace(/^htt?p?(s)?:?\/\/?/i, "http$1://"); // typo correction
