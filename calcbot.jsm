@@ -4,10 +4,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global aucgbot: false, ctof: false, calc: false, encodeUTF8: false, ftoc: false, module.exports: false, randint: false, run: false, writeln: false */
 
-require("./es5-sham.js");
+//require("./es5-sham.js");
 var math = require("mathjs");
 
-module.exports.version = "4.0.2 (2014-08-26)";
+module.exports.version = "4.0.3 (2015-09-29)";
 module.exports.prefs = {
 	equalPrefix: true, // treat messages starting with = as a calculator expression
 	abuse: {
@@ -205,7 +205,7 @@ module.exports.parseMsg = function parseMsg(msg, calc) {
 	}*/
 	// calculate & return result
 	var node = math.parse(msg);
-	var ans = node.compile(math).eval(calc);
+	var ans = node.compile().eval(calc);
 	if (this.prefs.userfriendly) {
 		if (ans == Infinity) {
 			return this.prefs.easterEggs ? "IT'S OVER 9000!!!1" : "That's a number that's too big for me.";
