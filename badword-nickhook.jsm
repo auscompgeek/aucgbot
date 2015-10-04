@@ -13,7 +13,7 @@ module.exports.version = "1.3 (2013-11-21)";
 module.exports.onNick = function onNick(e) {
 	const mod_badword = aucgbot.modules.badword;
 	if (!mod_badword) {
-		writeln("[WARNING] badword module not loaded");
+		console.warn("[WARNING] badword module not loaded");
 		return false;
 	}
 	const oldNick = e.oldNick.split("|")[0], oldNickDB = mod_badword.getUser(oldNick), newNick = e.newNick.split("|")[0];

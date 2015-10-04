@@ -16,8 +16,8 @@ for (let s = readln().trim().split(","); m=s.shift();) {
 	try {
 		aucgbot.loadModule(m);
 	} catch (ex) {
-		println(ex);
-		println(ex.stack);
+		console.log(ex);
+		console.log(ex.stack);
 	}
 }*/
 

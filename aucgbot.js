@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /* jshint esnext: true, node: true*/
-/* globals: entities, aucgbot, encodeUTF8, decodeUTF8, writeln, println */
+/* globals: entities, aucgbot, encodeUTF8, decodeUTF8 */
 "use strict";
 var net = require("net"),
 	url = require("url"),
@@ -60,8 +60,6 @@ aucgbot.version = "6.0.1 (2015-09)";
 aucgbot.source = "https://github.com/auscompgeek/aucgbot";
 aucgbot.useragent = "aucgbot/{0} (+{1}; {2}; NodeJS {3})".format(aucgbot.version, aucgbot.source, process.platform, process.version);
 // JSDB shims
-global.writeln = console.log;
-global.println = console.log;
 global.decodeHTML = entities.decode;
 /**
  * Start the bot. Each argument is to be passed as arguments to {@link aucgbot#connect}.
@@ -157,15 +155,13 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 	if (chans) {
 		if (chans instanceof Array) {
 			channels = chans;
-		}
-		else if (typeof chans === "string") {
+		} else if (typeof chans === "string") {
 			channels = chans.split(",");
-		}
-		else {
-			writeln("[WARNING] Can't join channels specified! Joining ", channels);
+		} else {
+			console.warn("[WARNING] Can't join channels specified! Joining", channels);
 		}
 	} else {
-		writeln("[WARNING] No channels specified! Joining ", channels);
+		console.warn("[WARNING] No channels specified! Joining", channels);
 	}
 	chans = null;
 	conn.channels = channels;
@@ -191,6 +187,7 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 		if (!ln) return;
 		if (aucgbot.prefs.printMessages)
 			console.log(ln);
+
 		if (!conn.joined) {
 			if (ln.startsWith("PING ")) {
 				conn.send("PONG", ln.slice(5));
@@ -206,23 +203,21 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 				if (obj !== "3") {
 					conn.send("QUIT");
 					conn.end(null, function() {
-						writeln("Disconnected from",conn.addr);
+						console.log("Disconnected from", conn.addr);
 					});
 					return;
 				}
 			} else if (/^:\S+ 433 ./.test(ln)) {
 				conn.send("NICK", conn.nick += "_");
 			} else if (/003/.test(ln)) {
-				console.log("AHA");
 				if (channels) {
 					conn.send("JOIN", ":" + channels./*map(function (chan) { return conn.chantypes.contains(chan[0]) ? chan : "#" + chan; }).*/join(","));
 					channels = null;
 					conn.joined = true;
 				}
 			}
-		}
-		else {
 
+		} else {
 			if (aucgbot.modMethod("parseln", arguments))
 				return;
 
@@ -484,7 +479,7 @@ aucgbot.checkFlood = function checkFlood(e) {
 				conn.flood_in[nick] = true;
 			else
 				conn.flood_in = true;
-			writeln("[WARNING] Flood detected by " + nick + "!");
+			console.warn("[WARNING] Flood detected by", nick);
 			if (kb && this.prefs.flood.kick)
 				conn.send("KICK", dest, nick, ":No flooding!");
 			else if (this.prefs.flood.warn && !relay)
@@ -581,10 +576,6 @@ aucgbot.parseCmd = function parseCmd(e) {
 		break;
 	default:
 		try {
-			if (cmd.substr(0,4) == "cmd_") {
-				cmd = cmd.substr(4);
-			}
-//			console.log(cmd, require('util').inspect(e));
 			this.modMethod("parseCmd", arguments) || this.modMethod("cmd_" + cmd, arguments);
 		} catch (ex) {
 			e.notice("Oops, I encountered an error.", ex);
@@ -673,22 +664,16 @@ aucgbot.getJSON = function getJSON() {
  * @return {Object} The loaded module.
  */
 aucgbot.loadModule = function loadModule(id) {
-	try {
-		delete require.cache[require.resolve("./" + id + ".jsm")];
-		let m = require("./" + id + ".jsm"); // must leak to global scope to reach module itself
-		if (m && m.version) {
-			this.modules[id] = m;
-		}
-		else {
-			throw new Error(id + " is not a module.");
-		}
-		writeln("Loaded mod_", id, " v", m.version);
-		return m;
+	let path = "./" + id + ".jsm";
+	delete require.cache[require.resolve(path)];
+	let m = require(path);
+	if (m && m.version) {
+		this.modules[id] = m;
+	} else {
+		throw new Error(id + " is not a module.");
 	}
-	catch (e) {
-		writeln("Failed to load mod_"+id);
-		writeln(e.stack);
-	}
+	console.log("Loaded mod_" + id, m.version);
+	return m;
 };
 
 /**
@@ -791,7 +776,7 @@ aucgbot.onCTCP = function onCTCP(e) {
 		} catch (ex) {
 			e.logError("onUnknownCTCP", ex, nick + (dest === nick ? "" : " in " + dest), type, msg);
 		}
-		writeln("[WARNING] Unknown CTCP! ^^^^^");
+		console.warn("[WARNING] Unknown CTCP!", type);
 		e.log("CTCP", nick + (nick === dest ? "" : " in " + dest), type, msg);
 	}
 };

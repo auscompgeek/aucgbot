@@ -27,7 +27,6 @@ module.exports.getList = function getList(nick) {
 
 module.exports.cmd_todo = function cmd_todo(e) {
 	var list = this.getList(e.nick);
-	console.log('args: ' + e);
 	if (e.args) {
 		list.push(e.args);
 		this.saveUsers();
@@ -124,5 +123,5 @@ module.exports.cmd_todoins = function cmd_todoins(e) {
 module.exports.cmd_todoins.help = "Inserts a todo before the specified index. Usage: todoins <index> <todo>";
 
 try { module.exports.loadUsers(); } catch (ex) {
-	println("Error while loading todo lists from disk: ", ex);
+	console.error("Error while loading todo lists from disk:", ex);
 }

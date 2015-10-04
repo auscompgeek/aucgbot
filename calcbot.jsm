@@ -2,7 +2,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global aucgbot: false, ctof: false, calc: false, encodeUTF8: false, ftoc: false, module.exports: false, randint: false, run: false, writeln: false */
+/*global aucgbot: false, ctof: false, calc: false, encodeUTF8: false, ftoc: false, module.exports: false, randint: false, run: false */
 
 //require("./es5-sham.js");
 var math = require("mathjs");
@@ -25,7 +25,7 @@ module.exports.prefs = {
 	actDice: true // output <x>d<y> as /me rolls a d<y> x times: a, b, c; total: d
 };
 //module.exports.abuse = /[\[{'"}\]]|alert|ass|cli|con|date|def|del|doc|ecma|eval|exit|false|for|glob|import|in[fs]|java|js|lo(?:ad|cal|se)|minimi|my|nan|op|p(?:ro|atch|lug|lay|rint)|quit|raw|rctrl|read|rite|run|scr|sys|this|throw|true|until|voice|while|win|yp/;
-module.exports.list = "Functions: acos, asin, atan, atan2, cos, sin, tan, exp, ln, pow, sqrt, abs, ceil, max, min, floor, round, random, randint, fact, mean, dice, ftoc, ctof. Constants: e, pi, phi, c. Operators: %, ^, **. Other topics: decimal, trig.";
+//module.exports.list = "Functions: acos, asin, atan, atan2, cos, sin, tan, exp, ln, pow, sqrt, abs, ceil, max, min, floor, round, random, randint, fact, mean, dice, ftoc, ctof. Constants: e, pi, phi, c. Operators: %, ^, **. Other topics: decimal, trig.";
 module.exports.calcs = {};
 
 module.exports.onNick = function onNick(e) {
@@ -49,7 +49,7 @@ module.exports.onUnknownMsg = function onUnknownMsg(e) {
 	var dest = e.dest, nick = e.nick, name = nick.split("|")[0];
 	/*
 	if (msg.match(this.abuse)) {
-		writeln("[WARNING] Abuse detected! ^^^^^");
+		console.warn("[WARNING] Abuse detected! ^^^^^");
 		if (this.prefs.abuse.log) {
 			e.log("CALC ABUSE", nick + (dest !== nick ? " in " + dest : ""), msg);
 		}
@@ -68,7 +68,7 @@ module.exports.onUnknownMsg = function onUnknownMsg(e) {
 			e.reply(s);
 		}
 	} catch (ex) {
-		writeln("[ERROR] ", ex);
+		console.error("[ERROR]", ex);
 		if (this.prefs.error.log) {
 			e.log("CALC ERROR", nick + (dest !== nick ? " in " + dest : ""), msg, ex);
 		}
@@ -83,7 +83,7 @@ module.exports["cmd_="] = module.exports.cmd_calc = module.exports.cmd_math = fu
 		if (this.prefs.abuse.warn && !e.relay) {
 			e.notice("Whoa! Careful dude!");
 		}
-		writeln("[WARNING] Abuse detected! ^^^^^");
+		console.warn("[WARNING] Abuse detected! ^^^^^");
 		if (this.prefs.abuse.log) {
 			e.log("CALC ABUSE", nick + (dest !== nick ? " in " + dest : ""), msg);
 		}
@@ -102,7 +102,7 @@ module.exports["cmd_="] = module.exports.cmd_calc = module.exports.cmd_math = fu
 			e.reply(s);
 		}
 	} catch (ex) {
-		writeln("[ERROR] ", ex);
+		console.error("[ERROR]", ex);
 		if (this.prefs.error.log) {
 			e.log("CALC ERROR", nick + (dest !== nick ? " in " + dest : ""), msg, ex);
 		}
@@ -183,9 +183,11 @@ module.exports.cmd_dice = module.exports.cmd_roll = function cmd_roll(e) {
 module.exports.cmd_roll.help = "Roll some dice. Usage: roll [<num>]d<sides> OR roll [<sides> [<num>]]";
 
 module.exports.parseMsg = function parseMsg(msg, calc) {
+/*
 	if (/help|list|^\?[^?]/.test(msg)) {
 		return this.help(msg);
 	}
+*/
 	if (this.prefs.easterEggs) { // Time for some Easter Eggs! *dance*
 		if (/^6 ?\* ?9$/.test(msg)) // 'The Hitchhiker's Guide to the Galaxy' (trilogy of 6)!
 			return "42. Wait, what?";
@@ -248,6 +250,7 @@ module.exports.cmdDice = function cmdDice(sides, count) {
 	return count > 1 ? ary.join(" + ") + " = " + total : ary[0];
 };
 
+/*
 module.exports.help = function calcHelp(e) {
 	switch (e.replace(/help|[? #]|math\.*|imum|ing|er/g, "").slice(0, 7)) {
 	case "arccosi": case "arccos": case "acos": case "cos^-1": case "cos^(-1":
@@ -342,3 +345,4 @@ module.exports.help = function calcHelp(e) {
 			this.list + " Type = ?<topic> for more information.";
 	}
 };
+*/
