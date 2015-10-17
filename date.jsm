@@ -26,7 +26,7 @@ module.exports.cmd_now = function cmd_now(e) {
 			e.reply(new Date().toUTCString());
 			break;
 		default:
-			if (args.contains("%"))  // strftime() format string
+			if (args.includes("%"))  // strftime() format string
 				e.reply(new Date().toLocaleFormat(args));
 			else
 				e.reply(this.cmd_now.help);
@@ -62,7 +62,7 @@ module.exports.cmd_epoch = function cmd_epoch(e) {
 			e.reply(date.toUTCString());
 			break;
 		default:
-			if (args.contains("%"))  // strftime() format string
+			if (args.includes("%"))  // strftime() format string
 				e.reply(date.toLocaleFormat(args));
 			else
 				e.reply(this.cmd_epoch.help);

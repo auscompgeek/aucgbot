@@ -8,7 +8,7 @@ module.exports.version = 0.7;
 module.exports.db = {};
 module.exports.filename = "karma.json";
 module.exports.load = function load() {
-	this.db = JSON.parse(aucgbot.readURI(this.filename) || "{}");
+	this.db = JSON.parse(aucgbot.readFile(this.filename) || "{}");
 };
 module.exports.save = function save() {
 	fs.writeFileSync(JSON.stringify(this.db));

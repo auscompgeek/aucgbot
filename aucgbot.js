@@ -3,18 +3,18 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /* jshint esnext: true, node: true*/
-/* globals: entities, aucgbot, encodeUTF8, decodeUTF8 */
+/* globals: aucgbot */
+
 "use strict";
+
 var net = require("net"),
 	url = require("url"),
 	util = require("util"),
 	fs = require("fs"),
 	request = require("urllib-sync").request,
 	Entities = require("html-entities").AllHtmlEntities;
-
-global.entities = new Entities();
-
-require("./String.format.js");
+require("string-format").extend(String.prototype);
+var entities = new Entities();
 
 global.aucgbot = global.aucgbot || {
 	ERR_MSG_SELF: "Get me to talk to myself, yeah, great idea...",
@@ -40,7 +40,7 @@ global.aucgbot = global.aucgbot || {
 		"keyboard.dieOnInput": false, // overrides keyboard.sendInput and keyboard.evalInput
 		/** @deprecated */ "keyboard.sendInput": false,
 		"keyboard.evalInput": false,
-		printMessages: false,
+		printMessages: true,
 		"kick.rejoin": false,
 		"kick.log": true, // on bot kicked
 		// RegExps to not ban/kick nicks/hosts
@@ -53,12 +53,12 @@ global.aucgbot = global.aucgbot || {
 	},
 	//cmodes: {}, // TODO Parse MODE lines.
 	modules: {},
-	conns: []
+	conns: {}
 };
 
-aucgbot.version = "6.0.1 (2015-09)";
+aucgbot.version = "6.0.2 (2015-10)";
 aucgbot.source = "https://github.com/auscompgeek/aucgbot";
-aucgbot.useragent = "aucgbot/{0} (+{1}; {2}; NodeJS {3})".format(aucgbot.version, aucgbot.source, process.platform, process.version);
+aucgbot.useragent = "aucgbot/{0} (+{1}; {2}; Node.js {3})".format(aucgbot.version, aucgbot.source, process.platform, process.version);
 // JSDB shims
 global.decodeHTML = entities.decode;
 /**
@@ -67,7 +67,7 @@ global.decodeHTML = entities.decode;
  * @usage aucgbot.start([hostname, port, nick, ident, pass, channels]...);
  */
 aucgbot.start = function startBot() {
-	var args = Array.slice(arguments);
+	var args = Array.from(arguments);
 	while (args.length)
 		this.connect.apply(this, args.shift());
 	args = null;
@@ -76,47 +76,55 @@ aucgbot.start = function startBot() {
 
 
 aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasluser, saslpass) {
-	var channels = ["#bots"], addr = (host || "127.0.0.1") + ":" + (parseInt(port) || 6667),
-	conn, ln;
 	host = host || "127.0.0.1";
 	port = parseInt(port) || 6667;
+	var channels = ["#bots"], addr = host + ":" + port, conn, ln;
+
+	if (addr in this.conns) {
+		console.log("Stubbornly refusing to connect again to", addr);
+
 	conn = net.connect(port, host, function() {
 		console.log("Connected to " + addr);
 	});
 	conn.nick = nick;
-	/* stupid nodejs is stupid */
+
+	// forkbomb's cancer follows:
 	conn.writeln = function writeln() {
-		var thing = Array.slice(arguments).join("");
-		return this.write(thing + "\r\n");
+		var data = Array.join(arguments, "");
+		if (data.length > 1022) {
+			data = data.slice(0, 1022);
+		}
+		return this.write(data + "\r\n");
 	};
 
 	conn.send = function send(/* ...data */) {
 		if (!arguments.length)
 			throw new TypeError("Socket.prototype.send requires at least 1 argument");
-		var data = encodeUTF8(Array.join(arguments, " ").trim());
+		var data = (Array.join(arguments, " ").trim());
 		if (data)
 			return this.writeln(data);
 	};
+
 	conn.msg = function msg(dest) {
 		if (arguments.length < 2)
 			throw new TypeError("conn.msg requires at least 2 arguments");
 		let m = Array.slice(arguments, 1).join(" ").trim().replace(/\s+/g, " ");
 		if (m)
-			return this.writeln("PRIVMSG ", encodeUTF8(dest + " :" + m));
+			return this.writeln("PRIVMSG ", (dest + " :" + m));
 	};
 	conn.nmsg = function nmsg(dest) {
 		if (arguments.length < 2)
 			throw new TypeError("conn.nmsg requires at least 2 arguments");
 		var msg = Array.slice(arguments, 1).join(" ").trim().replace(/\s+/g, " ");
 		if (msg)
-			return this.writeln(this.chantypes.contains(dest[0]) ? "PRIVMSG " : "NOTICE ", encodeUTF8(dest + " :" + msg));
+			return this.writeln(this.chantypes.includes(dest[0]) ? "PRIVMSG " : "NOTICE ", (dest + " :" + msg));
 	};
 	conn.notice = function notice(dest) {
 		if (arguments.length < 2)
 			throw new TypeError("conn.notice requires at least 2 arguments");
 		var msg = Array.slice(arguments, 1).join(" ").trim().replace(/\s+/g, " ");
 		if (msg)
-			return this.writeln("NOTICE ", encodeUTF8(dest + " :" + msg));
+			return this.writeln("NOTICE ", (dest + " :" + msg));
 	};
 	conn.reply = function reply(dest, nick) {
 		if (arguments.length < 3)
@@ -125,9 +133,8 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 		if (dest !== nick)
 			msg = nick + ": " + msg;
 		if (msg)
-			return this.writeln("PRIVMSG ", encodeUTF8(dest + " :" + msg));
+			return this.writeln("PRIVMSG ", (dest + " :" + msg));
 	};
-
 	conn.nreply = function nreply(dest, nick) {
 		if (arguments.length < 3)
 			throw new TypeError("Socket.prototype.nreply requires at least 3 arguments");
@@ -135,7 +142,7 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 		if (dest !== nick)
 			msg = nick + ": " + msg;
 		if (msg)
-			return this.writeln(this.chantypes.contains(dest[0]) ? "PRIVMSG " : "NOTICE ", encodeUTF8(dest + " :" + msg));
+			return this.writeln(this.chantypes.includes(dest[0]) ? "PRIVMSG " : "NOTICE ", (dest + " :" + msg));
 	};
 
 	conn.chantypes = "#&+!";
@@ -164,7 +171,6 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 		console.warn("[WARNING] No channels specified! Joining", channels);
 	}
 	chans = null;
-	conn.channels = channels;
 	if (aucgbot.prefs.flood.differentiate) {
 		conn.flood_lines = {};
 		conn.flood_lastTime = {};
@@ -175,27 +181,28 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 		conn.flood_lastTime = 0;
 		conn.flood_in = false;
 	}
-	conn.joined = false;
+
+	var buffer = "";
 	conn.on("data", function(data) {
-		var lns = data.split("\n");
-		for (let i = 0; i < lns.length; i++) {
-			conn.onLine(lns[i]);
-		}
+		var lines = (buffer + data).split("\n");
+		buffer = lines.pop();
+		lines.forEach(this.onLine, this);
 	});
+
+	conn.registered = false;
 	conn.onLine = function(ln) {
 		ln = ln.trim();
 		if (!ln) return;
 		if (aucgbot.prefs.printMessages)
 			console.log(ln);
 
-		if (!conn.joined) {
+		if (!conn.registered) {
 			if (ln.startsWith("PING ")) {
 				conn.send("PONG", ln.slice(5));
 			} else if (ln === "AUTHENTICATE +") {
 				conn.send("AUTHENTICATE", encodeB64(sasluser + "\0" + sasluser + "\0" + saslpass));
 				sasluser = saslpass = null;
 			} else if (/^:\S+ CAP \S+ ACK :sasl/.test(ln)) {
-				console.error('yep, sasl');
 				conn.send("AUTHENTICATE PLAIN");
 			} else if (/^:\S+ 90([345]) ./.test(ln)) {/^:\S+ 90([345]) ./.test(ln)
 				conn.send("CAP END");
@@ -209,17 +216,21 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 				}
 			} else if (/^:\S+ 433 ./.test(ln)) {
 				conn.send("NICK", conn.nick += "_");
-			} else if (/003/.test(ln)) {
+			} else if (/^:\S+ 001 /.test(ln)) {
 				if (channels) {
-					conn.send("JOIN", ":" + channels./*map(function (chan) { return conn.chantypes.contains(chan[0]) ? chan : "#" + chan; }).*/join(","));
+					conn.send("JOIN", ":" + channels/*.map(function (chan) { return conn.chantypes.includes(chan[0]) ? chan : "#" + chan; })*/.join(","));
 					channels = null;
-					conn.joined = true;
+					conn.registered = true;
 				}
 			}
 
 		} else {
-			if (aucgbot.modMethod("parseln", arguments))
-				return;
+			try {
+				if (aucgbot.modMethod("parseln", [ln, conn]))
+					return;
+			} catch (ex) {
+				console.error("error in parseln:", ex);
+			}
 
 			var msgary = /^:([^\s!@]+)!([^\s!@]+)@([^\s!@]+) PRIVMSG (\S+) :(.*)/.exec(ln);
 			if (msgary) {
@@ -236,9 +247,14 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 			} else if (/^:([^\s!@]+)!([^\s!@]+)@([^\s!@]+) NICK :(\S+)/.test(ln)) {
 				if (RegExp.$1 === conn.nick)
 					conn.nick = RegExp.$4;
-				else
-					aucgbot.modMethod("onNick", [{conn: conn, oldNick: RegExp.$1, newNick: RegExp.$4, ident: RegExp.$2, host: RegExp.$3, ln: ln}]);
-				//} else if (/^:([^\s!@]+)(?:!([^\s!@]+)@([^\s!@]+)|) MODE (\S+) ((?:[+\-][A-Za-z]+)+)/.test(ln)) {
+				else {
+					try {
+						aucgbot.modMethod("onNick", [{conn: conn, oldNick: RegExp.$1, newNick: RegExp.$4, ident: RegExp.$2, host: RegExp.$3, ln: ln}]);
+					} catch (ex) {
+						console.error("error in onNick:", ex);
+					}
+				}
+			//} else if (/^:([^\s!@]+)(?:!([^\s!@]+)@([^\s!@]+)|) MODE (\S+) ((?:[+\-][A-Za-z]+)+)/.test(ln)) {
 				// TODO parse MODE lines
 			} else if (/^:([^\s!@]+![^\s!@]+@[^\s!@]+) KICK (\S+) (\S+) :(.*)/.test(ln)) {
 				if (RegExp.$3 === conn.nick) {
@@ -250,10 +266,20 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 			}
 		}
 	};
-	conn.on('close', function(a) {
-		console.log("Connection shut");
+
+	conn.setTimeout(600000, function () {
+		console.warn("Timeout triggered on", addr);
+		this.end("QUIT :No data received for 10 minutes.\r\n");
 	});
-	this.conns.push(conn);
+	conn.on('error', function (error) {
+		console.error(`Error from ${addr}: ${error}`);
+	});
+	conn.on('close', function (had_error) {
+		console.log("Connection to", addr, "closed.");
+		delete aucgbot.conns[addr];
+	});
+	this.conns[addr] = conn;
+	return conn;
 };
 
 /** @constructor */
@@ -279,39 +305,39 @@ aucgbot.Message = function Message(conn, msgary) {
 aucgbot.Message.prototype = {
 	bot: aucgbot,
 	send: function send() {
-		var args = Array.slice(arguments), conn = this.conn;
+		var args = Array.from(arguments), conn = this.conn;
 		args.unshift(this.dest);
 		return conn.msg.apply(conn, args);
 	},
 	nmsg: function nmsg() {
-		var args = Array.slice(arguments), conn = this.conn;
+		var args = Array.from(arguments), conn = this.conn;
 		args.unshift(this.dest);
 		return conn.nmsg.apply(conn, args);
 	},
 	notice: function notice() {
-		var args = Array.slice(arguments), conn = this.conn;
+		var args = Array.from(arguments), conn = this.conn;
 		args.unshift(this.nick);
 		return conn.notice.apply(conn, args);
 	},
 	reply: function reply() {
 		// don't use Array.concat, it doesn't work with the arguments object
-		var args = Array.slice(arguments), conn = this.conn;
+		var args = Array.from(arguments), conn = this.conn;
 		args.unshift(this.nick), args.unshift(this.dest);
 		return conn.reply.apply(conn, args);
 	},
 	nreply: function nreply() {
-		var args = Array.slice(arguments), conn = this.conn;
+		var args = Array.from(arguments), conn = this.conn;
 		args.unshift(this.nick), args.unshift(this.dest);
 		return conn.nreply.apply(conn, args);
 	},
 	log: function _log() {
-		var args = Array.slice(arguments), bot = this.bot;
-		args.unshift(this.conn);
+		var args = Array.from(arguments), bot = this.bot;
+		args.unshift(this.conn.addr);
 		bot.log.apply(bot, args);
 	},
 	logError: function logError() {
-		var args = Array.slice(arguments), bot = this.bot;
-		args.unshift(this.conn);
+		var args = Array.from(arguments), bot = this.bot;
+		args.unshift(this.conn.addr);
 		bot.logError.apply(bot, args);
 	},
 	isSU: function isSU() {
@@ -323,9 +349,13 @@ aucgbot.Message.prototype = {
 };
 
 aucgbot.log = function log() {
+	// TODO
+	console.log.apply(console, arguments);
 }
 
 aucgbot.logError = function logError() {
+	// TODO
+	console.error.apply(console, arguments);
 }
 
 /**
@@ -357,13 +387,18 @@ aucgbot.onMsg = function onMsg(e) {
 	var meping = RegExp("^@?" + conn.nick.replace(/\W/g, "\\$&") + "[:,] ?", "i"), dest = e.dest, host = e.host;
 
 	// fix for message relay bots
-	if (this.prefs["relay.check"] && this.prefs["relay.bots"].contains(nick)) {
+	if (this.prefs["relay.check"] && this.prefs["relay.bots"].includes(nick)) {
 		if (/^\* (\S+) (.+)/.test(msg)) {
 			e.relay = e.nick, nick = e.nick = RegExp.$1.replace(/^(?:\[\w+\]|\w+:)|\/.+/g, ""), e.msg = RegExp.$2;
 			if (!e.nick && /^(\S+) (.+)/.test(e.msg))
 				e.nick = RegExp.$1, e.msg = RegExp.$2;
-			if (!this.checkFlood(e))
-				this.modMethod("onAction", [e]);
+			if (!this.checkFlood(e)) {
+				try {
+					this.modMethod("onAction", [e]);
+				} catch (ex) {
+					console.error("error in onAction:", ex);
+				}
+			}
 			return;
 		}
 		if (/^<([^>]+)> (.+)/.test(msg))
@@ -371,8 +406,12 @@ aucgbot.onMsg = function onMsg(e) {
 	}
 
 	// don't listen to bots
-	if (((/bot[\d_|]*$|Serv|^bot|Op$/i.test(nick) || this.prefs.bots.contains(nick)) && nick !== conn.nick) || (host.contains("/bot/") && !e.relay))
+	if (((/bot[\d_|]*$|Serv|^bot|Op$/i.test(nick) || this.prefs.bots.includes(nick)) && nick !== conn.nick) || (host.includes("/bot/") && !e.relay)) {
+		try {
+			this.modMethod("onBotMsg", arguments);
+		} catch (ex) {}
 		return;
+	}
 
 	// flood protection
 	if (this.checkFlood(e))
@@ -398,19 +437,12 @@ aucgbot.onMsg = function onMsg(e) {
 	}
 
 	var prefix = this.prefs.prefix;
-	if (prefix && msg.slice(0,prefix.length) === prefix && msg.length > prefix.length) {
-		let temp = msg.slice(prefix.length);
-		let match = temp.match(/^(\S+) ?/);
-		e.args = temp.replace(/^(\S+) ?/, "");
-		if (match == null) return;
-		e.cmd = match[1].toLowerCase();
-		this.parseCmd(e);
-	} else if (meping.test(msg) || dest === nick) {
-		let temp = msg.replace(meping, "");
-		let match = temp.match(/^(\S+) ?/);
-		e.args = temp.replace(/^(\S+) ?/, "");
-		e.cmd = RegExp.$1.toLowerCase();
-		this.parseCmd(e);
+	if (prefix && msg.startsWith(prefix) && msg.length > prefix.length) {
+		this.parseCmd(e, msg.slice(prefix.length));
+	} else if (meping.test(msg)) {
+		this.parseCmd(e, msg.replace(meping, ""));
+	} else if (dest === nick) {
+		this.parseCmd(e, msg);
 	} else {
 		try {
 			this.modMethod("onUnknownMsg", [e]);
@@ -449,8 +481,7 @@ aucgbot.checkFlood = function checkFlood(e) {
 		floodLines = conn.flood_lines[nick];
 		lastFloodTime = conn.flood_lastTime[nick];
 		inFlood = conn.flood_in[nick];
-	}
-	else {
+	} else {
 		floodLines = conn.flood_lines;
 		lastFloodTime = conn.flood_lastTime;
 		inFlood = conn.flood_in;
@@ -467,7 +498,7 @@ aucgbot.checkFlood = function checkFlood(e) {
 			conn.flood_lastTime[nick] = now;
 		else
 			conn.flood_lastTime = now;
-		if ((diff ? conn.flood_in[nick] : conn.flood_in)) {
+		if (diff ? conn.flood_in[nick] : conn.flood_in) {
 			if (kb) {
 				if (this.prefs.flood.kick)
 					conn.send("KICK", dest, nick, ":No flooding!");
@@ -498,17 +529,16 @@ aucgbot.checkFlood = function checkFlood(e) {
 /**
  * Parse a command filtered by onMsg(). Methods can listen here through the parseCmd and cmd_* methods.
  *
- * @param {string} dest Channel or nick to send messages back.
- * @param {string} cmd Command name.
- * @param {string} args Any arguments.
- * @param {string} nick Nick that sent the PRIVMSG.
- * @param {string} ident User's ident.
- * @param {string} host Hostname that sent the PRIVMSG.
- * @param {Stream} conn Server connection.
- * @param {string} relay Relay bot nick or "".
+ * @param {Message} e
  */
-aucgbot.parseCmd = function parseCmd(e) {
-	var dest = e.dest, cmd = e.cmd, args = e.args, nick = e.nick, host = e.host, conn = e.conn, relay = e.relay;
+aucgbot.parseCmd = function parseCmd(e, cmdMsg) {
+	let match = cmdMsg.match(/(\S+)(?:\s*(.*))?/);
+	if (!match || !match[1]) {
+		return;
+	}
+	let cmd = (e.cmd = match[1].toLowerCase());
+	let args = (e.args = match[2] || "");
+	let dest = e.dest, nick = e.nick, host = e.host, conn = e.conn, relay = e.relay;
 	switch (cmd) {
 	case "ping":
 		e.reply("pong", args);
@@ -620,39 +650,9 @@ aucgbot.getHTTP = function getHTTP(uri, modname, modver, headers) {
 	return res.data.toString();
 };
 
-aucgbot.readURI = function readURI(uri, headers) {
-	if (headers == null && !/^https?:\/\//.test(uri)) {
-		if (fs.existsSync(uri)) {
-			return "";
-		}
-		return fs.readFileSync(uri);
-	}
-	else {
-		return this.getHTTP(uri, null, null, headers);
-	}
-	/*var stream = new Stream(uri, null, headers), content;
-	sleep(this.prefs.readDelay);  // wait a tick so that the entire file actually comes through
-	if (stream.header) {
-		var record = new Record(stream.header);
-		record.caseSensitive = false;
-		var len = record.get("Content-Length") | 0;
-		if (len) {
-			content = stream.read(len);
-		} else {
-			content = stream.readFile();
-		}
-	} else {
-		content = stream.readFile();
-	}
-	stream.close();
-	try {
-		content = decodeUTF8(content);
-	} catch (ex) {}
-	if (stream.status && stream.status >= 300) {
-		throw new this.HTTPError(stream, content);
-	}
-	return content;*/
-};
+aucgbot.readFile = fs.readFileSync;
+aucgbot.writeFile = fs.writeFileSync;
+
 aucgbot.getJSON = function getJSON() {
 	return JSON.parse(this.getHTTP.apply(this, arguments));
 };
@@ -686,24 +686,16 @@ aucgbot.loadModule = function loadModule(id) {
 aucgbot.modMethod = function modMethod(id, args) {
 	if (args != null && typeof args.length !== "number")
 		args = Array.slice(arguments, 1);
-	try {
-		for (var m in this.modules) {
-			if (this.modules.hasOwnProperty(m)) {
-				module = this.modules[m];
-				if (typeof module === "object" && module && module.hasOwnProperty(id)) {
-					let method = module[id];
-					if (typeof method === "function" && method.apply(module, args))
-						return true;
-				}
+	for (let m in this.modules) {
+		if (this.modules.hasOwnProperty(m)) {
+			let module = this.modules[m];
+			if (typeof module === "object" && module && module.hasOwnProperty(id)) {
+				let method = module[id];
+				if (typeof method === "function" && method.apply(module, args))
+					return true;
 			}
 		}
-	} /*finally {
-		delete module;
-	}*/
-   catch (e) {
-	   console.error("what");
-	   console.error(e.stack);
-   }
+	}
 	return false;
 };
 
@@ -740,7 +732,7 @@ aucgbot.onCTCP = function onCTCP(e) {
 		}
 		break;
 	case "VERSION":
-		nctcp("aucgbot {0} (Node.JS {1}, {2}-{3})".format(this.version, process.version, process.platform, process.arch));
+		nctcp("aucgbot {0} (Node.js {1}, {2}-{3})".format(this.version, process.version, process.platform, process.arch));
 		break;
 	case "TIME":
 		nctcp(Date()); // little known fact: Date returns a string when not called as a constructor
@@ -805,7 +797,7 @@ aucgbot.remoteControl = function rcBot(e) {
 	case "join":
 		var chans = argv.shift().split(",");
 		for (var i = chans.length - 1; i >= 0; i--) {
-			if (!conn.chantypes.contains(chans[i][0]))
+			if (!conn.chantypes.includes(chans[i][0]))
 				chans[i] = "#" + chans[i];
 		}
 		conn.send("JOIN", chans.join(","), argv.join(" "));
@@ -813,7 +805,7 @@ aucgbot.remoteControl = function rcBot(e) {
 	case "leave":
 		var chans = argv.shift().split(",");
 		for (var i = chans.length - 1; i >= 0; i--) {
-			if (!conn.chantypes.contains(chans[i][0]))
+			if (!conn.chantypes.includes(chans[i][0]))
 				chans[i] = "#" + chans[i];
 		}
 		conn.send("PART", chans.join(","), ":" + nick + ":", argv.join(" "));
@@ -824,7 +816,7 @@ aucgbot.remoteControl = function rcBot(e) {
 			e.reply("Get me to kick myself, yeah, great idea...");
 			break;
 		}
-		if (!conn.chantypes.contains(chan[0]))
+		if (!conn.chantypes.includes(chan[0]))
 			chan = "#" + chan;
 		conn.send("KICK", chan, user, ":" + nick + ":", argv.join(" "));
 		break;
@@ -864,14 +856,22 @@ aucgbot.remoteControl = function rcBot(e) {
 		}
 		break;
 	case "reload":
-		if (!run("aucgbot.js")) {
-			e.reply("I can't find myself!");
-			e.log("Can't reload!");
+		delete require.cache[require.resolve('./aucgbot')];
+		try {
+			require('./aucgbot');
+		} catch (ex) {
+			e.reply(ex);
+			console.error(ex);
+			console.error(ex.stack);
 		}
 		break;
 	default:
-		if (this.modMethod("remoteControl", arguments))
-			break;
+		try {
+			if (this.modMethod("remoteControl", arguments))
+				break;
+		} catch (ex) {
+			console.log("error in rc:", ex);
+		}
 		e.notice("Hmm? Didn't quite get that.");
 	}
 };
@@ -886,7 +886,7 @@ aucgbot.remoteControl = function rcBot(e) {
  * @return {boolean} Whether the user is a superuser.
  */
 aucgbot.isSU = function isSU(e) {
-	if (this.prefs.suDests.contains(e.dest))
+	if (this.prefs.suDests.includes(e.dest))
 		return true;
 	var suHosts = this.prefs.suHosts, host = e.host;
 	if (suHosts instanceof RegExp) {
@@ -894,7 +894,7 @@ aucgbot.isSU = function isSU(e) {
 			return true;
 	}
 	if (suHosts instanceof Array) {
-		if (suHosts.contains(host))
+		if (suHosts.includes(host))
 			return true;
 	}
 	return false;
@@ -911,7 +911,7 @@ aucgbot.okToKick = function okToKick(e) {
 			return false;
 	}
 	if (nokickNicks instanceof Array) {
-		if (nokickNicks.contains(nick))
+		if (nokickNicks.includes(nick))
 			return false;
 	}
 	if (nokickHosts instanceof RegExp) {
@@ -919,10 +919,12 @@ aucgbot.okToKick = function okToKick(e) {
 			return false;
 	}
 	if (nokickHosts instanceof Array) {
-		if (nokickHosts.contains(host))
+		if (nokickHosts.includes(host))
 			return false;
 	}
 	return true;
 };
 
 require("./aucgbot-utils.js");
+
+module.exports = aucgbot;

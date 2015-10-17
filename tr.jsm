@@ -186,7 +186,7 @@ module.exports.cmd_rainbow = function cmd_rainbow(e) {
 	var s = "";
 	for (var i = 0, chr; i < msg.length; i++) {
 		chr = msg[i];
-		if (this.DIGITS.contains(chr)) {
+		if (this.DIGITS.includes(chr)) {
 			s += "\x03" + f(randint(0, 15)) + chr;
 		} else {
 			s += "\x03" + randint(0, 15) + chr;

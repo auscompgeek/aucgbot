@@ -8,6 +8,7 @@
     "mathjs": "*",
     "moment": "^2.8.3",
     "moment-timezone": "^0.2.2",
+    "string-format": "*",
     "synchronize": "^0.9.9",
     "urllib-sync": "^1.0.1"
   },

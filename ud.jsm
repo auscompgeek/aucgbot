@@ -4,7 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global module.exports: false */
 
-module.exports.version = 1.4;
+module.exports.version = 1.5;
 module.exports.BASE_URL = "http://api.urbandictionary.com/v0/";
 module.exports.DEFINE_BASE_URL = module.exports.BASE_URL + "define?term=";
 
@@ -26,6 +26,13 @@ module.exports.defToText = function defToText(def, field) {
 	return "{0} {1}".format(text, def.permalink);
 };
 
+module.exports.getDefinition = function getDefinition(term) {
+	// the Urban Dictionary API may or may not be horribly broken.
+	try {
+		return aucgbot.getJSON(this.DEFINE_BASE_URL + encodeURIComponent(term));
+	} catch (ex) {}
+}
+
 module.exports.cmd_ud = module.exports.cmd_urban =
 function cmd_ud(e) {
 	var term = e.args;
@@ -34,12 +41,7 @@ function cmd_ud(e) {
 		return true;
 	}
 
-	var data;
-	try {
-		// WHY URBAN DICTIONARY? WHY!?!?!?!?!??!?!?
-		data = JSON.parse(e.bot.readURI(this.DEFINE_BASE_URL + encodeURIComponent(term)));
-	} catch (ex) {}
-
+	var data = this.getDefinition(term);
 	if (!data) {
 		e.reply("Urban Dictionary returned no data.");
 		return true;
@@ -59,16 +61,11 @@ module.exports.cmd_urbanex =
 function cmd_urbanex(e) {
 	var term = e.args;
 	if (!term) {
-		e.reply(this.cmd_ud.help);
+		e.reply(this.cmd_urbanex.help);
 		return true;
 	}
 
-	var data;
-	try {
-		// seriously guys, fix the goddamn API server.
-		data = JSON.parse(e.bot.readURI(this.DEFINE_BASE_URL + encodeURIComponent(term)));
-	} catch (ex) {}
-
+	var data = this.getDefinition(term);
 	if (!data) {
 		e.reply("Urban Dictionary returned no data.");
 		return true;

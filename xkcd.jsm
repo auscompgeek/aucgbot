@@ -8,7 +8,7 @@ module.exports.version = 0.4;
 
 module.exports.getXKCDInfo = function getXKCDInfo(num) {
 	num = num | 0;
-	return JSON.parse(aucgbot.readURI("http://xkcd.com/" + (num ? num + "/" : "") + "info.0.json"));
+	return JSON.parse(aucgbot.getHTTP("http://xkcd.com/" + (num ? num + "/" : "") + "info.0.json"));
 };
 
 module.exports.cmd_randxkcd = function cmd_randxkcd(e) {

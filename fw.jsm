@@ -25,7 +25,7 @@ module.exports.cmd_fw = function cmd_fw(e) {
 		return true;
 	}
 
-	var page = e.bot.readURI(this.BASE_URL + encodeURIComponent(args));
+	var page = e.bot.getHTTP(this.BASE_URL + encodeURIComponent(args));
 	if (!page) {
 		e.reply("I CAN'T ACCESS THE FUCKING WEBSITE.");
 		return true;

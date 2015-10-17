@@ -3,17 +3,18 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*jshint es5: true, esnext: true, forin: true, proto: true */
-/*global Stream: false, aucgbot: false, module.exports: false */
+/*global aucgbot: false, module: false */
 
 // PLEASE NOTE: if you edit the badwords list using the rc js command, also
 // `this.modules.badword.parseList()` otherwise it will not work
-"use strict";
-module.exports.version = "5.4 (2013-11-21)";
-module.exports.db = {}, module.exports.sfwChans = [];
-module.exports.DB_FILENAME = "badword.json";
-module.exports.spaceAfterColon = false;
 
-module.exports.parseList = function parseList() {
+(function (module) {
+module.version = "5.4.1 (2015-01-19)";
+module.db = {}, module.sfwChans = [];
+module.DB_FILENAME = "badword.json";
+module.spaceAfterColon = false;
+
+module.parseList = function parseList() {
 	var badwords = [];
 	for (var word in this.badwords) {
 		if (this.badwords.hasOwnProperty(word) && typeof this.badwords[word] === "string")
@@ -21,9 +22,9 @@ module.exports.parseList = function parseList() {
 	}
 	this.badwordList = RegExp(badwords.join("|"));
 };
-module.exports.loadDB = function loadDB() {
+module.loadDB = function loadDB() {
 	try {
-		this.db = JSON.parse(aucgbot.readURI(this.DB_FILENAME));
+		this.db = JSON.parse(aucgbot.readFile(this.DB_FILENAME));
 	} catch (ex) {}
 	/* hasOwnProperty __proto__ hack: __proto__ === null => hasOwnProperty returns false
 	 *
@@ -45,10 +46,8 @@ module.exports.loadDB = function loadDB() {
 	//if (this.db.__proto__ === Object.prototype && Object.prototype.hasOwnProperty.call({}, "__proto__"))
 		//this.db.__proto__ = null;
 };
-module.exports.saveDB = function saveDB() {
-	var file = new Stream(this.DB_FILENAME, "w");
-	file.write(JSON.stringify(this.db));
-	file.close();
+module.saveDB = function saveDB() {
+	aucgbot.writeFile(this.DB_FILENAME, JSON.stringify(this.db));
 };
 /**
  * Get a user's database entry.
@@ -58,7 +57,7 @@ module.exports.saveDB = function saveDB() {
  * @param {boolean} [noAlts] Whether to not recursively get alternate nicks.
  * @return {Object} The database entry.
  */
-module.exports.getUser = function getUser(nick, create, noAlts) {
+module.getUser = function getUser(nick, create, noAlts) {
 	const name = nick.toLowerCase();
 	var db;
 	// We shall forever marvel at the wonders of __proto__... </sarcasm>
@@ -76,7 +75,7 @@ module.exports.getUser = function getUser(nick, create, noAlts) {
 	return db;
 };
 
-module.exports.badwords = {
+module.badwords = {
 // "Word": "lowercase quoted regex",
 	"Arse": "\\barse\\b",
 	"Asian": "as(?:ia|ai)n",
@@ -164,10 +163,10 @@ module.exports.badwords = {
 	"YOLO": "\\byolo\\b|u only live once",
 	"iPhone": "iphone"
 };
-module.exports.parseList();
-module.exports.loadDB();
+module.parseList();
+module.loadDB();
 
-module.exports.onMsg = function onMsg(e) {
+module.onMsg = function onMsg(e) {
 	var dest = e.dest, msg = e.msg, nick = e.nick, conn = e.conn;
 	if (dest !== nick && this.sfwChans.indexOf(dest) !== -1)
 		dest = nick;
@@ -242,3 +241,4 @@ module.exports.onMsg = function onMsg(e) {
 	}
 	this.saveDB();
 };
+})(module.exports);

@@ -2,7 +2,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global aucgbot: false, ctof: false, calc: false, encodeUTF8: false, ftoc: false, module.exports: false, randint: false, run: false */
+/*global aucgbot: false, ctof: false, calc: false, ftoc: false, module.exports: false, randint: false, run: false */
 
 //require("./es5-sham.js");
 var math = require("mathjs");
@@ -68,7 +68,7 @@ module.exports.onUnknownMsg = function onUnknownMsg(e) {
 			e.reply(s);
 		}
 	} catch (ex) {
-		console.error("[ERROR]", ex);
+		console.error(ex);
 		if (this.prefs.error.log) {
 			e.log("CALC ERROR", nick + (dest !== nick ? " in " + dest : ""), msg, ex);
 		}
@@ -102,7 +102,7 @@ module.exports["cmd_="] = module.exports.cmd_calc = module.exports.cmd_math = fu
 			e.reply(s);
 		}
 	} catch (ex) {
-		console.error("[ERROR]", ex);
+		console.error(ex);
 		if (this.prefs.error.log) {
 			e.log("CALC ERROR", nick + (dest !== nick ? " in " + dest : ""), msg, ex);
 		}
@@ -147,10 +147,10 @@ module.exports.cmd_qe = function cmd_quadraticEqn(e) {
 		return true;
 	}
 	var pron = RegExp.$2, a = RegExp.$1, b = RegExp.$3, c = RegExp.$4, _2a, delta, sqrtDelta;
-	if ("+-".contains(a)) {
+	if ("+-".includes(a)) {
 		a += "1";
 	}
-	if ("+-".contains(b)) {
+	if ("+-".includes(b)) {
 		b += "1";
 	}
 	a = a ? +a : 1, _2a = 2*a;

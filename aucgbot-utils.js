@@ -35,11 +35,7 @@ Array.prototype.random = function random() {
 	return this[Math.floor(Math.random() * this.length)];
 };
 
-if (typeof Array.contains !== "function")
-Array.contains = function contains(a, e) {
-	return Array.indexOf(a, e) !== -1;
-};
-if (typeof Array.prototype.contains !== "function")
+if (typeof Array.prototype.includes !== "function")
 /**
  * ES6 shim: Check if an array contains an element.
  *
@@ -47,85 +43,20 @@ if (typeof Array.prototype.contains !== "function")
  * @param {*} e An element to check.
  * @return {Boolean} Whether the string contains the substring.
  */
-Array.prototype.contains = function contains(e) {
+Array.prototype.includes = function includes(e) {
 	return this.indexOf(e) !== -1;
 };
 
-if (typeof String.prototype.contains !== "function")
-/**
- * ES6 shim: Check if a string contains a substring.
- *
- * @this {String} The string to check the contents of.
- * @param {String} s The substring to check.
- * @param {Number} [pos] Where to start searching.
- * @return {Boolean} Whether the string contains the substring.
- */
-String.prototype.contains = function contains(s, pos) {
-	"use asm";
-	s = s + "";
-	pos = pos | 0;
-	var S = this + "";
-	return S.indexOf(s, pos) !== -1;
-};
-
-if (typeof String.prototype.startsWith !== "function")
-/**
- * ES6 shim: Check if a string starts with a substring.
- *
- * @this {String} The string to check the contents of.
- * @param {String} s The substring to check.
- * @param {Number} [pos] Where to start searching.
- * @return {Boolean} Whether the string starts with the substring.
- */
-String.prototype.startsWith = function startsWith(s, pos) {
-	"use asm";
-	s = s + "";
-	pos = pos | 0;
-	var S = this + "";
-	//return S.indexOf(s, pos) === pos;
-	return S.substr(pos, s.length) === s;
-};
-
-if (typeof Object.keys !== "function")
-Object.keys = function keys(o) {
-	var a = [];
-	for (var i in o) {
-		if (Object.hasOwnProperty(o, i))
-			a.push(i);
-	}
-	return a;
-};
-
-if (typeof Object.is !== "function")
-Object.is = function is(x, y) {
-	return x === y ? x !== 0 || 1 / x == 1 / y : x !== x && y !== y;
-};
-
+// Array generics
 
 if (typeof Array.slice !== "function")
-Array.slice = function (obj, start, end) {
-	var res = [];
-	for (let i in obj) {
-		if (obj.hasOwnProperty(i)) {
-			res.push(obj[i]);
-		}
-	}
-	return res.slice(start, end);
+Array.slice = function slice(arr, start, end) {
+	return Array.prototype.slice.call(arr, start, end);
 };
 
 if (typeof Array.join !== "function")
-Array.join = function (args, sep) {
-	var res = [];
-	for (let i in args) {
-		if (args.hasOwnProperty(i)) {
-			res.push(args[i]);
-		}
-	}
-	return res.join(sep);
-};
-
-global.encodeUTF8 = function(a) {
-	return a;
+Array.join = function join(arr, sep) {
+	return Array.prototype.join.call(arr, sep);
 };
 
 global.encodeB64 = function(a) {

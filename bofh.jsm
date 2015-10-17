@@ -2,14 +2,15 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global module.exports: false */
+/*global module: false */
 
-module.exports.version = 0.3;
+(function (module) {
+module.version = 0.3;
 
-module.exports.cmd_bofh = function cmd_bofh(e) {
+module.cmd_bofh = function cmd_bofh(e) {
 	var excuses;
 	try {
-		excuses = e.bot.readURI("excuses.txt").split("\n");
+		excuses = e.bot.readFile("excuses.txt").split("\n");
 	} catch (ex) {
 		excuses = [
 			"out of memory",
@@ -22,6 +23,7 @@ module.exports.cmd_bofh = function cmd_bofh(e) {
 			"operation failed because: there is no message for this error (#1014)"
 		];
 	}
-	e.conn.reply(e.dest, e.nick, excuses.random());
+	e.reply(excuses.random());
 	return true;
 };
+})(module.exports);
