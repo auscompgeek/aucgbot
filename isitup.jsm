@@ -4,8 +4,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*global module.exports: false */
 
-module.exports.version = 0.3;
-module.exports.BASE_URL = "http://isitup.org/{0}.json";
+module.exports.version = 0.4;
+module.exports.BASE_URL = "https://isitup.org/{0}.json";
 
 module.exports.cmd_isitup = function cmd_isitup(e) {
 	var domain = e.args.replace(/https?:\/\/|\/.*/g, "");
@@ -15,7 +15,7 @@ module.exports.cmd_isitup = function cmd_isitup(e) {
 	}
 
 	// assume a .com domain if there's no .
-	if (!domain.contains(".")) {
+	if (!domain.includes(".")) {
 		domain += ".com";
 	}
 
