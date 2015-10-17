@@ -2,7 +2,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/* jshint esnext: true, node: true*/
+/* jshint -W117, esnext: true, node: true, eqnull: true, expr: true */
 /* globals: aucgbot */
 
 "use strict";
@@ -61,6 +61,7 @@ aucgbot.source = "https://github.com/auscompgeek/aucgbot";
 aucgbot.useragent = "aucgbot/{0} (+{1}; {2}; Node.js {3})".format(aucgbot.version, aucgbot.source, process.platform, process.version);
 // JSDB shims
 global.decodeHTML = entities.decode;
+
 /**
  * Start the bot. Each argument is to be passed as arguments to {@link aucgbot#connect}.
  *
@@ -74,7 +75,6 @@ aucgbot.start = function startBot() {
 	this.started = Date.now();
 };
 
-
 aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasluser, saslpass) {
 	host = host || "127.0.0.1";
 	port = parseInt(port) || 6667;
@@ -82,6 +82,7 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 
 	if (this.conns.hasOwnProperty(addr)) {
 		console.log("Stubbornly refusing to connect again to", addr);
+		return;
 	}
 
 	conn = net.connect(port, host, function() {
@@ -89,61 +90,45 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 	});
 	conn.nick = nick;
 
-	// forkbomb's cancer follows:
-	conn.writeln = function writeln() {
-		var data = Array.join(arguments, "");
-		if (data.length > 1022) {
-			data = data.slice(0, 1022);
-		}
-		return this.write(data + "\r\n");
-	};
-
-	conn.send = function send(/* ...data */) {
-		if (!arguments.length)
-			throw new TypeError("Socket.prototype.send requires at least 1 argument");
-		var data = (Array.join(arguments, " ").trim());
-		if (data)
-			return this.writeln(data);
-	};
-
-	conn.msg = function msg(dest) {
-		if (arguments.length < 2)
-			throw new TypeError("conn.msg requires at least 2 arguments");
-		let m = Array.slice(arguments, 1).join(" ").trim().replace(/\s+/g, " ");
+	// We don't feel like sticking these on net.Socket.prototype.
+	conn.msg = function msg(dest, ...m) {
+		if (!m.length)
+			throw new TypeError("conn.msg requires a message to send");
+		m = m.join(" ").trim().replace(/\s+/g, " ");
 		if (m)
-			return this.writeln("PRIVMSG ", (dest + " :" + m));
+			return this.writeln("PRIVMSG ", dest, " :", m);
 	};
-	conn.nmsg = function nmsg(dest) {
+	conn.nmsg = function nmsg(dest, ...msg) {
 		if (arguments.length < 2)
 			throw new TypeError("conn.nmsg requires at least 2 arguments");
-		var msg = Array.slice(arguments, 1).join(" ").trim().replace(/\s+/g, " ");
+		msg = msg.join(" ").trim().replace(/\s+/g, " ");
 		if (msg)
-			return this.writeln(this.chantypes.includes(dest[0]) ? "PRIVMSG " : "NOTICE ", (dest + " :" + msg));
+			return this.writeln(this.chantypes.includes(dest[0]) ? "PRIVMSG " : "NOTICE ", dest, " :", msg);
 	};
-	conn.notice = function notice(dest) {
+	conn.notice = function notice(dest, ...msg) {
 		if (arguments.length < 2)
 			throw new TypeError("conn.notice requires at least 2 arguments");
-		var msg = Array.slice(arguments, 1).join(" ").trim().replace(/\s+/g, " ");
+		msg = msg.join(" ").trim().replace(/\s+/g, " ");
 		if (msg)
-			return this.writeln("NOTICE ", (dest + " :" + msg));
+			return this.writeln("NOTICE ", dest, " :", msg);
 	};
-	conn.reply = function reply(dest, nick) {
+	conn.reply = function reply(dest, nick, ...msg) {
 		if (arguments.length < 3)
 			throw new TypeError("Socket.prototype.reply requires at least 3 arguments");
-		var msg = Array.slice(arguments, 2).join(" ").trim().replace(/\s+/g, " ");
+		msg = msg.join(" ").trim().replace(/\s+/g, " ");
 		if (dest !== nick)
 			msg = nick + ": " + msg;
 		if (msg)
-			return this.writeln("PRIVMSG ", (dest + " :" + msg));
+			return this.writeln("PRIVMSG ", dest, " :", msg);
 	};
-	conn.nreply = function nreply(dest, nick) {
+	conn.nreply = function nreply(dest, nick, ...msg) {
 		if (arguments.length < 3)
 			throw new TypeError("Socket.prototype.nreply requires at least 3 arguments");
-		var msg = Array.slice(arguments, 2).join(" ").trim().replace(/\s+/g, " ");
+		msg = msg.join(" ").trim().replace(/\s+/g, " ");
 		if (dest !== nick)
 			msg = nick + ": " + msg;
 		if (msg)
-			return this.writeln(this.chantypes.includes(dest[0]) ? "PRIVMSG " : "NOTICE ", (dest + " :" + msg));
+			return this.writeln(this.chantypes.includes(dest[0]) ? "PRIVMSG " : "NOTICE ", dest, " :", msg);
 	};
 
 	conn.chantypes = "#&+!";
@@ -205,7 +190,7 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 				sasluser = saslpass = null;
 			} else if (/^:\S+ CAP \S+ ACK :sasl/.test(ln)) {
 				conn.send("AUTHENTICATE PLAIN");
-			} else if (/^:\S+ 90([345]) ./.test(ln)) {/^:\S+ 90([345]) ./.test(ln)
+			} else if (/^:\S+ 90([345]) ./.test(ln)) {
 				conn.send("CAP END");
 				let obj = /^:\S+ 90([345]) ./.exec(ln)[1];
 				if (obj !== "3") {
@@ -283,6 +268,21 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 	return conn;
 };
 
+net.Socket.prototype.writeln = function writeln(...data) {
+	data = data.join("");
+	if (data.length > 1022) {
+		data = data.slice(0, 1022);
+	}
+	return this.write(data + "\r\n");
+};
+net.Socket.prototype.send = function send(...data) {
+	if (!data.length)
+		throw new TypeError("Socket.prototype.send requires at least 1 argument");
+	data = data.join(" ").trim();
+	if (data)
+		return this.writeln(data);
+};
+
 /** @constructor */
 aucgbot.HTTPError = function HTTPError(stream, content) {
 	this.message = "HTTP {0} {1}".format(stream.status, stream.statusText);
@@ -305,39 +305,39 @@ aucgbot.Message = function Message(conn, msgary) {
 };
 aucgbot.Message.prototype = {
 	bot: aucgbot,
-	send: function send() {
-		var args = Array.from(arguments), conn = this.conn;
+	send: function send(...args) {
+		var conn = this.conn;
 		args.unshift(this.dest);
 		return conn.msg.apply(conn, args);
 	},
-	nmsg: function nmsg() {
-		var args = Array.from(arguments), conn = this.conn;
+	nmsg: function nmsg(...args) {
+		var conn = this.conn;
 		args.unshift(this.dest);
 		return conn.nmsg.apply(conn, args);
 	},
-	notice: function notice() {
-		var args = Array.from(arguments), conn = this.conn;
+	notice: function notice(...args) {
+		var conn = this.conn;
 		args.unshift(this.nick);
 		return conn.notice.apply(conn, args);
 	},
-	reply: function reply() {
+	reply: function reply(...args) {
 		// don't use Array.concat, it doesn't work with the arguments object
-		var args = Array.from(arguments), conn = this.conn;
+		var conn = this.conn;
 		args.unshift(this.nick), args.unshift(this.dest);
 		return conn.reply.apply(conn, args);
 	},
-	nreply: function nreply() {
-		var args = Array.from(arguments), conn = this.conn;
+	nreply: function nreply(...args) {
+		var conn = this.conn;
 		args.unshift(this.nick), args.unshift(this.dest);
 		return conn.nreply.apply(conn, args);
 	},
-	log: function _log() {
-		var args = Array.from(arguments), bot = this.bot;
+	log: function _log(...args) {
+		var bot = this.bot;
 		args.unshift(this.conn.addr);
 		bot.log.apply(bot, args);
 	},
-	logError: function logError() {
-		var args = Array.from(arguments), bot = this.bot;
+	logError: function logError(...args) {
+		var bot = this.bot;
 		args.unshift(this.conn.addr);
 		bot.logError.apply(bot, args);
 	},
@@ -352,12 +352,12 @@ aucgbot.Message.prototype = {
 aucgbot.log = function log() {
 	// TODO
 	console.log.apply(console, arguments);
-}
+};
 
 aucgbot.logError = function logError() {
 	// TODO
 	console.error.apply(console, arguments);
-}
+};
 
 /**
  * Parse a PRIVMSG. Modules can listen for events through the onMsg method, fired before CTCP and
@@ -577,7 +577,7 @@ aucgbot.parseCmd = function parseCmd(e, cmdMsg) {
 	case "help":
 		if (args) {
 			var c = args, k = "cmd_" + c;
-			for (var m in this.modules) {
+			for (let m in this.modules) {
 				if (this.modules.hasOwnProperty(m)) {
 					var module = this.modules[m];
 					if (module.hasOwnProperty(k)) {
@@ -592,7 +592,7 @@ aucgbot.parseCmd = function parseCmd(e, cmdMsg) {
 			}
 			break;
 		}
-		/* fallthrough */
+		/* falls through */
 	case "listcmds": case "cmdlist":
 		var s = [];
 		function listModCmds(mod) {
@@ -696,8 +696,6 @@ aucgbot.loadModule = function loadModule(id) {
  * @return {boolean} Whether to stop processing the event.
  */
 aucgbot.modMethod = function modMethod(id, args) {
-	if (args != null && typeof args.length !== "number")
-		args = Array.slice(arguments, 1);
 	for (let m in this.modules) {
 		if (this.modules.hasOwnProperty(m)) {
 			let module = this.modules[m];
@@ -806,21 +804,13 @@ aucgbot.remoteControl = function rcBot(e) {
 	case "die":
 		conn.send("QUIT :" + nick + ":", args);
 		break;
-	case "join":
-		var chans = argv.shift().split(",");
-		for (var i = chans.length - 1; i >= 0; i--) {
+	case "join": case "leave":
+		let chans = argv.shift().split(",");
+		for (let i = chans.length - 1; i >= 0; i--) {
 			if (!conn.chantypes.includes(chans[i][0]))
 				chans[i] = "#" + chans[i];
 		}
-		conn.send("JOIN", chans.join(","), argv.join(" "));
-		break;
-	case "leave":
-		var chans = argv.shift().split(",");
-		for (var i = chans.length - 1; i >= 0; i--) {
-			if (!conn.chantypes.includes(chans[i][0]))
-				chans[i] = "#" + chans[i];
-		}
-		conn.send("PART", chans.join(","), ":" + nick + ":", argv.join(" "));
+		conn.send(cmd === "join" ? "JOIN" : "PART", chans.join(","), ":" + argv.join(" "));
 		break;
 	case "kick":
 		var chan = argv.shift(), user = argv.shift();
@@ -847,7 +837,11 @@ aucgbot.remoteControl = function rcBot(e) {
 		break;
 	case "eval": case "js": // Dangerous!
 		var res;
-		try { res = eval(args); } catch (ex) { res = "exception: " + ex; }
+		try {
+			res = eval(args); // jshint ignore: line
+		} catch (ex) {
+			res = "exception: " + ex;
+		}
 		if (typeof res === "function")
 			res = "function " + res.name;
 		if (res != null)
