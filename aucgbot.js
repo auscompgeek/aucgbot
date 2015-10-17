@@ -80,8 +80,9 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 	port = parseInt(port) || 6667;
 	var channels = ["#bots"], addr = host + ":" + port, conn, ln;
 
-	if (addr in this.conns) {
+	if (this.conns.hasOwnProperty(addr)) {
 		console.log("Stubbornly refusing to connect again to", addr);
+	}
 
 	conn = net.connect(port, host, function() {
 		console.log("Connected to " + addr);
@@ -158,7 +159,7 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 	}
 
 	conn.send("NICK", nick || "aucgbot");
-	conn.send("USER", ident || "aucgbot", "8 * :\x033\x0fauscompgeek's JS bot");
+	conn.send("USER", ident || "aucgbot", "8 * :\x033\x0fauscompgeek's JS bot - Node.js version");
 	if (chans) {
 		if (chans instanceof Array) {
 			channels = chans;
@@ -476,8 +477,9 @@ aucgbot.checkFlood = function checkFlood(e) {
 		return false;
 	var now = Date.now(), conn = e.conn, dest = e.dest, nick = e.nick, host = e.host, relay = e.relay, msg = e.msg, diff = this.prefs.flood.differentiate, lastFloodTime, floodLines, inFlood;
 	if (diff) {
-		if (!(nick in conn.flood_lines)) conn.flood_lines[nick] = 0;
-		if (!(nick in conn.flood_lastTime)) conn.flood_lastTime[nick] = 0;
+		if (!Object.prototype.hasOwnProperty.call(conn.flood_lines, nick)) {
+			conn.flood_lines[nick] = conn.flood_lastTime[nick] = 0;
+		}
 		floodLines = conn.flood_lines[nick];
 		lastFloodTime = conn.flood_lastTime[nick];
 		inFlood = conn.flood_in[nick];
@@ -593,11 +595,21 @@ aucgbot.parseCmd = function parseCmd(e, cmdMsg) {
 		/* fallthrough */
 	case "listcmds": case "cmdlist":
 		var s = [];
-		for (var m in this.modules) {
-			if (this.modules.hasOwnProperty(m)) {
-				for (var p in this.modules[m]) {
-					if (this.modules[m].hasOwnProperty(p) && p.slice(0, 4) === "cmd_")
-						s.push(p.slice(4));
+		function listModCmds(mod) {
+			for (let p in mod) {
+				if (mod.hasOwnProperty(p) && p.startsWith("cmd_")) {
+					s.push(p.slice(4));
+				}
+			}
+		}
+		if (args) {
+			if (this.modules.hasOwnProperty(args)) {
+				listModCmds(this.modules[args]);
+			}
+		} else {
+			for (let m in this.modules) {
+				if (this.modules.hasOwnProperty(m)) {
+					listModCmds(this.modules[m]);
 				}
 			}
 		}
@@ -861,7 +873,6 @@ aucgbot.remoteControl = function rcBot(e) {
 			require('./aucgbot');
 		} catch (ex) {
 			e.reply(ex);
-			console.error(ex);
 			console.error(ex.stack);
 		}
 		break;
