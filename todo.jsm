@@ -2,9 +2,10 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global module.exports: false */
+/* jshint esnext: true, node: true */
+
 var fs = require("fs");
-module.exports.version = 0.91;
+module.exports.version = 0.92;
 module.exports.users = {};
 module.exports.DB_FILENAME = "todo.json";
 
@@ -30,14 +31,10 @@ module.exports.cmd_todo = function cmd_todo(e) {
 	if (e.args) {
 		list.push(e.args);
 		this.saveUsers();
-		// e.notice("Ok.");
 	} else if (!list.length) {
 		e.reply("Nothing on your todo list.");
 	} else {
-		var i = 0;
-		e.reply(list.map(function addIndex(todo) {
-			return "[{0}] {1}".format(i++, todo);
-		}).join(" "));
+		e.reply(list.map((todo, index) => "[{0}] {1}".format(index, todo)).join(" "));
 	}
 
 	return true;
@@ -55,67 +52,48 @@ module.exports.cmd_tododel = function cmd_tododel(e) {
 	if (/^[0-9,]+$/.test(e.args)) {
 		var indexes = e.args.split(",").map(Number);
 
-		var notdeleted = 0;
 		for (var i = 0; i < indexes.length; i++) {
-			if (indexes[i] >= list.length)
-				notdeleted++;
-			else
-				list.splice(indexes[i], 1);
+			if (indexes[i] >= list.length) {
+				e.reply("Can't delete {0}, you only have {1} todo{2} left.".format(indexes[i], list.length, list.length == 1 ? "" : "s"));
+				return true;
+			}
+			list.splice(indexes[i], 1);
 		}
 
-		var deleted = indexes.length - notdeleted;
-		if (deleted != 0) {
-			this.saveUsers();
-			// e.notice("Ok, deleted {0} todo{1}.".format(deleted, deleted == 1 ? "" : "s"));
-		}
-		if (notdeleted > 0)
-			e.reply("You only have {0} todo{1}.".format(list.length, list.length == 1 ? "" : "s"));
+		this.saveUsers();
 	} else {
-		var filteredlist = list.filter(function startsWith(s) {
-			return s.slice(0, e.args.length) == e.args;
-		});
+		var filteredList = list.map((s, i) => ({ elem: s, index: i })).filter(todo => todo.elem.startsWith(e.args));
 
-		switch (filteredlist.length) {
+		switch (filteredList.length) {
 			case 0:
-				e.reply("No todos starting with \"{0}\".".format(e.args));
+				e.reply('No todos starting with "{0}".'.format(e.args));
 				break;
 			case 1:
-				list.splice(list.indexOf(filteredlist[0]), 1);
+				list.splice(filteredList[0].index, 1);
 				this.saveUsers();
-				// e.notice("Ok, deleted \"{0}\".".format(filteredlist[0]));
 				break;
 			default:
-				var formattedlist = [], currentindex = 0;
-				// O(list.length) way of finding these. No indexOf found here.
-				for (var i = 0; i < list.length; i++) {
-					if (list[i] == filteredlist[currentindex]) {
-						formattedlist[currentindex] = "[{0}] {1}".format(i, filteredlist[currentindex]);
-						currentindex++;
-					}
-				}
-				e.reply("Did you mean: {0}".format(formattedlist.join("; ")));
+				e.reply("Did you mean: {0}".format(filteredList.map(todo => "[{0}] {1}".format(todo.index, todo.elem).join(" "))));
 		}
 	}
 	return true;
 };
-module.exports.cmd_tododel.help = "Delete an item from your todo list. Usage: tododel [<index> | <startswith>]";
+module.exports.cmd_tododel.help = "Delete an item from your todo list. Usage: tododel <comma separated indices | beginning of todo>";
 
 module.exports.cmd_todoins = function cmd_todoins(e) {
-	var regex = /^([0-9]+) (.+)$/;
-	if (!e.args || ! regex.test(e.args)) {
+	var match = /^([0-9]+) (.+)$/.exec(e.args);
+	if (!match) {
 		e.reply(this.cmd_todoins.help);
 		return true;
 	}
-	var match = regex.exec(e.args);
 	var list = this.getList(e.nick);
-	var index = Number(match[1]), todo = match[2];
+	var index = match[1] >>> 0, todo = match[2];
 
-	if (index >= list.length)
+	if (index >= list.length) {
 		e.reply("You only have {0} todo{1}.".format(list.length, list.length == 1 ? "" : "s"));
-	else {
+	} else {
 		list.splice(index, 0, todo);
 		this.saveUsers();
-		// e.notice("Ok.");
 	}
 	return true;
 }
