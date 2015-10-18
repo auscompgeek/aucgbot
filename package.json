@@ -1,6 +1,6 @@
 {
   "name": "aucgbot",
-  "version": "6.00.0",
+  "version": "6.0.2",
   "license": "MPL-2.0",
   "dependencies": {
     "html-entities": "^1.1.1",
@@ -20,5 +20,11 @@
     "url": "https://github.com/auscompgeek/aucgbot"
   },
   "authors": "the aucgbot contributors (auscompgeek et. al.)",
+  "jshintConfig": {
+	  "esnext": true,
+	  "eqnull": true,
+	  "node": true,
+	  "predef": ["aucgbot"]
+  },
   "devDependencies": {}
 }
