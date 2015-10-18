@@ -858,7 +858,8 @@ aucgbot.remoteControl = function rcBot(e) {
 			for (args = args.split(","); args.length;)
 				this.loadModule(args.shift());
 		} catch (ex) {
-			e.reply(ex.fileName + ":" + ex.lineNumber, ex);
+			e.reply(ex);
+			console.error(ex.stack);
 		}
 		break;
 	case "reload":
