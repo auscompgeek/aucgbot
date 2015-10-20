@@ -2,8 +2,8 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/* jshint -W117, esnext: true, node: true, eqnull: true, expr: true */
-/* globals: aucgbot */
+/* jshint expr: true */
+/* globals encodeB64 */
 
 "use strict";
 
@@ -37,9 +37,6 @@ global.aucgbot = global.aucgbot || {
 		autoAcceptInvite: false, // automatically join on invite
 		"relay.check": true, // toggle relay bot checking
 		"relay.bots": ["iRelayer", "janus", "Mingbeast", "irfail", "rbot"],
-		"keyboard.dieOnInput": false, // overrides keyboard.sendInput and keyboard.evalInput
-		/** @deprecated */ "keyboard.sendInput": false,
-		"keyboard.evalInput": false,
 		printMessages: true,
 		"kick.rejoin": false,
 		"kick.log": true, // on bot kicked
