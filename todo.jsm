@@ -73,7 +73,7 @@ module.exports.cmd_tododel = function cmd_tododel(e) {
 				this.saveUsers();
 				break;
 			default:
-				e.reply("Did you mean: {0}".format(filteredList.map(todo => "[{0}] {1}".format(todo.index, todo.elem).join(" "))));
+				e.reply("Did you mean: {0}".format(filteredList.map(todo => "[{0}] {1}".format(todo.index, todo.elem)).join(" ")));
 		}
 	}
 	return true;
