@@ -3,10 +3,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /** @fileoverview aucgbot module: Transform text. */
-/*jshint es5: true, esnext: true, nonstandard: true */
-/*global decodeB64: false, decodeHTML: false, decodeURL: false, encodeB64: false, encodeHTML: false, encodeURL: false, module.exports: false */
+/*jshint nonstandard: true */
+/*global decodeB64, decodeHTML, decodeURL, encodeB64, encodeHTML, encodeURL, randint */
+
 "use strict";
-module.exports.version = 2.91;
+module.exports.version = 2.92;
 module.exports.UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 module.exports.LOWER = "abcdefghijklmnopqrstuvwxyz";
 module.exports.ALPHABET = module.exports.UPPER + module.exports.LOWER;
@@ -197,13 +198,8 @@ module.exports.cmd_rainbow = function cmd_rainbow(e) {
 };
 module.exports.cmd_rainbow.help = "Rainbows, rainbows everywhere! Usage: rainbow <text>";
 
-// from https://developer.mozilla.org/en/A_re-introduction_to_JavaScript
-// henceforth licensed in whatever license the MDN is (probably MPL)
 String.reverse = function reverse(str) {
-	var s = "";
-	for (var i = str.length - 1; i >= 0; i--)
-		s += str[i];
-	return s;
+	return Array.from(str).reverse().join("");
 };
 String.prototype.reverse = function reverse() { return String.reverse(this); };
 
@@ -211,25 +207,12 @@ module.exports.REVUPPER = module.exports.UPPER.reverse();
 module.exports.REVLOWER = module.exports.REVUPPER.toLowerCase();
 
 String.zfill = function zfill(str, l) {
-	while (str.length < l)
-		str = "0" + str;
+	var a = Array(l - str.length + 1);
+	a[l - str.length] = str;
+	str = Array(l - str.length + 1).join("0");
 	return str;
 };
 String.prototype.zfill = function zfill(l) { return String.zfill(this, l); };
-
-// shim for ES5: ECMA-262 6th Edition, 15.5.3.3
-String.fromCodePoint = function fromCodePoint() {
-	var points = [];
-	Array.forEach(arguments, function (offset) {
-		if (offset < 0x10000)
-			points.push(offset);
-		else {
-			offset -= 0x10000;
-			points.push(0xD800 | (offset >> 10), 0xDC00 | (offset & 0x3FF));
-		}
-	});
-	return String.fromCharCode.apply(null, points);
-};
 
 /**
  * Translates text in a similar fashion to the UNIX tr utility.
