@@ -3,14 +3,16 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*jshint es5: true, esnext: true, forin: true, proto: true */
-/*global aucgbot: false, module: false */
 
 // PLEASE NOTE: if you edit the badwords list using the rc js command, also
 // `this.modules.badword.parseList()` otherwise it will not work
 
 (function (module) {
-module.version = "5.4.1 (2015-01-19)";
-module.db = {}, module.sfwChans = [];
+"use strict";
+
+module.version = "5.5 (2015-10-23)";
+module.db = {};
+module.sfwChans = [];
 module.DB_FILENAME = "badword.json";
 module.spaceAfterColon = false;
 
@@ -166,73 +168,78 @@ module.badwords = {
 module.parseList();
 module.loadDB();
 
-module.onMsg = function onMsg(e) {
-	var dest = e.dest, msg = e.msg, nick = e.nick, conn = e.conn;
+module.cmd_badwords = function cmd_badwords(e) {
+	var dest = e.dest, nick = e.nick, conn = e.conn;
 	if (dest !== nick && this.sfwChans.indexOf(dest) !== -1)
 		dest = nick;
-	var db, word, words;
-	if (/^!badwords?\b/.test(msg)) {
-		msg = msg.split(" "), msg.shift();
-		var name = msg.shift() || nick;
-		name = name.split("|")[0], db = this.getUser(name), word = msg.shift(), msg = msg.join(" ");
-		if (!db && !(word && msg && aucgbot.isSU(nick, ident, host)))
-			conn.msg(dest, name, "hasn't said any bad words...yet...");
-		else if (word) {
-			if (word === "nick") {
-				if (msg && aucgbot.isSU(nick, ident, host, dest, relay)) {
-					if (!db)
-						db = this.getUser(name, true);
-					db.nick = msg;
-				} else {
-					if (!db.nick)
-						db = this.getUser(name, false, true);
-					conn.msg(dest, "Umm, the nick in the database is", db.nick, "but why are you asking?");
-				}
-			} else if (word.toLowerCase() === "total") {
-				var sum = 0;
-				for (word in db) {
-					if (db.hasOwnProperty(word)) {
-						var val = db[word];
-						if (word === "nick")
-							name = val;
-						else if (typeof val === "number")
-							sum += val;
-					}
-				}
-				conn.msg(dest, name, "said a total of", sum, "bad words!");
-			// Is it a valid badword? Take pity if the user didn't capitalise.
-			} else if ((this.badwords.hasOwnProperty(word) || this.badwords.hasOwnProperty(word = word[0].toUpperCase() + word.slice(1))) && typeof this.badwords[word] === "string") {
-				if (msg && aucgbot.isSU(e)) {
-					if (!db)
-						db = this.getUser(name, true);
-					if (!db[word])
-						db[word] = 0;
-					db[word] += parseInt(msg); // missing radix intended
-					this.saveDB();
-				} else {
-					conn.msg(dest, db.nick || name, "said '" + word + "'", db[word] || 0, "times!");
-				}
+	var msg = e.args.split(" ");
+	var name = msg.shift() || nick;
+	name = name.split("|")[0];
+	var db = this.getUser(name);
+	var word = msg.shift();
+	msg = msg.join(" ");
+
+	if (!db && !(word && msg && e.isSU())) {
+		conn.msg(dest, name, "hasn't said any bad words...yet...");
+	} else if (word) {
+		if (word === "nick") {
+			if (msg && e.isSU()) {
+				if (!db)
+					db = this.getUser(name, true);
+				db.nick = msg;
+			} else {
+				if (!db.nick)
+					db = this.getUser(name, false, true);
+				conn.msg(dest, "Umm, the nick in the database is", db.nick || ":", "but why are you asking?");
 			}
-		} else {
-			words = [];
+		} else if (word.toLowerCase() === "total") {
+			var sum = 0;
 			for (word in db) {
 				if (db.hasOwnProperty(word)) {
-					var val = db[word];
+					let val = db[word];
 					if (word === "nick")
 						name = val;
 					else if (typeof val === "number")
-						words.push(word + (this.spaceAfterColon ? ": " : ":") + val);
+						sum += val;
 				}
 			}
-			conn.reply(dest, name, words.join(", "));
+			conn.msg(dest, name, "said a total of", sum, "bad words!");
+		// Is it a valid badword? Take pity if the user didn't capitalise.
+		} else if ((this.badwords.hasOwnProperty(word) || this.badwords.hasOwnProperty(word = word[0].toUpperCase() + word.slice(1))) && typeof this.badwords[word] === "string") {
+			if (msg && e.isSU()) {
+				if (!db)
+					db = this.getUser(name, true);
+				if (!db[word])
+					db[word] = 0;
+				db[word] += parseInt(msg); // missing radix intended
+				this.saveDB();
+			} else {
+				conn.msg(dest, `${db.nick || name} said '${word}' ${db[word] || 0} times!`);
+			}
 		}
-		return true;
+	} else {
+		let words = [];
+		for (word in db) {
+			if (db.hasOwnProperty(word)) {
+				let val = db[word];
+				if (word === "nick")
+					name = val;
+				else if (typeof val === "number")
+					words.push(word + (this.spaceAfterColon ? ": " : ":") + val);
+			}
+		}
+		conn.reply(dest, name, words.join(", "));
 	}
-	msg = msg.toLowerCase();
+	return true;
+};
+
+module.onUnknownMsg = function onUnknownMsg(e) {
+	var msg = e.msg.toLowerCase(), nick = e.nick;
 	if (!this.badwordList.test(msg))
 		return;
-	db = this.getUser(nick.split("|")[0], true);
-	for (word in this.badwords) {
+	var db = this.getUser(nick.split("|")[0], true);
+	for (let word in this.badwords) {
+		let words;
 		if (this.badwords.hasOwnProperty(word) && typeof this.badwords[word] === "string" && (words = msg.match(this.badwords[word], "g"))) {
 			if (!db[word])
 				db[word] = 0;
