@@ -62,7 +62,7 @@ module.exports.cmd_tododel = function cmd_tododel(e) {
 
 		this.saveUsers();
 	} else {
-		var filteredList = list.map((s, i) => ({ elem: s, index: i })).filter(todo => todo.elem.startsWith(e.args));
+		var filteredList = list.map((s, i) => ({ elem: s, index: i })).filter(todo => todo.elem.toLowerCase().startsWith(e.args.toLowerCase()));
 
 		switch (filteredList.length) {
 			case 0:
