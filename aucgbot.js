@@ -53,8 +53,8 @@ global.aucgbot = global.aucgbot || {
 	conns: {}
 };
 
-aucgbot.version = "6.0.2 (2015-10)";
-aucgbot.source = "https://github.com/auscompgeek/aucgbot";
+aucgbot.version = "6.0.3 (2015-12)";
+aucgbot.source = "https://github.com/auscompgeek/aucgbot/tree/forkbomb-nodejs";
 aucgbot.useragent = "aucgbot/{0} (+{1}; {2}; Node.js {3})".format(aucgbot.version, aucgbot.source, process.platform, process.version);
 // JSDB shims
 global.decodeHTML = entities.decode;
@@ -96,22 +96,22 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 			return this.writeln("PRIVMSG ", dest, " :", m);
 	};
 	conn.nmsg = function nmsg(dest, ...msg) {
-		if (arguments.length < 2)
+		if (!msg.length)
 			throw new TypeError("conn.nmsg requires at least 2 arguments");
 		msg = msg.join(" ").trim().replace(/\s+/g, " ");
 		if (msg)
 			return this.writeln(this.chantypes.includes(dest[0]) ? "PRIVMSG " : "NOTICE ", dest, " :", msg);
 	};
 	conn.notice = function notice(dest, ...msg) {
-		if (arguments.length < 2)
+		if (!msg.length)
 			throw new TypeError("conn.notice requires at least 2 arguments");
 		msg = msg.join(" ").trim().replace(/\s+/g, " ");
 		if (msg)
 			return this.writeln("NOTICE ", dest, " :", msg);
 	};
 	conn.reply = function reply(dest, nick, ...msg) {
-		if (arguments.length < 3)
-			throw new TypeError("Socket.prototype.reply requires at least 3 arguments");
+		if (!msg.length)
+			throw new TypeError("conn.reply requires at least 3 arguments");
 		msg = msg.join(" ").trim().replace(/\s+/g, " ");
 		if (dest !== nick)
 			msg = nick + ": " + msg;
@@ -119,8 +119,8 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 			return this.writeln("PRIVMSG ", dest, " :", msg);
 	};
 	conn.nreply = function nreply(dest, nick, ...msg) {
-		if (arguments.length < 3)
-			throw new TypeError("Socket.prototype.nreply requires at least 3 arguments");
+		if (!msg.length)
+			throw new TypeError("conn.nreply requires at least 3 arguments");
 		msg = msg.join(" ").trim().replace(/\s+/g, " ");
 		if (dest !== nick)
 			msg = nick + ": " + msg;
@@ -244,7 +244,7 @@ aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasl
 					if (aucgbot.prefs["kick.rejoin"])
 						conn.send("JOIN", RegExp.$2);
 					if (aucgbot.prefs["kick.log"])
-						aucgbot.log(conn, "KICK", RegExp.$1, RegExp.$2, RegExp.$4);
+						aucgbot.log(conn.addr, "KICK", RegExp.$1, RegExp.$2, RegExp.$4);
 				}
 			}
 		}
@@ -659,7 +659,7 @@ aucgbot.getHTTP = function getHTTP(uri, modname, modver, headers) {
 	return res.data.toString();
 };
 
-aucgbot.readFile = fs.readFileSync;
+aucgbot.readFile = file => fs.readFileSync(file, 'utf8');
 aucgbot.writeFile = fs.writeFileSync;
 
 aucgbot.getJSON = function getJSON() {
