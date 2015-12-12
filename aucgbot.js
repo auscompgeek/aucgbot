@@ -8,6 +8,7 @@
 "use strict";
 
 var net = require("net"),
+	tls = require("tls"),
 	url = require("url"),
 	util = require("util"),
 	fs = require("fs"),
@@ -73,17 +74,20 @@ aucgbot.start = function startBot() {
 	this.started = Date.now();
 };
 
-aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasluser, saslpass) {
+aucgbot.connect = function connectBot(host, port, nick, ident, pass, chans, sasluser, saslpass, ssl) {
 	host = host || "127.0.0.1";
-	port = parseInt(port) || 6667;
-	var channels = ["#bots"], addr = host + ":" + port, conn, ln;
+
+	if (typeof port === "string" && port[0] === "+")
+		ssl = true;
+	port = parseInt(port) || (ssl ? 6697 : 6667);
+	var channels = ["#bots"], addr = host + (ssl ? ":+" : ":") + port, conn, ln;
 
 	if (this.conns.hasOwnProperty(addr)) {
 		console.log("Stubbornly refusing to connect again to", addr);
 		return;
 	}
 
-	conn = net.connect(port, host, function() {
+	conn = (ssl ? tls : net).connect(port, host, function() {
 		console.log("Connected to " + addr);
 	});
 	conn.nick = nick;
