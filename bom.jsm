@@ -19,7 +19,7 @@ bom.idToFwoJsonUrl = function idToFwoJsonUrl(id) {
 };
 
 bom.idToMinJsonUrl = function idToMinJsonUrl(id) {
-	return String.format("http://vovo.id.au/scripts/bommin.php?id={0}&wmo={1}", id.split("."));
+	return "http://vovo.id.au/scripts/bommin.php?id={0.0}&wmo={0.1}".format(id.split("."));
 };
 
 bom.fullNameToName = function fullNameToName(name) {
@@ -60,7 +60,9 @@ bom.cmd_bom = function cmd_bom(e) {
 	var data;
 	try {
 		data = e.bot.getJSON(this.idToMinJsonUrl(stationId), "bom", this.version);
-	} catch (ex) {}
+	} catch (ex) {
+		console.error(ex);
+	}
 
 	if (!data) {
 		e.reply("BoM returned no data.");
