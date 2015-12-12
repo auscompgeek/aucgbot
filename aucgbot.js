@@ -45,6 +45,7 @@ global.aucgbot = global.aucgbot || {
 		"nokick.hosts": /botters|staff|dev|math|javascript/,
 		bots: ["PaperBag", "root"], // bot nicks that don't match the bot regex
 		suDests: [],
+		suHostmasks: [],
 		// regex for allowed hosts to use rc command
 		suHosts: /\/(?:auscompgeek|forkbomb|gnustomp)$/
 	},
@@ -299,6 +300,7 @@ aucgbot.Message = function Message(conn, msgary) {
 	var ln = msgary[0], nick = msgary[1], ident = msgary[2], host = msgary[3], dest = msgary[4], msg = msgary[5];
 	this.msg = msg, this.nick = nick, this.ident = ident, this.host = host, this.conn = conn, this.ln = ln, this.sentTo = dest;
 	this.dest = dest === conn.nick ? nick : dest;
+	this.prefix = `${nick}!${ident}@${host}`;
 };
 aucgbot.Message.prototype = {
 	bot: aucgbot,
@@ -900,6 +902,9 @@ aucgbot.isSU = function isSU(e) {
 		if (suHosts.includes(host))
 			return true;
 	}
+	var suHostmasks = this.prefs.suHostmasks, hostmask = e.prefix;
+	if (suHostmasks && suHostmasks.includes(hostmask))
+		return true;
 	return false;
 };
 aucgbot.okToKick = function okToKick(e) {
