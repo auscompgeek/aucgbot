@@ -537,7 +537,7 @@ aucgbot.parseCmd = function parseCmd(e, cmdMsg) {
 	if (!match || !match[1]) {
 		return;
 	}
-	let cmd = (e.cmd = match[1].toLowerCase());
+	let cmd = (e.cmd = match[1]).toLowerCase();
 	let args = (e.args = match[2] || "");
 	let dest = e.dest, nick = e.nick, host = e.host, conn = e.conn, relay = e.relay;
 	switch (cmd) {
@@ -617,10 +617,17 @@ aucgbot.parseCmd = function parseCmd(e, cmdMsg) {
 		break;
 	default:
 		try {
-			this.modMethod("parseCmd", arguments) || this.modMethod("cmd_" + cmd, arguments);
+			if (this.modMethod("parseCmd", arguments) || this.modMethod("cmd_" + cmd, arguments))
+				return;
 		} catch (ex) {
 			e.notice("Oops, I encountered an error.", ex);
 			e.logError("command", ex, nick + (dest === nick ? "" : " in " + dest), cmd, args);
+			return;
+		}
+		try {
+			this.modMethod("onUnknownCmd", arguments);
+		} catch (ex) {
+			e.logError("unknown command", ex, nick, cmd, args);
 		}
 	}
 };
