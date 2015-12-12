@@ -2,7 +2,6 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-/*global module.exports: false */
 
 module.exports.version = 2.2;
 module.exports.SEARCH_API_BASE = "http://ajax.googleapis.com/ajax/services/search/web?v=1.0&rsz=1&q=";
@@ -38,7 +37,7 @@ function cmd_google(e) {
 	if (res0) {
 		e.reply(
 			unescape(res0.url), "-", decodeHTML(res0.titleNoFormatting), "-",
-			decodeHTML(res0.content).replace(/<\/?b>/g, "\x02")
+			decodeHTML(res0.content).replace(/<\/?b>/g, e.preferNoColour ? "" : "\x02")
 		);
 	} else {
 		e.reply("No results.");
