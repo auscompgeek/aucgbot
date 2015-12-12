@@ -10,7 +10,7 @@
 (function (module) {
 "use strict";
 
-module.version = "5.5 (2015-10-23)";
+module.version = "5.5.1 (2015-10-25)";
 module.db = {};
 module.sfwChans = [];
 module.DB_FILENAME = "badword.json";
@@ -19,8 +19,15 @@ module.spaceAfterColon = false;
 module.parseList = function parseList() {
 	var badwords = [];
 	for (var word in this.badwords) {
-		if (this.badwords.hasOwnProperty(word) && typeof this.badwords[word] === "string")
-			badwords.push(this.badwords[word]);
+		if (this.badwords.hasOwnProperty(word)) {
+			if (typeof this.badwords[word] === "string") {
+				let regex = this.badwords[word];
+				badwords.push(regex);
+				this.badwords[word] = new RegExp(regex);
+			} else {
+				badwords.push(regex.source);
+			}
+		}
 	}
 	this.badwordList = RegExp(badwords.join("|"));
 };
@@ -78,7 +85,7 @@ module.getUser = function getUser(nick, create, noAlts) {
 };
 
 module.badwords = {
-// "Word": "lowercase quoted regex",
+// "Word": "lowercase regex",
 	"Arse": "\\barse\\b",
 	"Asian": "as(?:ia|ai)n",
 	"Ass": "\\ba[s$]{2}(?:holes?|es)?\\b|lmf?ao",
@@ -88,7 +95,7 @@ module.badwords = {
 	"Bloody": "bloody",
 	"Boob": "b[o0]{2}b|\\b(?:8008(?:135|)|5318008)\\b",
 	"Bum": "bum",
-	"Butt": "butt",
+	"Butt": "butts?\\b",
 	"Chinese": "chinese",
 	"Cock": "cock",
 	"Coon": "coon",
@@ -140,6 +147,7 @@ module.badwords = {
 	"Pussy": "puss(?:y\\b|ies)",
 	"Queer": "queer",
 	"Retard": "retard",
+	"Rekt": "rekt",
 	"Screw you": "screw (?:yo|)u",
 	"Seems legit": "seems legit",
 	"Shat": "shat",
@@ -180,7 +188,11 @@ module.cmd_badwords = function cmd_badwords(e) {
 	msg = msg.join(" ");
 
 	if (!db && !(word && msg && e.isSU())) {
-		conn.msg(dest, name, "hasn't said any bad words...yet...");
+		if (name == e.conn.nick) {
+			conn.msg(dest, "I never bloody swear you idiot, WTF are you on about?");
+		} else {
+			conn.msg(dest, name, "hasn't said any bad words...yet...");
+		}
 	} else if (word) {
 		if (word === "nick") {
 			if (msg && e.isSU()) {
@@ -240,7 +252,7 @@ module.onUnknownMsg = function onUnknownMsg(e) {
 	var db = this.getUser(nick.split("|")[0], true);
 	for (let word in this.badwords) {
 		let words;
-		if (this.badwords.hasOwnProperty(word) && typeof this.badwords[word] === "string" && (words = msg.match(this.badwords[word], "g"))) {
+		if (this.badwords.hasOwnProperty(word) && (words = msg.match(this.badwords[word]))) {
 			if (!db[word])
 				db[word] = 0;
 			db[word] += words.length;
