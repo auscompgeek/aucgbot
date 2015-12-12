@@ -30,7 +30,7 @@ module.exports.cmd_wwwtitle = function cmd_wwwtitle(e) {
 		return true;
 	}
 
-	if (url.slice(0, 4) != "http"){
+	if (!url.startsWith("http")) {
 		url = "http://" + url;
 	}
 
@@ -50,4 +50,4 @@ module.exports.cmd_oblique = function cmd_oblique(e) {
 	e.reply(e.bot.getHTTP(this.BASE_URL + encodeURI(service) + "/" + encodeURIComponent(argv.join(" "))));
 	return true;
 };
-module.exports.cmd_oblique.help = "Query an Oblique service. Usage: oblique <service> <args>";
+module.exports.cmd_oblique.help = "Query an Oblique service. See https://github.com/nslater/oblique for details. Usage: oblique <service> <args>";
