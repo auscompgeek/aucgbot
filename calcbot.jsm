@@ -7,7 +7,7 @@
 //require("./es5-sham.js");
 var math = require("mathjs");
 
-module.exports.version = "4.0.3 (2015-09-29)";
+module.exports.version = "4.0.4 (2015-11-05)";
 module.exports.prefs = {
 	equalPrefix: true, // treat messages starting with = as a calculator expression
 	abuse: {
@@ -78,6 +78,10 @@ module.exports.onUnknownMsg = function onUnknownMsg(e) {
 
 module.exports["cmd_="] = module.exports.cmd_calc = module.exports.cmd_math = function cmd_calc(e) {
 	var dest = e.dest, msg = e.args.replace(/(?:\/\/|@).*/, ""), nick = e.nick, name = nick.split("|")[0];
+	if (!msg) {
+		e.reply(cmd_calc.help);
+		return true;
+	}
 	/*
 	if (msg.match(this.abuse)) {
 		if (this.prefs.abuse.warn && !e.relay) {
@@ -146,7 +150,7 @@ module.exports.cmd_qe = function cmd_quadraticEqn(e) {
 		e.reply(this.cmd_qe.help);
 		return true;
 	}
-	var pron = RegExp.$2, a = RegExp.$1, b = RegExp.$3, c = RegExp.$4, _2a, delta, sqrtDelta;
+	var pron = RegExp.$2, a = RegExp.$1.trim(), b = RegExp.$3.trim(), c = RegExp.$4, _2a, delta, sqrtDelta;
 	if ("+-".includes(a)) {
 		a += "1";
 	}
@@ -164,6 +168,8 @@ module.exports.cmd_qe = function cmd_quadraticEqn(e) {
 		return true;
 	}
 	if (delta === 0) {
+		e.reply(pron, "= {0}/{1} = {2}".format(-b, _2a, -b/_2a));
+		return true;
 	}
 	sqrtDelta = Math.sqrt(delta);
 	e.reply(pron, "= ({0} \xB1 \u221A{1})/{2} = {3} or {4}".format(-b, delta, _2a, (-b + sqrtDelta)/_2a, (-b - sqrtDelta)/_2a));
