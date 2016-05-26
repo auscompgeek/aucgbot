@@ -225,6 +225,8 @@ module.exports.parseMsg = function parseMsg(msg, calc) {
 	if (typeof ans === "function") {
 		ans = ans.toString();
 		ans = ans.slice(0, ans.indexOf("{")-1);
+	} else {
+		ans = ans.toString();
 	}
 	return node + ": " + ans;
 };
