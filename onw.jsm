@@ -1,7 +1,7 @@
 "use strict";
 (function (self) {
 
-self.version = 0.4;
+self.version = 0.5;
 
 const NOT_STARTED = 0;
 const NIGHT = 1;
@@ -14,7 +14,7 @@ const centreNameToIndex = CENTRE_POSITIONS.indexOf.bind(CENTRE_POSITIONS);
 self.WOLF_ROLES = ["werewolf", "minion"];
 self.VILLAGE_ROLES = ["mason", "seer", "robber", "troublemaker", "drunk", "insomniac", "hunter", "villager"];
 self.TARGETING_ROLES = ["seer", "robber", "troublemaker", "drunk"];
-self.ROLES = self.WOLF_ROLES.concat(self.VILLAGE_ROLES).concat("tanner");  // roles in night action order
+self.ROLES = self.WOLF_ROLES.concat(self.VILLAGE_ROLES, "tanner");  // roles in night action order
 
 self.IN_PM_ONLY_CMDS = ["see", "swap", "vote"];
 self.NOT_PLAYING_CMDS = ["join", "stats", "fstop"];
@@ -24,11 +24,11 @@ self.ROLE_PMS = {
 	"minion": "You are a minion. You are trying to help the werewolves take over the town. Your goal is to avoid getting the werewolves killed. You win with the werewolves.",
 	"mason": "You are a mason.",
 	"seer": "You are the seer. You may either see someone else's initial role using `onw see <player>`, or look at two roles in the centre using `onw see (left|middle|right) (left|middle|right)`.",
-	"robber": "You are the robber. You may rob a player's role by using the `onw swap <player>` command. You will not see your new role.",
+	"robber": "You are the robber. You may rob a player's role by using the `onw swap <player>` command. You will see your new role.",
 	"troublemaker": "You are the troublemaker. You may swap two players' roles, not including yourself, using the `onw swap <player1> <player2>` command.",
 	"drunk": "You are the drunk. You must swap your role with a role in the centre, using the `onw swap (left|middle|right)` command. You will not see your new role.",
 	"insomniac": "You are the insomniac. At the end of the night, you will see your new role.",
-	"hunter": "You are the hunter. If you are killed, whoever you vote for will also be killed.",
+	"hunter": "You are the hunter. If you are killed, you will kill whoever you vote for.",
 	"villager": "You are a regular villager.",
 	"tanner": "You are the tanner. Your goal is to get killed.",
 };
@@ -276,6 +276,11 @@ self.subcommands = {
 				return;
 			}
 
+			if (target === player || targetB === player) {
+				e.notice("You may not swap a player with yourself.");
+				return;
+			}
+
 			self.targets.set(player, [target, targetB]);
 			e.notice("You have picked", target, "and", targetB, "to swap.");
 			break;
@@ -449,7 +454,9 @@ self.roleNightActions = {
 	robber: function (conn, robbers) {
 		for (let player of robbers) {
 			let target = self.targets.get(player);
+			if (target === player) continue;
 			self.swapPlayerRoles(player, target);
+			cnotice(conn, player, `You are now a ${self.playerToNewRole[player]}.`);
 		}
 	},
 
